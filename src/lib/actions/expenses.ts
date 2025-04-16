@@ -1,0 +1,221 @@
+// lib/actions/expenses.ts
+'use server';
+
+import { z } from 'zod';
+import { createActionClient } from '@/lib/supabase/server'; // Using action client
+import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
+import { ExpenseCategory } from '@/lib/definitions'; // Assuming you might need this type
+
+// Zod schema for expense form validation
+// Based on: id, category_id, amount, date, description, months
+const ExpenseSchema = z.object({
+  id: z.string().uuid().optional(), // Optional: only present for updates
+  category_id: z.string().uuid("Invalid category").nullable().optional(), // Can be null or omitted if category is not selected
+  amount: z.coerce // Coerce form string to number
+    .number({ invalid_type_error: 'Please enter a valid amount.' })
+    .min(0.01, { message: 'Amount must be positive.' }),
+  date: z.coerce.date({ required_error: 'Please select a date.' }), // Coerce to Date object
+  description: z.string().optional().nullable(),
+  // Optional: Add months validation if you include it in your form
+  // months: z.array(z.coerce.number().int().min(1).max(12))
+  //   .optional()
+  //   .nullable()
+  //   .refine(arr => !arr || new Set(arr).size === arr.length, { // Ensure unique months if provided
+  //       message: 'Months must be unique',
+  //   }),
+});
+
+// Type for state returned by the action (for useFormState)
+export type ExpenseState = {
+  errors?: {
+    category_id?: string[];
+    amount?: string[];
+    date?: string[];
+    description?: string[];
+    months?: string[]; // Add if using months field
+    database?: string[]; // For general DB or other errors
+  };
+  message?: string | null;
+};
+
+// --- Server Action: Create or Update Expense ---
+export async function createOrUpdateExpense(
+  prevState: ExpenseState | undefined,
+  formData: FormData
+): Promise<ExpenseState> {
+  const cookieStore = cookies();
+  const supabase = createActionClient();
+
+  // 1. Authenticate User
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { message: 'Authentication required.' };
+  }
+
+  // 2. Validate Form Data
+  // Convert category_id empty string to null before validation if necessary
+  const rawFormData = Object.fromEntries(formData.entries());
+  if (rawFormData.category_id === '') {
+      rawFormData.category_id = null;
+  }
+
+  const validatedFields = ExpenseSchema.safeParse(rawFormData);
+
+  if (!validatedFields.success) {
+    console.error("Validation Errors:", validatedFields.error.flatten().fieldErrors);
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid form data. Please check the fields.',
+    };
+  }
+
+  // 3. Prepare Data for Supabase
+  const { id, date, ...expenseData } = validatedFields.data;
+  const dateString = date.toISOString().split('T')[0]; // Format YYYY-MM-DD for Supabase date type
+
+  // Ensure category_id is null if not provided or explicitly null
+  const finalCategoryId = expenseData.category_id === undefined ? null : expenseData.category_id;
+
+  // Handle months if using: ensure null if empty array or not provided
+  // const finalMonths = expenseData.months && expenseData.months.length > 0 ? expenseData.months : null;
+
+  try {
+    let result;
+    if (id) {
+      // --- Update Existing Expense ---
+      console.log('Updating expense with ID:', id);
+      result = await supabase
+        .from('expenses')
+        .update({
+          ...expenseData,
+          category_id: finalCategoryId,
+          date: dateString,
+          // months: finalMonths, // Uncomment if using months
+          user_id: user.id, // IMPORTANT: Ensure user_id is set on update for RLS/ownership
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+    } else {
+      // --- Create New Expense ---
+      console.log('Creating new expense');
+      result = await supabase
+        .from('expenses')
+        .insert({
+          ...expenseData,
+          category_id: finalCategoryId,
+          date: dateString,
+          // months: finalMonths, // Uncomment if using months
+          // user_id is set by the 'set_expenses_user_id' trigger on INSERT
+        })
+        .select()
+        .single();
+    }
+
+    const { error } = result;
+
+    if (error) {
+      console.error("Supabase DB Error:", error);
+      // Check for specific errors like duplicate key, foreign key violation etc. if needed
+      return { message: `Database Error: ${error.message}` };
+    }
+
+    console.log('Expense operation successful:', result.data);
+
+  } catch (error) {
+    console.error("Catch Error:", error);
+    return { message: 'An unexpected error occurred while saving the expense.' };
+  }
+
+  // 4. Revalidate Cache and Return Success
+  revalidatePath('/expenses'); // Revalidate the expenses list page
+  revalidatePath('/revenue'); // Revalidate the revenue page as it depends on expenses
+
+  return { message: id ? 'Expense updated successfully.' : 'Expense created successfully.' };
+}
+
+
+// --- Server Action: Delete Expense ---
+export async function deleteExpense(id: string): Promise<{ message: string; error?: null } | { message?: null; error: string }> {
+    'use server'; // Directive needed here too if called directly
+
+    if (!id) return { error: 'Expense ID is required.'};
+
+    const cookieStore = cookies();
+    const supabase = createActionClient();
+
+    // 1. Authenticate User
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return { error: 'Authentication required.' };
+    }
+
+    // 2. (Optional but Recommended) Authorize: Check if user owns this expense
+    // This relies on RLS primarily, but an explicit check adds layer.
+    /*
+    const { data: expense, error: fetchError } = await supabase
+        .from('expenses')
+        .select('user_id')
+        .eq('id', id)
+        .single();
+
+    if (fetchError || !expense) {
+        return { error: 'Expense not found or error fetching data.' };
+    }
+
+    if (expense.user_id !== user.id) {
+         return { error: 'Unauthorized to delete this expense.' };
+    }
+    */
+
+    // 3. Delete Expense
+    try {
+        const { error } = await supabase.from('expenses').delete().eq('id', id);
+
+        if (error) {
+            console.error("Supabase Delete Error:", error);
+            return { error: `Database Error: Failed to delete expense. ${error.message}` };
+        }
+    } catch (e) {
+        console.error("Catch Error during delete:", e);
+        return { error: 'An unexpected error occurred during deletion.' };
+    }
+
+
+    // 4. Revalidate Cache
+    revalidatePath('/expenses');
+    revalidatePath('/revenue');
+
+    return { message: 'Expense deleted successfully.' };
+}
+
+// --- Helper Action: Get Expense Categories (Optional, could also be done in page component) ---
+// Useful for populating select dropdowns in the ExpenseForm
+export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
+    'use server';
+    const cookieStore = cookies();
+    // Can use server client here as it's just reading public/user data
+    const supabase = createActionClient(); // Or createClient from server
+
+     const { data: { user } } = await supabase.auth.getUser();
+     if (!user) {
+       // Decide: throw error or return empty array? Returning empty might be safer for UI.
+       console.error('getExpenseCategories: Authentication required.');
+       return [];
+     }
+
+    // Assuming categories are global or you might add user_id if they are user-specific
+    const { data, error } = await supabase
+        .from('expense_categories')
+        .select('id, name')
+        .order('name', { ascending: true });
+
+    if (error) {
+        console.error('Error fetching expense categories:', error);
+        return []; // Return empty array on error to prevent breaking forms
+    }
+
+    return data || [];
+}

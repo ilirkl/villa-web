@@ -1,0 +1,118 @@
+'use client';
+
+import { BookingCard } from '@/components/bookings/BookingCard';
+import Link from 'next/link';
+import { PlusCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Booking, BookingSource } from '@/lib/definitions';
+import { createClient } from '@/lib/supabase/client';
+import { SearchBar } from '@/components/SearchBar';
+import { FilterSheet } from '@/components/FilterSheet';
+
+const bookingSourceOptions = [
+  { id: 'DIRECT', name: 'Direct', color: '#34d399' },
+  { id: 'AIRBNB', name: 'Airbnb', color: '#ff5a5f' },
+  { id: 'BOOKING', name: 'Booking', color: '#003580' },
+];
+
+const sortOptions = [
+  { field: 'start_date', label: 'Check-in Date' }
+];
+
+export default function BookingsPage() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sourceFilter, setSourceFilter] = useState<BookingSource | 'all'>('all');
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .order('start_date', { ascending: sortOrder === 'asc' });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setBookings(data || []);
+      }
+      setIsLoading(false);
+    };
+
+    fetchBookings();
+  }, [sortOrder]);
+
+  // Apply filters and search
+  useEffect(() => {
+    let result = [...bookings];
+
+    // Apply source filter
+    if (sourceFilter !== 'all') {
+      result = result.filter(booking => booking.source === sourceFilter);
+    }
+
+    // Apply search
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      result = result.filter(booking =>
+        booking.guest_name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    setFilteredBookings(result);
+  }, [bookings, sourceFilter, searchTerm]);
+
+  if (isLoading) return <div>Loading bookings...</div>;
+  if (error) return <p>Error loading bookings: {error}</p>;
+  if (!bookings || bookings.length === 0) return <p>No bookings found.</p>;
+
+  return (
+    <div className="pb-18">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold">Bookings</h1>
+        <Link href="/bookings/add" className="group relative">
+          <PlusCircle 
+            className="h-8 w-8 transition-all duration-300 ease-in-out transform 
+                       group-hover:scale-110 group-hover:rotate-90 group-hover:shadow-lg 
+                       active:scale-95 active:rotate-180" 
+            style={{ 
+              color: '#ff5a5f',
+              filter: 'drop-shadow(0 0 0.5rem rgba(255, 90, 95, 0.3))'
+            }} 
+          />
+        </Link>
+      </div>
+
+      <div className="flex gap-2 mb-6">
+        <div className="flex-1">
+          <SearchBar 
+            onSearch={setSearchTerm}
+            placeholder="Search guest name..."
+          />
+        </div>
+        <FilterSheet 
+          title="Filter Bookings"
+          sortOptions={sortOptions}
+          filterOptions={bookingSourceOptions}
+          currentSortField="start_date"
+          currentSortOrder={sortOrder}
+          currentFilter={sourceFilter}
+          onSortFieldChange={() => {}} // Only one sort field, so no need to change
+          onSortOrderChange={setSortOrder}
+          onFilterChange={(filter) => setSourceFilter(filter as BookingSource | 'all')}
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {filteredBookings.map((booking: Booking) => (
+          <BookingCard key={booking.id} booking={booking} />
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,155 @@
+/* Custom styles for FullCalendar */
+
+/* Event styling */
+.fc-event {
+  border-radius: 6px !important;
+  border: none !important;
+  padding: 0px 6px !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+  cursor: default !important;
+  background-color: #ff5a5f !important;
+  height: 24px !important;
+  min-height: 24px !important;
+}
+
+.fc-event-main-frame {
+  height: 100% !important;
+  min-height: 28px !important;
+  display: block !important;
+}
+
+.fc-event-title-container {
+  height: 100% !important;
+  display: flex;
+  align-items: center;
+}
+
+/* Ensure the event spans across days properly */
+.fc-event-main {
+  padding: 0 !important;
+  height: 100% !important;
+  min-height: 28px !important;
+  display: block !important;
+}
+
+/* Remove the time/duration text if any */
+.fc-event-time {
+  display: none !important;
+}
+
+/* Ensure consistent height for multi-day events */
+.fc-daygrid-event-harness {
+  height: 28px !important;
+  min-height: 28px !important;
+}
+
+/* Force block display for continuation events */
+.fc-daygrid-block-event .fc-event-main {
+  display: block !important;
+}
+
+/* Adjust the day cell to accommodate taller events */
+.fc-daygrid-day-frame {
+  min-height: 100px !important;
+}
+
+/* Disable event hover and selection */
+.fc-event:hover,
+.fc-event:active,
+.fc-event:focus {
+  cursor: default !important;
+  opacity: 1 !important;
+  background: inherit !important;
+}
+
+/* Header buttons */
+.fc-button {
+  border-radius: 6px !important;
+  border: 1px solid var(--border) !important;
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  font-weight: 500 !important;
+  padding: 0.5rem 1rem !important;
+  transition: all 0.2s !important;
+}
+
+.fc-button:hover {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.fc-button-active {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+/* Today's date text color */
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  color: #ff5a5f !important;
+  font-weight: 600 !important;
+}
+
+/* Today cell highlighting */
+.fc-day-today {
+  background-color: var(--accent) !important;
+}
+
+/* Month title */
+.fc-toolbar-title {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  color: var(--foreground) !important;
+}
+
+/* Calendar header */
+.fc-col-header-cell {
+  padding: 0.75rem 0 !important;
+  font-weight: 500 !important;
+  color: var(--muted-foreground) !important;
+}
+
+/* Calendar cells */
+.fc-daygrid-day {
+  transition: none !important;
+  cursor: default !important;
+}
+
+/* Disable day hover effect */
+.fc-daygrid-day:hover {
+  background-color: transparent !important;
+}
+
+/* Event dot in "more" popover */
+.fc-daygrid-event-dot {
+  border-color: currentColor !important;
+}
+
+/* "more" link styling */
+.fc-more-link {
+  color: var(--primary) !important;
+  font-weight: 500 !important;
+  pointer-events: none !important;
+}
+
+/* Disable text selection */
+.fc {
+  user-select: none !important;
+}
+
+/* Remove hover effects from all calendar elements */
+.fc * {
+  cursor: default !important;
+}
+
+.fc-event-main {
+  cursor: default !important;
+}
+
+
+
+
+
+
+
