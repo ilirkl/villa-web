@@ -52,7 +52,44 @@
 
 /* Adjust the day cell to accommodate taller events */
 .fc-daygrid-day-frame {
-  min-height: 100px !important;
+  min-height: 80px !important; /* Reduced from 100px to 80px */
+}
+
+/* You might also want to adjust these related styles */
+.fc-daygrid-day {
+  height: 80px !important;
+}
+
+/* Ensure the day number is properly positioned */
+.fc-daygrid-day-top {
+  padding-top: 4px !important;
+}
+
+/* Adjust spacing for events within the cell */
+.fc-daygrid-day-events {
+  padding: 2px 0 !important;
+  margin: 0 !important;
+}
+
+/* Keep event height consistent */
+.fc-event {
+  height: 24px !important;
+  min-height: 24px !important;
+}
+
+.fc-event-main-frame {
+  height: 100% !important;
+  min-height: 24px !important;
+}
+
+.fc-daygrid-event-harness {
+  height: 24px !important;
+  min-height: 24px !important;
+}
+
+.fc-event-main {
+  height: 100% !important;
+  min-height: 24px !important;
 }
 
 /* Disable event hover and selection */
@@ -146,6 +183,7 @@
 .fc-event-main {
   cursor: default !important;
 }
+
 
 
 
