@@ -76,27 +76,47 @@ export function BookingCard({
     try {
       toast.info('Generating invoice...');
       
-      const pdfBuffer = await generateInvoice(booking.id);
+      const response = await generateInvoice(booking.id);
       
-      if (!pdfBuffer || pdfBuffer.length === 0) {
-        throw new Error('Failed to generate PDF');
+      if (!response) {
+        throw new Error('No response received from server');
       }
 
-      const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute(
-        'download', 
-        `Invoice-${booking.guest_name}-${format(new Date(booking.start_date), 'yyyy-MM-dd')}.pdf`
-      );
+      // Convert response to Uint8Array if it isn't already
+      let pdfBuffer: Uint8Array;
+      if (response instanceof Uint8Array) {
+        pdfBuffer = response;
+      } else if (Array.isArray(response)) {
+        pdfBuffer = new Uint8Array(response);
+      } else if (response instanceof ArrayBuffer) {
+        pdfBuffer = new Uint8Array(response);
+      } else {
+        throw new Error(`Unexpected response type: ${typeof response}`);
+      }
 
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Create blob and download
+      const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
       
-      toast.success('Invoice downloaded successfully');
+      // Try to open in new tab first
+      const newWindow = window.open(url, '_blank');
+      
+      if (!newWindow) {
+        // Fallback to download if popup is blocked
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Invoice-${booking.guest_name}-${format(new Date(booking.start_date), 'yyyy-MM-dd')}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      
+      // Cleanup
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 1000);
+      
+      toast.success('Invoice generated successfully');
     } catch (error) {
       console.error('Invoice generation error:', error);
       toast.error(
