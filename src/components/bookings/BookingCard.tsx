@@ -33,12 +33,14 @@ interface BookingCardProps {
   booking: Booking;
   hideFooter?: boolean;
   hideNotes?: boolean;
+  onDelete?: () => void;  // Add onDelete prop
 }
 
 export function BookingCard({ 
   booking, 
   hideFooter = false,
-  hideNotes = false 
+  hideNotes = false,
+  onDelete
 }: BookingCardProps) {
   // Add a function to determine badge styling based on source
   const getSourceBadgeStyle = (source: string) => {
@@ -55,16 +57,18 @@ export function BookingCard({
   };
 
   const handleDelete = async () => {
-      try {
-          await deleteBooking(booking.id);
-          toast.success("Booking Deleted", {
-            description: `Booking for ${booking.guest_name} was deleted successfully.`
-          });
-      } catch (error: any) {
-           toast.error("Deletion Failed", {
-              description: error.message || "Failed to delete booking.",
-           });
-      }
+    try {
+      await deleteBooking(booking.id);
+      toast.success("Booking Deleted", {
+        description: `Booking for ${booking.guest_name} was deleted successfully.`
+      });
+      // Call the refresh function after successful deletion
+      onDelete?.();
+    } catch (error: any) {
+      toast.error("Deletion Failed", {
+        description: error.message || "Failed to delete booking.",
+      });
+    }
   };
 
   return (

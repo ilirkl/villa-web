@@ -21,11 +21,12 @@ export default async function EditBookingPage({ params }: EditBookingPageProps) 
     notFound(); // Show 404 if booking not found or error
   }
 
-  // Prepare initial data for the form, converting date strings to Date objects
+  // Ensure dates are properly converted to Date objects
   const initialFormData = {
-      ...booking,
-      start_date: new Date(booking.start_date),
-      end_date: new Date(booking.end_date),
+    ...booking,
+    // Ensure we're parsing the dates correctly
+    start_date: booking.start_date ? new Date(booking.start_date + 'T00:00:00') : undefined,
+    end_date: booking.end_date ? new Date(booking.end_date + 'T00:00:00') : undefined,
   };
 
   return (

@@ -47,8 +47,7 @@ export type BookingState = {
 };
 
 export async function createOrUpdateBooking(prevState: BookingState | undefined, formData: FormData): Promise<BookingState> {
-  const cookieStore = cookies();
-  const supabase = createActionClient(); // Use action client
+  const supabase = createActionClient();
 
   // 1. Validate User
   const { data: { user } } = await supabase.auth.getUser();
@@ -68,58 +67,93 @@ export async function createOrUpdateBooking(prevState: BookingState | undefined,
   }
 
   const { id, start_date, end_date, ...bookingData } = validatedFields.data;
-  const startDateString = start_date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-  const endDateString = end_date.toISOString().split('T')[0];     // Format as YYYY-MM-DD
+  const startDateString = start_date.toISOString().split('T')[0];
+  const endDateString = end_date.toISOString().split('T')[0];
+
+  // Add debug logging
+  console.log('Received dates:', {
+    original_start: start_date,
+    original_end: end_date,
+    startDateString,
+    endDateString
+  });
 
   try {
     let result;
     if (id) {
       // Update existing booking
+      const updateData = {
+        start_date: startDateString,
+        end_date: endDateString,
+        ...bookingData,
+        user_id: user.id,
+        updated_at: new Date().toISOString(),
+      };
+      
+      console.log('Update data:', updateData);
+
       result = await supabase
         .from('bookings')
-        .update({
-          ...bookingData,
-          start_date: startDateString,
-          end_date: endDateString,
-          user_id: user.id, // Ensure user_id is set on update too
-          updated_at: new Date().toISOString(),
-         })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
+
+      if (result.error) {
+        console.error("Update Error:", result.error);
+        return {
+          message: `Failed to update booking: ${result.error.message}`,
+          errors: { database: [result.error.message] }
+        };
+      }
+
+      // Verify the update
+      const verifyResult = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      console.log('Updated booking:', verifyResult.data);
 
     } else {
       // Create new booking
       result = await supabase
         .from('bookings')
         .insert({
-           ...bookingData,
-           start_date: startDateString,
-           end_date: endDateString,
-           // user_id is set by trigger 'set_bookings_user_id'
-         })
+          start_date: startDateString,
+          end_date: endDateString,
+          ...bookingData,
+        })
         .select()
         .single();
-    }
 
-    const { error } = result;
-
-    if (error) {
-      console.error("Supabase DB Error:", error);
-      return { message: `Database Error: ${error.message}` };
+      if (result.error) {
+        console.error("Insert Error:", result.error);
+        return {
+          message: `Failed to create booking: ${result.error.message}`,
+          errors: { database: [result.error.message] }
+        };
+      }
     }
 
   } catch (error) {
-    console.error("Catch Error:", error);
-    return { message: 'An unexpected error occurred.' };
+    console.error("Unexpected Error:", error);
+    return {
+      message: 'An unexpected error occurred.',
+      errors: { database: ['Internal server error'] }
+    };
   }
 
-  // 3. Revalidate cache and redirect (or return success)
-  revalidatePath('/dashboard'); // Revalidate calendar view
-  revalidatePath('/bookings'); // Revalidate bookings list
-  // You might want to redirect after success, e.g., redirect('/bookings')
-  // For useFormState, returning a success message is often better
-  return { message: id ? 'Booking updated successfully.' : 'Booking created successfully.' };
+  // Force revalidation of all relevant paths
+  revalidatePath('/dashboard');
+  revalidatePath('/bookings');
+  revalidatePath(`/bookings/${id}`);
+  revalidatePath(`/bookings/${id}/edit`);
+  
+  return { 
+    message: id ? 'Booking updated successfully.' : 'Booking created successfully.',
+  };
 }
 
 export async function deleteBooking(id: string) {

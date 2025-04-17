@@ -97,13 +97,14 @@ export function BookingForm({ initialData }: BookingFormProps) {
              toast.success(isEditing ? "Booking Updated" : "Booking Created", {
                  description: state.message,
              });
-             // Redirect only on success if needed
              if (!isEditing) {
                 // Debounce or delay redirect slightly to allow user to see toast
                  setTimeout(() => router.push('/bookings'), 500);
              } else {
-                 // Maybe refresh data or just stay on the page after edit
-                 // router.refresh(); // Optional: refresh server data on edit page
+                 // Force a hard refresh of the page data
+                 router.refresh();
+                 // Optional: redirect back to bookings list
+                 setTimeout(() => router.push('/bookings'), 500);
              }
         }
      }
@@ -112,18 +113,24 @@ export function BookingForm({ initialData }: BookingFormProps) {
 
   // onSubmit remains the same
   const onSubmit = (formData: FormSchemaType) => {
-      // ... (FormData creation logic remains the same)
-      const data = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-            if (value instanceof Date) {
-                data.append(key, value.toISOString());
-            } else {
-                 data.append(key, String(value));
-            }
+    const data = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        if (value instanceof Date) {
+          // Ensure we're using the correct date by handling timezone offset
+          const date = new Date(value);
+          // Format date as YYYY-MM-DD, ensuring we use UTC to avoid timezone issues
+          const dateString = new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
+            .toISOString()
+            .split('T')[0];
+          data.append(key, dateString);
+          console.log(`Submitting ${key}:`, dateString); // Debug log
+        } else {
+          data.append(key, String(value));
         }
-      });
-      dispatch(data);
+      }
+    });
+    dispatch(data);
   };
 
   // Form rendering remains the same

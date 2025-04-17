@@ -50,6 +50,7 @@ export default function ExpensesPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [filterOptions, setFilterOptions] = useState<Array<{ id: string; name: string; color: string }>>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Fetch categories for filter options
   useEffect(() => {
@@ -72,25 +73,31 @@ export default function ExpensesPage() {
     fetchCategories();
   }, []);
 
-  // Fetch expenses
+  // Modify the fetchExpenses function to be reusable
+  const fetchExpenses = async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('*, expense_categories ( name )')
+      .order(sortField, { ascending: sortOrder === 'asc' });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setExpenses(data || []);
+    }
+    setIsLoading(false);
+  };
+
+  // Pass the refresh function down to ExpenseCard
+  const handleRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  // Modify the useEffect to include refreshTrigger
   useEffect(() => {
-    const fetchExpenses = async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*, expense_categories ( name )')
-        .order(sortField, { ascending: sortOrder === 'asc' });
-
-      if (error) {
-        setError(error.message);
-      } else {
-        setExpenses(data || []);
-      }
-      setIsLoading(false);
-    };
-
     fetchExpenses();
-  }, [sortField, sortOrder]);
+  }, [sortField, sortOrder, refreshTrigger]);
 
   // Apply filters and search
   useEffect(() => {
@@ -156,7 +163,11 @@ export default function ExpensesPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredExpenses.map((expense) => (
-          <ExpenseCard key={expense.id} expense={expense} />
+          <ExpenseCard 
+            key={expense.id} 
+            expense={expense} 
+            onDelete={handleRefresh}
+          />
         ))}
       </div>
     </div>

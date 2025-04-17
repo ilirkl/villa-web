@@ -27,6 +27,13 @@ export default function BookingsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [sourceFilter, setSourceFilter] = useState<BookingSource | 'all'>('all');
+  // Add refresh trigger state
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Add refresh handler
+  const handleRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -45,7 +52,7 @@ export default function BookingsPage() {
     };
 
     fetchBookings();
-  }, [sortOrder]);
+  }, [sortOrder, refreshTrigger]); // Add refreshTrigger to dependencies
 
   // Apply filters and search
   useEffect(() => {
@@ -110,7 +117,11 @@ export default function BookingsPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredBookings.map((booking: Booking) => (
-          <BookingCard key={booking.id} booking={booking} />
+          <BookingCard 
+            key={booking.id} 
+            booking={booking} 
+            onDelete={handleRefresh}  // Add onDelete prop
+          />
         ))}
       </div>
     </div>

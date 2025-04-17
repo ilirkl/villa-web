@@ -35,13 +35,14 @@ type ExpenseWithCategory = Expense & {
 
 interface ExpenseCardProps {
   expense: ExpenseWithCategory;
+  onDelete?: () => void;
 }
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(amount);
 };
 
-export function ExpenseCard({ expense }: ExpenseCardProps) {
+export function ExpenseCard({ expense, onDelete }: ExpenseCardProps) {
   // Add a function to determine badge styling based on category
   const getCategoryBadgeStyle = (categoryName: string | undefined) => {
     switch (categoryName?.toLowerCase()) {
@@ -74,6 +75,8 @@ export function ExpenseCard({ expense }: ExpenseCardProps) {
       toast.success("Expense Deleted", {
         description: result.message,
       });
+      // Call the refresh function after successful deletion
+      onDelete?.();
     }
   };
 

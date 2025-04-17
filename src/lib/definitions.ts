@@ -13,7 +13,18 @@ export type Expense = Database['public']['Tables']['expenses']['Row'] & {
     expense_categories?: ExpenseCategory | null;
 };
 export type ExpenseCategory = Database['public']['Tables']['expense_categories']['Row'];
-export type Profile = Database['public']['Tables']['profiles']['Row'];
+export type Profile = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  company_name: string | null;
+  phone_number: string | null;
+  address: string | null;
+  website: string | null;
+  vat_number: string | null;
+  updated_at: string;
+};
 
 // --- Form Data types (will now use the correctly exported BookingSource) ---
 export type BookingFormData = Omit<Booking, 'id' | 'created_at' | 'updated_at' | 'user_id'> & {
