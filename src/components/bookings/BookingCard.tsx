@@ -12,6 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
+// Remove format import if no longer needed elsewhere in this file,
+// but keep it for the invoice filename for now.
 import { format } from 'date-fns';
 import { Pencil, Trash2, Tag, FileText } from 'lucide-react';
 import { deleteBooking } from '@/lib/actions/bookings';
@@ -32,18 +34,23 @@ import { Badge } from "@/components/ui/badge";
 
 interface BookingCardProps {
   booking: Booking;
+  formattedStartDate: string; // Add this prop
+  formattedEndDate: string;   // Add this prop
   hideFooter?: boolean;
   hideNotes?: boolean;
-  onDelete?: () => void;  // Add onDelete prop
+  onDelete?: () => void;
 }
 
-export function BookingCard({ 
-  booking, 
+export function BookingCard({
+  booking,
+  formattedStartDate, // Destructure the new prop
+  formattedEndDate,   // Destructure the new prop
   hideFooter = false,
   hideNotes = false,
   onDelete
 }: BookingCardProps) {
-  // Add a function to determine badge styling based on source
+
+  // Function to determine badge styling based on source (Keep as is)
   const getSourceBadgeStyle = (source: string) => {
     switch (source) {
       case 'DIRECT':
@@ -57,13 +64,13 @@ export function BookingCard({
     }
   };
 
+  // Keep handleDelete as is
   const handleDelete = async () => {
     try {
       await deleteBooking(booking.id);
       toast.success("Booking Deleted", {
         description: `Booking for ${booking.guest_name} was deleted successfully.`
       });
-      // Call the refresh function after successful deletion
       onDelete?.();
     } catch (error: any) {
       toast.error("Deletion Failed", {
@@ -72,17 +79,17 @@ export function BookingCard({
     }
   };
 
+  // Keep handleDownloadInvoice as is - formatting here happens on user interaction, not during initial render/hydration
   const handleDownloadInvoice = async () => {
     try {
       toast.info('Generating invoice...');
-      
+
       const response = await generateInvoice(booking.id);
-      
+
       if (!response) {
         throw new Error('No response received from server');
       }
 
-      // Convert response to Uint8Array if it isn't already
       let pdfBuffer: Uint8Array;
       if (response instanceof Uint8Array) {
         pdfBuffer = response;
@@ -94,34 +101,31 @@ export function BookingCard({
         throw new Error(`Unexpected response type: ${typeof response}`);
       }
 
-      // Create blob and download
       const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
-      
-      // Try to open in new tab first
+
       const newWindow = window.open(url, '_blank');
-      
+
       if (!newWindow) {
-        // Fallback to download if popup is blocked
         const link = document.createElement('a');
         link.href = url;
+        // This date formatting for the filename is generally safe as it's post-hydration
         link.download = `Invoice-${booking.guest_name}-${format(new Date(booking.start_date), 'yyyy-MM-dd')}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
       }
-      
-      // Cleanup
+
       setTimeout(() => {
         URL.revokeObjectURL(url);
       }, 1000);
-      
+
       toast.success('Invoice generated successfully');
     } catch (error) {
       console.error('Invoice generation error:', error);
       toast.error(
-        error instanceof Error 
-          ? error.message 
+        error instanceof Error
+          ? error.message
           : 'Failed to generate invoice'
       );
     }
@@ -133,9 +137,12 @@ export function BookingCard({
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="mb-3">{booking.guest_name}</CardTitle>
+            {/* --- CHANGE HERE --- */}
+            {/* Use the pre-formatted date strings directly */}
             <CardDescription>
-              {format(new Date(booking.start_date), 'dd MMM')} - {format(new Date(booking.end_date), 'dd MMM')}
+              {formattedStartDate} - {formattedEndDate}
             </CardDescription>
+            {/* --- END CHANGE --- */}
           </div>
           <div className="text-right">
             <div className="text-[#ff5a5f] font-bold">
@@ -158,22 +165,22 @@ export function BookingCard({
       )}
       {!hideFooter && (
         <CardFooter className="flex justify-between items-center">
-          <Badge 
-            variant="outline" 
+          <Badge
+            variant="outline"
             className={`flex items-center gap-1 text-xs ${getSourceBadgeStyle(booking.source)}`}
           >
             <Tag className="h-3 w-3" />
             {booking.source}
           </Badge>
           <div className="flex gap-2">
-            <FileText 
-              className="h-6 w-6 text-[#ff5a5f] cursor-pointer transition-all duration-300 ease-in-out transform 
-                        hover:scale-110 active:scale-95" 
+            <FileText
+              className="h-6 w-6 text-[#ff5a5f] cursor-pointer transition-all duration-300 ease-in-out transform
+                        hover:scale-110 active:scale-95"
               onClick={handleDownloadInvoice}
             />
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Trash2 className="h-6 w-6 text-[#ff5a5f]" /> 
+                <Trash2 className="h-6 w-6 text-[#ff5a5f] cursor-pointer" />
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -191,9 +198,9 @@ export function BookingCard({
               </AlertDialogContent>
             </AlertDialog>
             <Link href={`/bookings/${booking.id}/edit`}>
-              <Pencil className="h-6 w-6 transition-all duration-300 ease-in-out transform 
-                            text-[#ff5a5f] hover:scale-110 
-                            active:scale-95 active:rotate-12" /> 
+              <Pencil className="h-6 w-6 transition-all duration-300 ease-in-out transform
+                            text-[#ff5a5f] hover:scale-110
+                            active:scale-95 active:rotate-12 cursor-pointer" />
             </Link>
           </div>
         </CardFooter>

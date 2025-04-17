@@ -1,22 +1,45 @@
+/* ./calendar.css */
+
 /* Custom styles for FullCalendar */
 
-/* Event styling */
-.fc-event {
-  border-radius: 6px !important;
-  border: none !important;
-  padding: 0px 6px !important;
-  font-size: 0.875rem !important;
-  font-weight: 500 !important;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+/* --- Event Styling & Interaction Control --- */
+
+/* Prevent default focus outline, ensure default cursor, and maintain appearance */
+.fc-event,
+.fc-event:hover,
+.fc-event:active,
+.fc-event:focus,
+.fc-event:focus-visible { /* Target normal, hover, active, focus, and modern focus states */
+  outline: none !important;
+  box-shadow: none !important; /* Override potential box-shadow focus styles */
   cursor: default !important;
-  background-color: #ff5a5f !important;
-  height: 24px !important;
-  min-height: 24px !important;
+  background-color: #ff5a5f !important; /* Explicitly set your desired background */
+  opacity: 1 !important; /* Ensure opacity isn't changed on hover/focus */
+  border-radius: 6px !important; /* Keep base styling */
+  border: none !important; /* Keep base styling */
+  padding: 0px 6px !important; /* Keep base styling */
+  font-size: 0.875rem !important; /* Keep base styling */
+  font-weight: 500 !important; /* Keep base styling */
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important; /* Keep base styling */
+  height: 24px !important; /* Keep base styling */
+  min-height: 24px !important; /* Keep base styling */
 }
+
+/* Ensure the main event part also doesn't change cursor */
+.fc-event-main,
+.fc-event-main:hover {
+   cursor: default !important;
+   height: 100% !important; /* Keep consistent height */
+   min-height: 24px !important; /* Keep consistent height */
+   padding: 0 !important; /* Keep base styling */
+   display: block !important; /* Keep base styling */
+}
+
+/* --- Event Layout & Structure --- */
 
 .fc-event-main-frame {
   height: 100% !important;
-  min-height: 28px !important;
+  min-height: 24px !important; /* Match event height */
   display: block !important;
 }
 
@@ -26,14 +49,6 @@
   align-items: center;
 }
 
-/* Ensure the event spans across days properly */
-.fc-event-main {
-  padding: 0 !important;
-  height: 100% !important;
-  min-height: 28px !important;
-  display: block !important;
-}
-
 /* Remove the time/duration text if any */
 .fc-event-time {
   display: none !important;
@@ -41,8 +56,9 @@
 
 /* Ensure consistent height for multi-day events */
 .fc-daygrid-event-harness {
-  height: 28px !important;
-  min-height: 28px !important;
+  height: 24px !important; /* Match event height */
+  min-height: 24px !important; /* Match event height */
+  margin-bottom: 2px !important; /* Add a small gap between events vertically */
 }
 
 /* Force block display for continuation events */
@@ -50,12 +66,14 @@
   display: block !important;
 }
 
-/* Adjust the day cell to accommodate taller events */
+/* --- Day Cell & Grid Layout --- */
+
+/* Adjust the day cell height */
 .fc-daygrid-day-frame {
-  min-height: 80px !important; /* Reduced from 100px to 80px */
+  min-height: 80px !important;
 }
 
-/* You might also want to adjust these related styles */
+/* Related height setting for day cell */
 .fc-daygrid-day {
   height: 80px !important;
 }
@@ -71,35 +89,18 @@
   margin: 0 !important;
 }
 
-/* Keep event height consistent */
-.fc-event {
-  height: 24px !important;
-  min-height: 24px !important;
-}
-
-.fc-event-main-frame {
-  height: 100% !important;
-  min-height: 24px !important;
-}
-
-.fc-daygrid-event-harness {
-  height: 24px !important;
-  min-height: 24px !important;
-}
-
-.fc-event-main {
-  height: 100% !important;
-  min-height: 24px !important;
-}
-
-/* Disable event hover and selection */
-.fc-event:hover,
-.fc-event:active,
-.fc-event:focus {
+/* Disable day cell interaction */
+.fc-daygrid-day {
+  transition: none !important;
   cursor: default !important;
-  opacity: 1 !important;
-  background: inherit !important;
 }
+
+/* Disable day hover effect */
+.fc-daygrid-day:hover {
+  background-color: transparent !important;
+}
+
+/* --- Toolbar & Header --- */
 
 /* Header buttons */
 .fc-button {
@@ -110,6 +111,7 @@
   font-weight: 500 !important;
   padding: 0.5rem 1rem !important;
   transition: all 0.2s !important;
+  cursor: pointer !important; /* Buttons should be clickable */
 }
 
 .fc-button:hover {
@@ -122,6 +124,23 @@
   color: var(--accent-foreground) !important;
 }
 
+/* Month title */
+.fc-toolbar-title {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  color: var(--foreground) !important;
+}
+
+/* Calendar header (Mon, Tue, Wed...) */
+.fc-col-header-cell {
+  padding: 0.75rem 0 !important;
+  font-weight: 500 !important;
+  color: var(--muted-foreground) !important;
+  cursor: default !important; /* Header cells are not interactive */
+}
+
+/* --- Specific Day Styling --- */
+
 /* Today's date text color */
 .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
   color: #ff5a5f !important;
@@ -133,61 +152,39 @@
   background-color: var(--accent) !important;
 }
 
-/* Month title */
-.fc-toolbar-title {
-  font-size: 1.25rem !important;
-  font-weight: 600 !important;
-  color: var(--foreground) !important;
-}
 
-/* Calendar header */
-.fc-col-header-cell {
-  padding: 0.75rem 0 !important;
-  font-weight: 500 !important;
-  color: var(--muted-foreground) !important;
-}
-
-/* Calendar cells */
-.fc-daygrid-day {
-  transition: none !important;
-  cursor: default !important;
-}
-
-/* Disable day hover effect */
-.fc-daygrid-day:hover {
-  background-color: transparent !important;
-}
+/* --- More Link Popover --- */
 
 /* Event dot in "more" popover */
 .fc-daygrid-event-dot {
   border-color: currentColor !important;
 }
 
-/* "more" link styling */
+/* "more" link styling - Keep non-interactive */
 .fc-more-link {
   color: var(--primary) !important;
   font-weight: 500 !important;
   pointer-events: none !important;
+  cursor: default !important;
 }
 
-/* Disable text selection */
+/* --- Global Overrides --- */
+
+/* Disable text selection globally for the calendar */
 .fc {
   user-select: none !important;
+  -webkit-user-select: none !important; /* Safari */
+  -moz-user-select: none !important; /* Firefox */
+  -ms-user-select: none !important; /* IE */
 }
 
-/* Remove hover effects from all calendar elements */
+/*
+ Optional: If you still face issues with cursors somewhere,
+ uncommenting this might help, but it's very broad.
+ It's better to target specific elements if possible.
+*/
+/*
 .fc * {
   cursor: default !important;
 }
-
-.fc-event-main {
-  cursor: default !important;
-}
-
-
-
-
-
-
-
-
+*/
