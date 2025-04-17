@@ -5,6 +5,7 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { MonthlyReportPDF } from '../pdf/MonthlyReportPDF';
 import { createClient } from '../supabase/server';
 import { format, startOfMonth, endOfMonth, parseISO, differenceInDays } from 'date-fns';
+import { sq } from 'date-fns/locale';
 
 export type ReportBuffer = Uint8Array;
 
@@ -13,9 +14,9 @@ export async function generateMonthlyReport(month: string, year: string): Promis
     console.log('Starting report generation for:', { month, year });
     const supabase = createClient();
 
-    // Convert month and year to numbers
-    const monthNum = parseInt(month);
-    const yearNum = parseInt(year);
+    // Parse the month and year as numbers
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
 
     // Validate inputs
     if (isNaN(monthNum) || isNaN(yearNum) || monthNum < 1 || monthNum > 12) {
@@ -137,6 +138,8 @@ export async function generateMonthlyReport(month: string, year: string): Promis
     throw error;
   }
 }
+
+
 
 
 

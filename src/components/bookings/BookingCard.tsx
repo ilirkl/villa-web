@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { Pencil, Trash2, Tag } from 'lucide-react';
+import { Pencil, Trash2, Tag, FileText } from 'lucide-react';
 import { deleteBooking } from '@/lib/actions/bookings';
+import { generateInvoice } from '@/lib/actions/invoice';
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -71,6 +72,41 @@ export function BookingCard({
     }
   };
 
+  const handleDownloadInvoice = async () => {
+    try {
+      toast.info('Generating invoice...');
+      
+      const pdfBuffer = await generateInvoice(booking.id);
+      
+      if (!pdfBuffer || pdfBuffer.length === 0) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute(
+        'download', 
+        `Invoice-${booking.guest_name}-${format(new Date(booking.start_date), 'yyyy-MM-dd')}.pdf`
+      );
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Invoice downloaded successfully');
+    } catch (error) {
+      console.error('Invoice generation error:', error);
+      toast.error(
+        error instanceof Error 
+          ? error.message 
+          : 'Failed to generate invoice'
+      );
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -110,6 +146,11 @@ export function BookingCard({
             {booking.source}
           </Badge>
           <div className="flex gap-2">
+            <FileText 
+              className="h-6 w-6 text-[#ff5a5f] cursor-pointer transition-all duration-300 ease-in-out transform 
+                        hover:scale-110 active:scale-95" 
+              onClick={handleDownloadInvoice}
+            />
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Trash2 className="h-6 w-6 text-[#ff5a5f]" /> 

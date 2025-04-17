@@ -5,9 +5,11 @@ import { Download } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { generateMonthlyReport } from '@/lib/actions/reports';
+import { parse } from 'date-fns';
+import { sq } from 'date-fns/locale';
 
 interface DownloadReportButtonProps {
-    month: string; // Format: "Month Year" (e.g., "January 2024")
+    month: string; // Format: "Month Year" (e.g., "Prill 2024")
 }
 
 export default function DownloadReportButton({ month }: DownloadReportButtonProps) {
@@ -23,15 +25,17 @@ export default function DownloadReportButton({ month }: DownloadReportButtonProp
                 throw new Error(`Invalid month format: ${month}`);
             }
             
-            // Get month number (1-12)
-            const date = new Date(`${monthName} 1, ${year}`);
+            // Parse the date using Albanian locale
+            const date = parse(monthName, 'MMMM', new Date(), { locale: sq });
             if (isNaN(date.getTime())) {
-                throw new Error(`Invalid date: ${monthName} 1, ${year}`);
+                throw new Error(`Invalid date: ${monthName}`);
             }
+
+            // Get month number (1-12)
             const monthNumber = (date.getMonth() + 1).toString();
 
             console.log('Requesting report generation:', { monthNumber, year });
-            toast.info('Generating report...');
+            toast.info('Po gjenerohet raporti...');
 
             // Generate PDF
             const response = await generateMonthlyReport(monthNumber, year);
@@ -52,27 +56,21 @@ export default function DownloadReportButton({ month }: DownloadReportButtonProp
                 throw new Error(`Unexpected response type: ${typeof response}`);
             }
 
-            console.log('Creating PDF blob, buffer size:', pdfBuffer.length);
-
             // Create blob and download
             const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
-            const url = window.URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `Report-${monthName}-${year}.pdf`);
-
-            // Trigger download
+            link.download = `Raport-${monthName}-${year}.pdf`;
             document.body.appendChild(link);
             link.click();
-            
-            // Cleanup
             document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            URL.revokeObjectURL(url);
 
-            toast.success('Report downloaded successfully!');
+            toast.success('Raporti u gjenerua me sukses!');
         } catch (error) {
-            console.error('Download error:', error);
-            toast.error(error instanceof Error ? error.message : 'Failed to generate report');
+            console.error('Error downloading report:', error);
+            toast.error('Gabim gjatë gjenerimit të raportit');
         } finally {
             setIsLoading(false);
         }
@@ -84,8 +82,8 @@ export default function DownloadReportButton({ month }: DownloadReportButtonProp
             disabled={isLoading}
             className="w-full"
         >
-            <Download className="mr-2 h-4 w-4" />
-            {isLoading ? 'Generating...' : 'Download Report'}
+            <Download className="w-4 h-4 mr-2" />
+            {isLoading ? 'Duke gjeneruar raportin...' : 'Shkarko Raportin PDF'}
         </Button>
     );
 }
