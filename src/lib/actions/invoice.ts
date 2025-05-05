@@ -5,7 +5,7 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { InvoicePDF } from '../pdf/InvoicePDF';
 import { createActionClient } from '@/lib/supabase/server';
 
-export async function generateInvoice(bookingId: string): Promise<ArrayBuffer> {
+export async function generateInvoice(bookingId: string): Promise<Uint8Array> {
   try {
     const supabase = createActionClient();
     
@@ -67,7 +67,7 @@ export async function generateInvoice(bookingId: string): Promise<ArrayBuffer> {
     });
 
     // Generate and return buffer
-    const buffer = await renderToBuffer(document);
+    const buffer = await renderToBuffer(document as any);
     return buffer;
 
   } catch (error) {
@@ -75,6 +75,12 @@ export async function generateInvoice(bookingId: string): Promise<ArrayBuffer> {
     throw error;
   }
 }
+
+
+
+
+
+
 
 
 

@@ -124,7 +124,7 @@ export async function generateMonthlyReport(month: string, year: string): Promis
     });
 
     console.log('Rendering PDF to buffer...');
-    const buffer = await renderToBuffer(document);
+    const buffer = await renderToBuffer(document as any);
     
     if (!buffer || !(buffer instanceof Uint8Array)) {
       throw new Error('Invalid PDF buffer generated');
@@ -138,6 +138,7 @@ export async function generateMonthlyReport(month: string, year: string): Promis
     throw error;
   }
 }
+
 
 
 

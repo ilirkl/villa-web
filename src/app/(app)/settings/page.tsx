@@ -432,7 +432,7 @@ export default function SettingsPage() {
     return <div className="flex justify-center items-center h-screen">Loading profile...</div>;
   }
 
-  const displayAvatarSrc = avatarPreview || getImageUrl(profile?.avatar_url);
+  const displayAvatarSrc = avatarPreview || getImageUrl(profile?.avatar_url || null);
 
   return (
     // Outer container
@@ -446,7 +446,7 @@ export default function SettingsPage() {
             <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
               <Image
                 src={displayAvatarSrc} alt={profile?.full_name ? `${profile.full_name}'s avatar` : 'Avatar'} fill sizes="64px" className="object-cover" priority key={displayAvatarSrc}
-                onError={(e) => { console.error('Image load error:', e); /* @ts-ignore */ e.target.src = '/default-avatar.png'; }}
+                onError={(e) => { console.error('Image load error:', e); e.currentTarget.src = '/default-avatar.png'; }}
               />
               {(isProcessing || isUploading || isSaving) && (
                 <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10"><div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin"></div></div>
@@ -530,3 +530,5 @@ export default function SettingsPage() {
     </div> // End outer container
   ); // End return
 } // End component
+
+

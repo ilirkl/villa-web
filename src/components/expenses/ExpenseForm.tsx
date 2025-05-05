@@ -100,17 +100,16 @@ export function ExpenseForm({ initialData, categories = [] }: ExpenseFormProps) 
 
   // onSubmit remains the same
   const onSubmit = (formData: FormSchemaType) => {
-      // ... (FormData creation logic remains the same)
       const data = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-          if (key === 'id' && value) data.append(key, value);
+          if (key === 'id' && value) data.append(key, String(value));
           if (key === 'amount' && value !== undefined) data.append(key, String(value));
           if (key === 'date' && value instanceof Date) data.append(key, value.toISOString());
           if (key === 'category_id') {
-              if(value) data.append(key, value);
+              if(value) data.append(key, String(value));
               else data.append(key, '');
           }
-          if (key === 'description' && value) data.append(key, value);
+          if (key === 'description' && value) data.append(key, String(value));
       });
       dispatch(data);
   };

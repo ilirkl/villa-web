@@ -13,8 +13,7 @@ export async function GET(request: Request) {
 
 
   if (code) {
-    const cookieStore = cookies();
-    const supabase = createClient(cookieStore); // Pass cookieStore
+    const supabase = createClient(); // Don't pass cookieStore, it's handled internally
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       console.log('Auth Callback: Code exchange successful. Redirecting to:', next);

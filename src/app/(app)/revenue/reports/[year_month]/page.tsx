@@ -30,8 +30,8 @@ import DownloadReportButton from '@/components/revenue/report/DownloadReportButt
 
 // --- Import Types ---
 import type { Database, Tables } from '@/lib/database.types';
-type Booking = Tables<'bookings'>;
-type Expense = Tables<'expenses'>;
+type Booking = Pick<Tables<'bookings'>, 'id' | 'start_date' | 'end_date' | 'total_amount'>;
+type Expense = Pick<Tables<'expenses'>, 'id' | 'date' | 'amount' | 'category_id'>;
 type ExpenseCategory = Tables<'expense_categories'>;
 // Define type for expense breakdown items used locally and passed down
 interface ExpenseBreakdownItem { name: string; value: number; percentage: number; }

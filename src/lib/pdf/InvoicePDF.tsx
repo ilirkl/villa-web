@@ -7,15 +7,12 @@ import { Booking } from '@/lib/definitions';
 Font.register({
   family: 'Helvetica',
   fonts: [
-    {
-      src: {
-        fontFamily: 'Helvetica'
-      }
+    { 
+      src: 'https://fonts.gstatic.com/s/helveticaneue/v70/1Ptsg8zYS_SKggPNyCg4TYFv.ttf',
+      fontWeight: 'normal'
     },
     {
-      src: {
-        fontFamily: 'Helvetica-Bold'
-      },
+      src: 'https://fonts.gstatic.com/s/helveticaneue/v70/1Ptsg8zYS_SKggPNyCg4QIFv.ttf',
       fontWeight: 'bold'
     }
   ]
@@ -127,6 +124,7 @@ interface InvoicePDFProps {
     phone_number: string | null;
     website: string | null;
     vat_number: string | null;
+    instagram?: string | null;
   };
 }
 
@@ -235,6 +233,8 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ booking, profile }) => {
     </Document>
   );
 };
+
+
 
 
 

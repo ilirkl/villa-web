@@ -41,6 +41,11 @@ type Booking = Tables<'bookings'>;
 type Expense = Tables<'expenses'>;
 type ExpenseCategory = Tables<'expense_categories'>;
 
+// Add partial types for the revenue page
+type PartialBooking = Pick<Booking, 'id' | 'start_date' | 'end_date' | 'total_amount'>;
+type PartialExpense = Pick<Expense, 'id' | 'date' | 'amount' | 'category_id'>;
+type PartialExpenseCategory = Pick<ExpenseCategory, 'id' | 'name'>;
+
 // Define types needed for child components' props (can be moved to a definitions file)
 interface RevenueChartItem {
     name: string;           // Month Abbreviation (e.g., 'Shk', 'Mar')
@@ -66,7 +71,7 @@ interface MonthlyReportItem {
 // import { formatCurrency } from '@/lib/utils';
 
 // Helper function to split booking revenue across months
-function allocateBookingRevenueAcrossMonths(booking: Booking): { monthKey: string; amount: number }[] {
+function allocateBookingRevenueAcrossMonths(booking: PartialBooking): { monthKey: string; amount: number }[] {
     if (!booking.start_date || !booking.end_date || !booking.total_amount) return [];
     
     try {
@@ -127,9 +132,9 @@ async function RevenueData() {
     const threeMonthsAhead = endOfMonth(addMonths(now, 3));
 
     // Initialize data variables with default empty/zero states to prevent errors
-    let allBookings: Booking[] = [];
-    let allExpenses: Expense[] = [];
-    let categories: ExpenseCategory[] = [];
+    let allBookings: PartialBooking[] = [];
+    let allExpenses: PartialExpense[] = [];
+    let categories: PartialExpenseCategory[] = [];
     let categoryMap: Map<string, string> = new Map();
 
     let currentMonthGrossRevenue = 0;

@@ -50,8 +50,9 @@ export default function DownloadReportButton({ month }: DownloadReportButtonProp
                 pdfBuffer = response;
             } else if (Array.isArray(response)) {
                 pdfBuffer = new Uint8Array(response);
-            } else if (response instanceof ArrayBuffer) {
-                pdfBuffer = new Uint8Array(response);
+            } else if (typeof response === 'object' && response !== null && 'buffer' in response) {
+                // Handle ArrayBuffer-like objects
+                pdfBuffer = new Uint8Array(response as ArrayBufferLike);
             } else {
                 throw new Error(`Unexpected response type: ${typeof response}`);
             }

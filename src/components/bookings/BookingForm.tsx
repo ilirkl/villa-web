@@ -30,21 +30,22 @@ import { useEffect } from 'react';
 import { toast } from "sonner"; // Import sonner toast
 import { useRouter } from 'next/navigation';
 
-// Zod schema (remains the same)
+// Zod schema update
 const FormSchema = z.object({
   id: z.string().uuid().optional(),
   guest_name: z.string().min(1, 'Guest name is required'),
   start_date: z.date({ required_error: 'Start date is required.' }),
   end_date: z.date({ required_error: 'End date is required.' }),
   total_amount: z.coerce.number().min(0, 'Must be positive'),
-  prepayment: z.coerce.number().min(0, 'Must be positive').default(0),
+  prepayment: z.coerce.number().min(0, 'Must be positive'),
   source: z.enum(Constants.public.Enums.booking_source, {
-    errorMap: (issue, ctx) => ({ message: 'Please select a valid booking source.' }) // Optional custom error
- }),  notes: z.string().nullable().optional(),
+    errorMap: (issue, ctx) => ({ message: 'Please select a valid booking source.' })
+  }),
+  notes: z.string().nullable().optional(),
 }).refine((data) => data.end_date > data.start_date, {
-    message: 'End date must be after start date',
-    path: ['end_date'],
-  });
+  message: 'End date must be after start date',
+  path: ['end_date'],
+});
 
 type FormSchemaType = z.infer<typeof FormSchema>;
 

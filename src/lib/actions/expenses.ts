@@ -56,11 +56,23 @@ export async function createOrUpdateExpense(
   // 2. Validate Form Data
   // Convert category_id empty string to null before validation if necessary
   const rawFormData = Object.fromEntries(formData.entries());
-  if (rawFormData.category_id === '') {
-      rawFormData.category_id = null;
-  }
+  
+  // Create a new object with explicit typing to allow null values
+  const formDataForValidation: Record<string, string | number | null | Date> = {};
+  
+  // Manually copy and convert values as needed
+  Object.entries(rawFormData).forEach(([key, value]) => {
+    // Only handle string values (ignore File objects if any)
+    if (typeof value === 'string') {
+      if (key === 'category_id' && value === '') {
+        formDataForValidation[key] = null;
+      } else {
+        formDataForValidation[key] = value;
+      }
+    }
+  });
 
-  const validatedFields = ExpenseSchema.safeParse(rawFormData);
+  const validatedFields = ExpenseSchema.safeParse(formDataForValidation);
 
   if (!validatedFields.success) {
     console.error("Validation Errors:", validatedFields.error.flatten().fieldErrors);
@@ -217,5 +229,5 @@ export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
         return []; // Return empty array on error to prevent breaking forms
     }
 
-    return data || [];
+    return data as ExpenseCategory[] || [];
 }

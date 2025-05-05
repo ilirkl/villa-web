@@ -94,7 +94,17 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ initialEvents }) => {
         dayHeaderClassNames="text-muted-foreground font-medium text-sm"
         titleFormat={{ month: 'long', year: 'numeric' }}
         buttonText={{ prev: '‹', next: '›' }}
-        buttonClassNames="bg-transparent hover:bg-accent focus:z-10 p-1.5 rounded-md transition-colors"
+        buttonIcons={false}
+        customButtons={{
+          prev: {
+            text: '‹',
+            click: () => calendarRef.current?.getApi().prev()
+          },
+          next: {
+            text: '›',
+            click: () => calendarRef.current?.getApi().next()
+          }
+        }}
         selectable={false}
         editable={false}
 

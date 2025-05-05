@@ -1,15 +1,15 @@
-// app/(auth)/login/page.tsx
 'use client'; // Auth UI requires client-side rendering
 
 import { createClient } from '@/lib/supabase/client'; // Use client helper
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared'; // Or other themes like ThemeMinimal
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner'; // Assuming you're using sonner for toasts
 
-export default function LoginPage() {
+// Create a client component that uses useSearchParams
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -67,14 +67,29 @@ export default function LoginPage() {
           showLinks={true}
           view="sign_in"
           theme="default"
-          onError={(error) => {
-            console.error('Auth error:', error);
-            toast.error('Authentication Error', {
-              description: error.message,
-            });
-          }}
         />
       </CardContent>
     </Card>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Welcome Back</CardTitle>
+          <CardDescription>Loading login options...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center p-4">
+            <div className="animate-pulse h-48 w-full bg-gray-200 rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

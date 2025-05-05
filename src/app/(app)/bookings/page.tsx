@@ -8,6 +8,7 @@ import { Booking, BookingSource } from '@/lib/definitions';
 import { createClient } from '@/lib/supabase/client';
 import { SearchBar } from '@/components/SearchBar';
 import { FilterSheet } from '@/components/FilterSheet';
+import { parse, format } from 'date-fns';
 
 const bookingSourceOptions = [
   { id: 'DIRECT', name: 'Direct', color: '#34d399' },
@@ -18,6 +19,20 @@ const bookingSourceOptions = [
 const sortOptions = [
   { field: 'start_date', label: 'Check-in Date' }
 ];
+
+// Helper function to safely parse and format dates
+const formatBookingDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'N/A';
+  try {
+    // Parse the date string explicitly as YYYY-MM-DD
+    const date = parse(dateString, 'yyyy-MM-dd', new Date());
+    // Format the date object
+    return format(date, 'dd MMM'); // e.g., "18 Apr"
+  } catch (error) {
+    console.error(`Error formatting date: ${dateString}`, error);
+    return dateString; // Fallback to original string on error
+  }
+};
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -120,7 +135,9 @@ export default function BookingsPage() {
           <BookingCard 
             key={booking.id} 
             booking={booking} 
-            onDelete={handleRefresh}  // Add onDelete prop
+            onDelete={handleRefresh}
+            formattedStartDate={formatBookingDate(booking.start_date)}
+            formattedEndDate={formatBookingDate(booking.end_date)}
           />
         ))}
       </div>
