@@ -36,6 +36,12 @@ export function Sidebar() {
     loadDictionary();
   }, [lang]);
 
+  // Add this function to check if a route is active
+  const isActive = (href: string): boolean => {
+    // Check if the current path starts with the href (to handle nested routes)
+    return pathname.startsWith(`/${lang}${href}`);
+  };
+
   const navItems = [
     { href: "/dashboard", label: dictionary.dashboard || "Dashboard", icon: Home },
     { href: "/bookings", label: dictionary.bookings || "Bookings", icon: CalendarDays },
@@ -52,10 +58,10 @@ export function Sidebar() {
             <Tooltip key={item.href}>
               <TooltipTrigger asChild>
                 <Link
-                  href={item.href}
+                  href={`/${lang}${item.href}`}
                   className={cn(
                     "flex flex-col items-center justify-center gap-1 rounded-lg p-2 text-xs transition-colors",
-                    pathname === item.href
+                    isActive(item.href)
                       ? "text-[#ff5a5f]"
                       : "text-muted-foreground hover:text-foreground"
                   )}

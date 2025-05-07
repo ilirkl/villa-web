@@ -1,195 +1,753 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Villa Management System</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <style>
-    .gradient-text {
-      background: linear-gradient(90deg, #3b82f6, #14b8a6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Villa Ime - Villa Rental Management Solution</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #ff5252;
+            --primary-light: #ff8a80;
+            --primary-dark: #c50e29;
+            --secondary: #424242;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --background: #ffffff;
+            --surface: #f5f5f5;
+            --surface-variant: #e0e0e0;
+            --elevation-1: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --elevation-2: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+            --elevation-3: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+            --radius-small: 8px;
+            --radius-medium: 16px;
+            --radius-large: 24px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            background-color: var(--background);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--background);
+            box-shadow: var(--elevation-1);
+            position: fixed;
+            width: 100%;
+            z-index: 100;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .cta-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--radius-small);
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .cta-button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding-top: 120px;
+            padding-bottom: 80px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            display: flex;
+            align-items: center;
+            gap: 60px;
+        }
+
+        .hero-text {
+            flex: 1;
+        }
+
+        .hero-title {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+        }
+
+        .secondary-button {
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 12px 24px;
+            border-radius: var(--radius-small);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .secondary-button:hover {
+            background-color: var(--primary-light);
+            color: white;
+        }
+
+        .hero-image {
+            flex: 1;
+            position: relative;
+        }
+
+        .device-mockup {
+            width: 100%;
+            max-width: 400px;
+            border-radius: var(--radius-medium);
+            box-shadow: var(--elevation-3);
+            transform: perspective(1000px) rotateY(-15deg) rotateX(5deg);
+            transition: transform 0.5s;
+        }
+
+        .device-mockup:hover {
+            transform: perspective(1000px) rotateY(-5deg) rotateX(2deg);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 100px 0;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 60px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .feature-card {
+            background-color: var(--surface);
+            border-radius: var(--radius-medium);
+            padding: 30px;
+            box-shadow: var(--elevation-1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--elevation-2);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background-color: var(--primary-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: white;
+            font-size: 24px;
+        }
+
+        .feature-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+        }
+
+        /* Stats Section */
+        .stats {
+            background-color: var(--surface);
+            padding: 80px 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            text-align: center;
+        }
+
+        .stat-item {
+            padding: 20px;
+        }
+
+        .stat-number {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        /* Screenshots Section */
+        .screenshots {
+            padding: 100px 0;
+        }
+
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .screenshot-item {
+            border-radius: var(--radius-medium);
+            overflow: hidden;
+            box-shadow: var(--elevation-2);
+            transition: transform 0.3s;
+        }
+
+        .screenshot-item:hover {
+            transform: scale(1.05);
+        }
+
+        .screenshot-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Testimonials */
+        .testimonials {
+            background-color: var(--surface);
+            padding: 100px 0;
+        }
+
+        .testimonial-card {
+            background-color: var(--background);
+            border-radius: var(--radius-medium);
+            padding: 30px;
+            box-shadow: var(--elevation-1);
+            margin: 0 auto;
+            max-width: 800px;
+        }
+
+        .testimonial-text {
+            font-size: 20px;
+            font-style: italic;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .testimonial-text::before,
+        .testimonial-text::after {
+            content: '"';
+            font-size: 50px;
+            color: var(--primary-light);
+            position: absolute;
+            opacity: 0.3;
+        }
+
+        .testimonial-text::before {
+            top: -20px;
+            left: -15px;
+        }
+
+        .testimonial-text::after {
+            bottom: -40px;
+            right: -15px;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--surface-variant);
+        }
+
+        .author-name {
+            font-weight: 600;
+        }
+
+        .author-title {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 100px 0;
+            text-align: center;
+        }
+
+        .cta-title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .cta-subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--secondary);
+            color: white;
+            padding: 60px 0 30px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-column h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: #b0b0b0;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s;
+        }
+
+        .social-icon:hover {
+            background-color: var(--primary);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #b0b0b0;
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .hero-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .hero-buttons {
+                justify-content: center;
+            }
+
+            .device-mockup {
+                margin-top: 40px;
+                transform: none;
+            }
+
+            .device-mockup:hover {
+                transform: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .hero-title {
+                font-size: 36px;
+            }
+
+            .section-title {
+                font-size: 30px;
+            }
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate {
+            animation: fadeIn 0.8s ease forwards;
+        }
+
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+        .delay-3 { animation-delay: 0.6s; }
+        .delay-4 { animation-delay: 0.8s; }
+    </style>
 </head>
-<body class="min-h-screen bg-gradient-to-b from-white to-gray-100">
-  <!-- Hero Section -->
-  <header class="container mx-auto px-4 py-16 md:py-24">
-    <div class="flex flex-col items-center text-center">
-      <h1 class="text-4xl md:text-6xl font-bold mb-6 gradient-text">
-        Villa Management System
-      </h1>
-      <p class="text-xl md:text-2xl text-gray-600 max-w-3xl mb-10">
-        Streamline your villa rental business with our all-in-one management solution
-      </p>
-      <div class="flex flex-col sm:flex-row gap-4">
-        <a 
-          href="https://your-app-url.com" 
-          class="px-8 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
-        >
-          Login
-        </a>
-        <a 
-          href="#features"
-          class="px-8 py-3 rounded-lg border border-blue-600 text-blue-600 font-medium hover:bg-blue-50 transition-colors"
-        >
-          Learn More
-        </a>
-      </div>
-    </div>
-  </header>
-
-  <!-- App Screenshot -->
-  <section class="container mx-auto px-4 py-12">
-    <div class="relative w-full max-w-5xl mx-auto rounded-xl overflow-hidden shadow-2xl">
-      <div class="aspect-[16/9] bg-gray-200 flex items-center justify-center">
-        <!-- Replace with actual screenshot -->
-        <div class="text-gray-500">
-          App Screenshot
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <nav class="navbar">
+                <div class="logo">
+                    <div class="logo-icon">VI</div>
+                    <div class="logo-text">Villa Ime</div>
+                </div>
+                <div class="nav-links">
+                    <a href="#features">Features</a>
+                    <a href="#screenshots">Screenshots</a>
+                    <a href="#testimonials">Testimonials</a>
+                    <a href="#contact">Contact</a>
+                </div>
+                <a href="https://villaime.vercel.app/"><button class="cta-button animate delay-2">Get Started Today</button></a>
+            </nav>
         </div>
-      </div>
-    </div>
-  </section>
+    </header>
 
-  <!-- Features Section -->
-  <section id="features" class="container mx-auto px-4 py-16 md:py-24">
-    <h2 class="text-3xl md:text-4xl font-bold text-center mb-16">
-      Key Features
-    </h2>
-    
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <!-- Feature 1 -->
-      <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow">
-        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text animate">
+                    <h1 class="hero-title">Simplify Your Villa Rental Management</h1>
+                    <p class="hero-subtitle">Villa Ime helps property managers track bookings, expenses, and revenue all in one place. Generate reports and maximize your rental income.</p>
+                    <div class="hero-buttons">
+                        <a href="https://villaime.vercel.app/"><button class="cta-button">Start Using</button></a>
+                        <a href="#screenshots"><button class="secondary-button">View Demo</button></a>
+                    </div>
+                </div>
+                <div class="hero-image animate delay-1">
+                    <img src="./public/images/finances-slide.jpg" alt="Villa Ime App Dashboard" class="device-mockup">
+                </div>
+            </div>
         </div>
-        <h3 class="text-xl font-semibold mb-3">
-          Booking Management
-        </h3>
-        <p class="text-gray-600">
-          Easily manage all your bookings in one place with a visual calendar and detailed guest information.
-        </p>
-      </div>
+    </section>
 
-      <!-- Feature 2 -->
-      <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow">
-        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-6">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <h2 class="section-title animate">Powerful Features</h2>
+            <div class="features-grid">
+                <div class="feature-card animate delay-1">
+                    <div class="feature-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <h3 class="feature-title">Booking Management</h3>
+                    <p class="feature-description">Easily manage all your bookings in one place. Track guest information, booking dates, and payment status.</p>
+                </div>
+                <div class="feature-card animate delay-2">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="feature-title">Revenue Tracking</h3>
+                    <p class="feature-description">Monitor your income with detailed revenue reports. See your monthly net profit and track financial performance.</p>
+                </div>
+                <div class="feature-card animate delay-3">
+                    <div class="feature-icon">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <h3 class="feature-title">Expense Management</h3>
+                    <p class="feature-description">Keep track of all your expenses by category. Monitor utilities, cleaning, maintenance, and more.</p>
+                </div>
+                <div class="feature-card animate delay-4">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-invoice"></i>
+                    </div>
+                    <h3 class="feature-title">Monthly Reports</h3>
+                    <p class="feature-description">Generate comprehensive monthly reports with profit breakdown, occupancy rates, and performance metrics.</p>
+                </div>
+                <div class="feature-card animate delay-1">
+                    <div class="feature-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <h3 class="feature-title">Performance Metrics</h3>
+                    <p class="feature-description">Track key metrics like occupancy rate, average stay duration, and booking sources to optimize your business.</p>
+                </div>
+                <div class="feature-card animate delay-2">
+                    <div class="feature-icon">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <h3 class="feature-title">Customizable Settings</h3>
+                    <p class="feature-description">Personalize your experience with customizable profile settings, language options, and more.</p>
+                </div>
+            </div>
         </div>
-        <h3 class="text-xl font-semibold mb-3">
-          Revenue Tracking
-        </h3>
-        <p class="text-gray-600">
-          Track your income and expenses with detailed reports and visualizations to maximize profitability.
-        </p>
-      </div>
+    </section>
 
-      <!-- Feature 3 -->
-      <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow">
-        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-6">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-          </svg>
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item animate">
+                    <div class="stat-number">500+</div>
+                    <div class="stat-label">Active Users</div>
+                </div>
+                <div class="stat-item animate delay-1">
+                    <div class="stat-number">10,000+</div>
+                    <div class="stat-label">Bookings Managed</div>
+                </div>
+                <div class="stat-item animate delay-2">
+                    <div class="stat-number">€2M+</div>
+                    <div class="stat-label">Revenue Tracked</div>
+                </div>
+                <div class="stat-item animate delay-3">
+                    <div class="stat-number">4.8</div>
+                    <div class="stat-label">User Rating</div>
+                </div>
+            </div>
         </div>
-        <h3 class="text-xl font-semibold mb-3">
-          Expense Management
-        </h3>
-        <p class="text-gray-600">
-          Keep track of all your property expenses with categorization and receipt storage.
-        </p>
-      </div>
+    </section>
 
-      <!-- Feature 4 -->
-      <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow">
-        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-6">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
+    <!-- Screenshots Section -->
+    <section class="screenshots" id="screenshots">
+        <div class="container">
+            <h2 class="section-title animate">App Screenshots</h2>
+            <div class="screenshots-grid">
+                <div class="screenshot-item animate delay-1">
+                    <img src="./public/images/bookings.jpg" alt="Bookings Management" class="screenshot-image">
+                </div>
+                <div class="screenshot-item animate delay-2">
+                    <img src="./public/images/finances.jpg" alt="Financial Dashboard" class="screenshot-image">
+                </div>
+                <div class="screenshot-item animate delay-3">
+                    <img src="./public/images/monthly-report2.jpg" alt="Monthly Reports" class="screenshot-image">
+                </div>
+                <div class="screenshot-item animate delay-4">
+                    <img src="./public/images/monthly-report1.jpg" alt="Expense Tracking" class="screenshot-image">
+                </div>
+                <div class="screenshot-item animate delay-1">
+                    <img src="./public/images/dashboard.jpg" alt="Dashboard View" class="screenshot-image">
+                </div>
+                <div class="screenshot-item animate delay-2">
+                    <img src="./public/images/settings.jpg" alt="Settings Page" class="screenshot-image">
+                </div>
+                <div class="screenshot-item animate delay-3">
+                    <img src="./public/images/monthly-report.jpg" alt="Detailed Monthly Report" class="screenshot-image">
+                </div>
+                <div class="screenshot-item animate delay-3">
+                  <img src="./public/images/invoice.jpg" alt="Guest Invoice" class="screenshot-image">
+              </div>
+            </div>
         </div>
-        <h3 class="text-xl font-semibold mb-3">
-          Task Management
-        </h3>
-        <p class="text-gray-600">
-          Organize cleaning, maintenance, and other tasks with automated scheduling and reminders.
-        </p>
-      </div>
+    </section>
 
-      <!-- Feature 5 -->
-      <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow">
-        <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-6">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
+    <!-- Testimonials Section -->
+    <section class="testimonials" id="testimonials">
+        <div class="container">
+            <h2 class="section-title animate">What Our Users Say</h2>
+            <div class="testimonial-card animate delay-1">
+                <p class="testimonial-text">Villa Ime has completely transformed how I manage my rental properties. The expense tracking and monthly reports have helped me increase my profits by 30%.</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar"></div>
+                    <div>
+                        <div class="author-name">Alex Johnson</div>
+                        <div class="author-title">Property Manager</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <h3 class="text-xl font-semibold mb-3">
-          Multi-language Support
-        </h3>
-        <p class="text-gray-600">
-          Full support for multiple languages to serve your international clients and staff.
-        </p>
-      </div>
+    </section>
 
-      <!-- Feature 6 -->
-      <div class="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow">
-        <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-6">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-          </svg>
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2 class="cta-title animate">Ready to Simplify Your Villa Management?</h2>
+            <p class="cta-subtitle animate delay-1">Join thousands of property managers who are saving time and increasing profits with Villa Ime.</p>
+            <a href="https://villaime.vercel.app/"><button class="cta-button animate delay-2">Get Started Today</button></a>
         </div>
-        <h3 class="text-xl font-semibold mb-3">
-          Secure Access
-        </h3>
-        <p class="text-gray-600">
-          Protect your business data with secure authentication and role-based access control.
-        </p>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- CTA Section -->
-  <section class="bg-blue-600 text-white py-16 md:py-24">
-    <div class="container mx-auto px-4 text-center">
-      <h2 class="text-3xl md:text-4xl font-bold mb-6">
-        Ready to streamline your villa management?
-      </h2>
-      <p class="text-xl max-w-3xl mx-auto mb-10 text-blue-100">
-        Join hundreds of property owners who are saving time and increasing profits with our villa management system.
-      </p>
-      <a 
-        href="https://your-app-url.com"
-        class="px-8 py-4 rounded-lg bg-white text-blue-600 font-medium hover:bg-blue-50 transition-colors text-lg"
-      >
-        Get Started Today
-      </a>
-    </div>
-  </section>
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <div class="logo">
+                        <div class="logo-icon">VI</div>
+                        <div class="logo-text">Villa Ime</div>
+                    </div>
+                    <p style="margin-top: 20px; color: #b0b0b0;">The complete solution for villa rental management.</p>
+                </div>
+                <div class="footer-column">
+                    <h3>Features</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Booking Management</a></li>
+                        <li><a href="#">Expense Tracking</a></li>
+                        <li><a href="#">Revenue Reports</a></li>
+                        <li><a href="#">Performance Metrics</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Resources</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">API</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Support</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Connect</h3>
+                    <div class="social-links">
+                        <a href="#" class="social-icon"><i class="fab fa-github"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                    </div>
+                    <p style="margin-top: 20px; color: #b0b0b0;">Email: ilirkl@gmail.com</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Villa Ime. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
 
-  <!-- Footer -->
-  <footer class="bg-gray-100 py-12">
-    <div class="container mx-auto px-4">
-      <div class="flex flex-col md:flex-row justify-between items-center">
-        <div class="mb-6 md:mb-0">
-          <h3 class="text-xl font-bold">Villa Management System</h3>
-          <p class="text-gray-600 mt-2">© 2023 All Rights Reserved</p>
-        </div>
-        <div class="flex space-x-6">
-          <a href="https://your-app-url.com" class="text-gray-600 hover:text-blue-600">
-            Login
-          </a>
-          <a href="#features" class="text-gray-600 hover:text-blue-600">
-            Features
-          </a>
-          <a href="#" class="text-gray-600 hover:text-blue-600">
-            Contact
-          </a>
-        </div>
-      </div>
-    </div>
-  </footer>
+    <script>
+        // Simple animation on scroll
+        document.addEventListener('DOMContentLoaded', function() {
+            const animatedElements = document.querySelectorAll('.animate');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = 1;
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            animatedElements.forEach(element => {
+                element.style.opacity = 0;
+                element.style.transform = 'translateY(20px)';
+                observer.observe(element);
+            });
+        });
+    </script>
 </body>
 </html>
+
+
