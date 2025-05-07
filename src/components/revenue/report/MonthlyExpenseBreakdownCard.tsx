@@ -1,8 +1,10 @@
-// src/components/revenue/report/MonthlyExpenseBreakdownCard.tsx
-// This is very similar to the main ExpenseBreakdownCard, could be made reusable
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from "@/components/ui/progress";
-import { formatCurrency } from '@/lib/utils';
+'use client';
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/utils";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getDictionary } from "@/lib/dictionary";
 
 interface ExpenseBreakdownItem {
     name: string;
@@ -15,29 +17,74 @@ interface MonthlyExpenseBreakdownCardProps {
     data: ExpenseBreakdownItem[];
 }
 
-export default function MonthlyExpenseBreakdownCard({ title, data }: MonthlyExpenseBreakdownCardProps) {
+const getCategoryColor = (categoryName: string): string => {
+  // Use a consistent color for all categories
+  return '#FF5A5F'; // Airbnb-style red color for all categories
+};
+
+export default function MonthlyExpenseBreakdownCard({
+    title,
+    data,
+}: MonthlyExpenseBreakdownCardProps) {
+    const params = useParams();
+    const lang = params?.lang as string || 'en';
+    const [dictionary, setDictionary] = useState<any>({});
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    useEffect(() => {
+        async function loadDictionary() {
+            try {
+                const dict = await getDictionary(lang as 'en' | 'sq');
+                setDictionary(dict);
+                setIsLoaded(true);
+            } catch (error) {
+                console.error('Failed to load dictionary:', error);
+                setIsLoaded(true);
+            }
+        }
+        loadDictionary();
+    }, [lang]);
+
+    if (!isLoaded) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Loading...</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="animate-pulse h-40 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                </CardContent>
+            </Card>
+        );
+    }
+
     return (
         <Card>
-            <CardHeader className="pb-4">
-                <CardTitle>{title}</CardTitle>
+            <CardHeader>
+                <CardTitle>{dictionary.expense_breakdown || 'Expense Breakdown'}</CardTitle>
             </CardHeader>
             <CardContent>
                 {data.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">No expense data for this month.</p>
+                    <p className="text-center text-muted-foreground py-4">{dictionary.no_expenses || 'No expenses recorded for this period.'}</p>
                 ) : (
                     <div className="space-y-4">
-                        {data.map((item) => (
-                            <div key={item.name}>
-                                <div className="flex justify-between items-center mb-1 text-sm">
-                                    <span className="font-medium">{item.name}</span>
-                                    <span className="font-semibold">{formatCurrency(item.value)}</span>
+                        {data.map((item, index) => (
+                            <div key={index} className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">{item.name}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium">{formatCurrency(item.value)}</span>
+                                        <span className="text-xs text-muted-foreground">({item.percentage.toFixed(1)}%)</span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    {/* Match progress bar color from screenshot */}
-                                    <Progress value={item.percentage} className="flex-1 h-2 [&>div]:bg-red-500" />
-                                    <span className="text-xs font-medium text-muted-foreground w-12 text-right"> {/* Wider width for % */}
-                                        {item.percentage.toFixed(1)}%
-                                    </span>
+                                <div className="h-2 w-full rounded-full bg-secondary">
+                                    <div 
+                                        className="h-full rounded-full" 
+                                        style={{ 
+                                            width: `${item.percentage}%`,
+                                            backgroundColor: getCategoryColor(item.name)
+                                        }}
+                                    />
                                 </div>
                             </div>
                         ))}

@@ -8,28 +8,35 @@ import {
   startOfWeek,
   endOfWeek,
   format,
-  parse, // Import parse
+  parse,
 } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { BookingCard } from '@/components/bookings/BookingCard';
+import { getDictionary } from '@/lib/dictionary';
+import { sq } from 'date-fns/locale';
 
-// Helper function to safely parse and format dates
-// It assumes input is 'YYYY-MM-DD' and treats it as such, avoiding timezone shifts during parsing
-const formatBookingDate = (dateString: string | null | undefined): string => {
+// Import our custom Albanian locale for FullCalendar
+import sqLocale from '@/lib/fullcalendar-sq-locale';
+
+// Helper function to safely parse and format dates with locale support
+const formatBookingDate = (dateString: string | null | undefined, locale: string): string => {
   if (!dateString) return 'N/A'; // Or handle as needed
   try {
     // Parse the date string explicitly as YYYY-MM-DD
     const date = parse(dateString, 'yyyy-MM-dd', new Date());
-    // Format the date object
-    return format(date, 'dd MMM'); // e.g., "18 Apr"
+    // Format the date object with the appropriate locale
+    return format(date, 'dd MMM', { 
+      locale: locale === 'sq' ? sq : undefined 
+    }); // e.g., "18 Pri" for Albanian or "18 Apr" for English
   } catch (error) {
     console.error(`Error formatting date: ${dateString}`, error);
     return dateString; // Fallback to original string on error
   }
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ params }: { params: { lang: string } }) {
   const supabase = createClient();
+  const dictionary = await getDictionary(params.lang as 'en' | 'sq');
 
   // Get today's date boundaries (use UTC for consistency if needed, but date comparison should be fine)
   const today = new Date();
@@ -89,50 +96,51 @@ export default async function DashboardPage() {
   // Prepare data for BookingCards with pre-formatted dates
   const todayCheckIns = todayCheckInsData?.map((booking) => ({
     ...booking,
-    formattedStartDate: formatBookingDate(booking.start_date),
-    formattedEndDate: formatBookingDate(booking.end_date),
+    formattedStartDate: formatBookingDate(booking.start_date, params.lang),
+    formattedEndDate: formatBookingDate(booking.end_date, params.lang),
   }));
 
   const todayCheckOuts = todayCheckOutsData?.map((booking) => ({
     ...booking,
-    formattedStartDate: formatBookingDate(booking.start_date),
-    formattedEndDate: formatBookingDate(booking.end_date),
+    formattedStartDate: formatBookingDate(booking.start_date, params.lang),
+    formattedEndDate: formatBookingDate(booking.end_date, params.lang),
   }));
 
   const upcomingCheckIns = upcomingCheckInsData?.map((booking) => ({
     ...booking,
-    formattedStartDate: formatBookingDate(booking.start_date),
-    formattedEndDate: formatBookingDate(booking.end_date),
+    formattedStartDate: formatBookingDate(booking.start_date, params.lang),
+    formattedEndDate: formatBookingDate(booking.end_date, params.lang),
   }));
 
   return (
     <div className="space-y-8 pb-20">
-      {/* ... Calendar ... */}
-      <h1 className="text-2xl font-semibold mb-4">Booking Calendar</h1>
+      {/* Calendar */}
+      <h1 className="text-2xl font-semibold mb-4">{dictionary.booking_calendar}</h1>
 
-      <Suspense fallback={<div>Loading Calendar...</div>}>
-        <BookingCalendar initialEvents={events} />
+      <Suspense fallback={<div>{dictionary.loading_calendar}</div>}>
+        <BookingCalendar 
+          initialEvents={events} 
+        />
       </Suspense>
-
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Today's Activity Card */}
         <Card className="[&>*:last-child]:!pb-0">
           <CardHeader>
             <CardTitle className="text-lg font-medium">
-              Today's Activity
+              {dictionary.todays_activity}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Check-ins Section */}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                Check-ins ({todayCheckIns?.length || 0})
+                {dictionary.check_ins} ({todayCheckIns?.length || 0})
               </h3>
               <div className="space-y-4">
                 {todayCheckIns?.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No check-ins today
+                    {dictionary.no_check_ins_today}
                   </p>
                 ) : (
                   todayCheckIns?.map((booking) => (
@@ -156,12 +164,12 @@ export default async function DashboardPage() {
             {/* Check-outs Section */}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                Check-outs ({todayCheckOuts?.length || 0})
+                {dictionary.check_outs} ({todayCheckOuts?.length || 0})
               </h3>
               <div className="space-y-4">
                 {todayCheckOuts?.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No check-outs today
+                    {dictionary.no_check_outs_today}
                   </p>
                 ) : (
                   todayCheckOuts?.map((booking) => (
@@ -184,13 +192,13 @@ export default async function DashboardPage() {
         <Card className="[&>*:last-child]:!pb-0">
           <CardHeader>
             <CardTitle className="text-lg font-medium">
-              Upcoming Check-ins This Week ({upcomingCheckIns?.length || 0})
+              {dictionary.upcoming_check_ins_this_week ?? 'Upcoming Check-ins This Week'} ({upcomingCheckIns?.length || 0})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {upcomingCheckIns?.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No upcoming check-ins this week
+                {dictionary.no_upcoming_check_ins_this_week}
               </p>
             ) : (
               upcomingCheckIns?.map((booking) => (

@@ -5,53 +5,96 @@ import { Suspense } from 'react';
 import {
     ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, Legend, CartesianGrid
 } from 'recharts';
-import { formatCurrency } from '@/lib/utils'; // *** IMPORT THE UTILITY ***
+import { formatCurrency } from '@/lib/utils';
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getDictionary } from "@/lib/dictionary";
 
 interface RevenueChartItem {
     name: string;
-    "Fitimi Neto": number;
-    "Rezervime": number;
+    [key: string]: string | number; // Allow any string keys for translated labels
 }
+
 interface RevenueLineChartProps {
     data: RevenueChartItem[];
 }
 
-// Tooltip formatter uses the imported utility
-const formatCurrencyForTooltip = (value: number | string | Array<number | string>) => {
-    if (typeof value === 'number') {
-        // *** USE IMPORTED FUNCTION ***
-        return formatCurrency(value);
-    }
-    return value;
-};
-
 export default function RevenueLineChart({ data }: RevenueLineChartProps) {
-    // Add console.log for debugging
-    console.log('RevenueLineChart received data:', data);
+    const params = useParams();
+    const lang = params?.lang as string || 'en';
+    const [dictionary, setDictionary] = useState<any>({});
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    if (!data || data.length === 0) {
+    useEffect(() => {
+        async function loadDictionary() {
+            try {
+                const dict = await getDictionary(lang as 'en' | 'sq');
+                setDictionary(dict);
+                setIsLoaded(true);
+            } catch (error) {
+                console.error('Failed to load dictionary:', error);
+                setIsLoaded(true);
+            }
+        }
+        loadDictionary();
+    }, [lang]);
+
+    // Tooltip formatter uses the imported utility
+    const formatCurrencyForTooltip = (value: number | string | Array<number | string>) => {
+        if (typeof value === 'number') {
+            return formatCurrency(value);
+        }
+        return value;
+    };
+
+    if (!isLoaded) {
         return (
             <div className="flex items-center justify-center h-full text-muted-foreground">
-                No data available.
+                {dictionary.loading || 'Loading...'}
             </div>
         );
     }
 
+    if (!data || data.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+                {dictionary.no_data_available || 'No data available.'}
+            </div>
+        );
+    }
+
+    // Get the keys from the first data item (excluding 'name')
+    const dataKeys = Object.keys(data[0]).filter(key => key !== 'name');
+    
     // Ensure all required data points exist
-    const validData = data.every(item => 
-        item.name && 
-        typeof item["Fitimi Neto"] === 'number' && 
-        typeof item["Rezervime"] === 'number'
-    );
+    const validData = data.every(item => {
+        if (!item.name) return false;
+        
+        // Check that all data keys have numeric values
+        return dataKeys.every(key => typeof item[key] === 'number');
+    });
 
     if (!validData) {
         console.error('Invalid data structure:', data);
         return (
             <div className="flex items-center justify-center h-full text-muted-foreground">
-                Error: Invalid data format.
+                {dictionary.invalid_data_format || 'Error: Invalid data format.'}
             </div>
         );
     }
+
+    // Find the booking/revenue key and net profit key
+    const bookingsKey = dataKeys.find(key => 
+        key.includes('Bookings') || 
+        key.includes('Rezervime') || 
+        key === dictionary.bookings_label
+    ) || dataKeys[0];
+    
+    const netProfitKey = dataKeys.find(key => 
+        key.includes('Net Profit') || 
+        key.includes('Fitimi Neto') || 
+        key === dictionary.net_profit_label
+    ) || dataKeys[1];
 
     return (
         <ResponsiveContainer width="100%" height="100%">
@@ -80,14 +123,6 @@ export default function RevenueLineChart({ data }: RevenueLineChartProps) {
                     stroke="hsl(var(--muted-foreground))" 
                 />
                 <Tooltip
-                    cursor={{ stroke: 'hsl(var(--border))', strokeDasharray: '3 3' }}
-                    contentStyle={{ 
-                        fontSize: '12px', 
-                        borderRadius: '0.5rem', 
-                        border: '1px solid hsl(var(--border))', 
-                        background: 'hsl(var(--background))', 
-                        color: 'hsl(var(--foreground))' 
-                    }}
                     formatter={formatCurrencyForTooltip}
                 />
                 <Legend 
@@ -100,7 +135,7 @@ export default function RevenueLineChart({ data }: RevenueLineChartProps) {
                 />
                 <Area 
                     type="monotone" 
-                    dataKey="Fitimi Neto" 
+                    dataKey={netProfitKey} 
                     stroke="#ef4444" 
                     fillOpacity={1} 
                     fill="url(#colorNeto)" 
@@ -110,7 +145,7 @@ export default function RevenueLineChart({ data }: RevenueLineChartProps) {
                 />
                 <Area 
                     type="monotone" 
-                    dataKey="Rezervime" 
+                    dataKey={bookingsKey} 
                     stroke="#3b82f6" 
                     fillOpacity={0} 
                     strokeWidth={2} 

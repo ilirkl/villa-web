@@ -19,6 +19,8 @@ import Link from 'next/link'; // Next.js Link component
 import { Button } from '@/components/ui/button'; // Shadcn Button
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Shadcn Card components
 import { ChevronLeft } from 'lucide-react'; // Icon
+import { getDictionary } from '@/lib/dictionary';
+import { translateExpenseCategory } from '@/lib/translations';
 
 // --- Import helper and sub-components ---
 // Ensure these paths are correct for your project structure
@@ -72,12 +74,14 @@ function calculateBookingRevenueForMonth(
 interface PageProps {
     params: {
         year_month: string; // Expects format "YYYY-MM", e.g., "2025-03"
+        lang: string;
     };
 }
 
 // --- Default Export: The Monthly Report Page Component ---
 export default async function MonthlyReportPage({ params }: PageProps) {
-    const { year_month } = params;
+    const { year_month, lang } = params;
+    const dictionary = await getDictionary(lang as 'en' | 'sq');
     const supabase = createClient(); // Initialize Supabase server client
 
     // --- 1. Parse and Validate Date Parameter ---
@@ -116,10 +120,7 @@ export default async function MonthlyReportPage({ params }: PageProps) {
                 .from('bookings')
                 .select('id, start_date, end_date, total_amount')
                 .or(`and(start_date.lte.${monthEndString},end_date.gte.${monthStartString})`)
-                // This will fetch bookings that:
-                // 1. Start before or on month end AND
-                // 2. End after or on month start
-                // This ensures we get ALL bookings that overlap with the month
+                
                 .order('start_date', { ascending: true }),
             supabase
                 .from('expenses')
@@ -140,15 +141,6 @@ export default async function MonthlyReportPage({ params }: PageProps) {
         if (expensesRes.error) throw new Error(`Expenses fetch error: ${expensesRes.error.message}`);
         if (categoriesRes.error) throw new Error(`Categories fetch error: ${categoriesRes.error.message}`);
 
-        // Log fetched bookings for debugging
-        console.log(`Fetched ${bookingsRes.data?.length} bookings for ${year_month}:`, 
-            bookingsRes.data?.map(b => ({
-                id: b.id,
-                start: b.start_date,
-                end: b.end_date,
-                amount: b.total_amount
-            }))
-        );
 
         // Assign data or default to empty arrays
         bookings = bookingsRes.data || [];
@@ -184,7 +176,6 @@ export default async function MonthlyReportPage({ params }: PageProps) {
         netProfit = grossProfit - totalExpenses;
 
         // --- Performance Stats Calculation ---
-        console.log(`Calculating stats for ${bookings.length} bookings starting in ${year_month}`);
 
         totalNightsReserved = bookings.reduce((sum, b) => {
             if (!b || !b.start_date || !b.end_date) {
@@ -208,12 +199,10 @@ export default async function MonthlyReportPage({ params }: PageProps) {
                         // differenceInDays typically calculates full days between. Add 1 for nights.
                         // Example: Check out on 3rd, Check in on 1st = differenceInDays is 2. Nights = 2. Seems correct? Test this.
                         const nightsInMonth = differenceInDays(bookingEndInCalcMonth, bookingStartInCalcMonth);
-                        console.log(`   Booking ID ${b.id}: ${format(start, 'dd/MM')} - ${format(end, 'dd/MM')}. Nights within ${format(targetMonthDate, 'MMMM')}: ${nightsInMonth}`);
                         return sum + nightsInMonth; // Add nights actually *in* the report month
                     } else {
                          // This happens if the booking range doesn't overlap the calculated range
                          // or if start/end are the same after clamping
-                        // console.log(`   -> Booking ID ${b.id}: Range outside or zero length within month.`);
                          return sum;
                     }
                 } else {
@@ -226,18 +215,18 @@ export default async function MonthlyReportPage({ params }: PageProps) {
             }
         }, 0);
 
-        console.log(`Total nights reserved calculated: ${totalNightsReserved}`);
+        
 
         const totalDaysInMonth = getDaysInMonth(targetMonthDate);
-        console.log(`Total days in ${format(targetMonthDate, 'MMMM')}: ${totalDaysInMonth}`);
+        
 
         // Calculate Occupancy Rate, avoid division by zero
         occupancyRate = totalDaysInMonth > 0 ? (totalNightsReserved / totalDaysInMonth) * 100 : 0;
-        console.log(`Occupancy rate calculated: ${occupancyRate.toFixed(1)}%`);
+       
 
         // Calculate Average Stay, avoid division by zero
         avgStay = bookings.length > 0 ? totalNightsReserved / bookings.length : 0;
-        console.log(`Average stay calculated: ${avgStay.toFixed(1)} nights`);
+        
 
         // --- Expense Breakdown Calculation ---
          if (!Array.isArray(expenses)) { // Add safety check
@@ -245,8 +234,10 @@ export default async function MonthlyReportPage({ params }: PageProps) {
          }
         const expensesByCategory = expenses.reduce((acc, expense) => {
             if (!expense) return acc;
-            const categoryName = expense.category_id ? categoryMap.get(expense.category_id) : 'Uncategorized';
-            acc[categoryName!] = (acc[categoryName!] || 0) + (expense.amount || 0);
+            const originalCategoryName = expense.category_id ? categoryMap.get(expense.category_id) : 'Uncategorized';
+            // Translate the category name based on the current language
+            const categoryName = translateExpenseCategory(originalCategoryName, dictionary, params.lang);
+            acc[categoryName] = (acc[categoryName] || 0) + (expense.amount || 0);
             return acc;
         }, {} as Record<string, number>);
 
@@ -264,7 +255,7 @@ export default async function MonthlyReportPage({ params }: PageProps) {
     }
 
     // --- 4. Render Page Structure ---
-    const formattedMonthYear = format(targetMonthDate, 'MMMM yyyy', { locale: sq }); // Format title using Albanian locale
+    const formattedMonthYear = format(targetMonthDate, 'MMMM yyyy', { locale: lang === 'sq' ? sq : undefined });
 
     return (
         // Main container with padding (including bottom)
@@ -273,7 +264,7 @@ export default async function MonthlyReportPage({ params }: PageProps) {
             <div className="flex items-center mb-6 gap-4">
                 {/* Back Button */}
                 <Button variant="ghost" size="icon" asChild>
-                    <Link href="/revenue" aria-label="Back to Finances">
+                    <Link href="/revenue" aria-label={dictionary.back_to_finances || "Back to Finances"}>
                         <ChevronLeft className="h-5 w-5" />
                     </Link>
                 </Button>
@@ -294,7 +285,7 @@ export default async function MonthlyReportPage({ params }: PageProps) {
 
                 {/* Performance Statistics Card */}
                 <Card>
-                    <CardHeader><CardTitle>Statistikat e Performancës</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>{dictionary.performance_stats || "Performance Statistics"}</CardTitle></CardHeader>
                     <CardContent>
                         {/* Grid component displaying the stats */}
                         <PerformanceStatsGrid
@@ -307,12 +298,15 @@ export default async function MonthlyReportPage({ params }: PageProps) {
 
                 {/* Expense Breakdown Card */}
                 <MonthlyExpenseBreakdownCard
-                    title="Ndarja e Shpenzimeve" // Title: Expense Breakdown
+                    title={dictionary.expense_breakdown || "Expense Breakdown"}
                     data={expenseBreakdown}
                 />
 
-                {/* Download Report Button */}
-                <DownloadReportButton month={formattedMonthYear} />
+                {/* Download Report Button - Pass both formatted month and the year_month parameter */}
+                <DownloadReportButton 
+                    month={formattedMonthYear} 
+                    yearMonth={year_month} 
+                />
             </div>
         </div>
     );

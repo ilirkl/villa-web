@@ -5,13 +5,15 @@ import { notFound } from 'next/navigation';
 import { getExpenseCategories } from '@/lib/actions/expenses';
 import { Suspense } from 'react';
 import { ExpenseFormData } from '@/lib/definitions'; // Using form-specific type
+import { getDictionary } from '@/lib/dictionary';
 
 interface EditExpensePageProps {
-    params: { id: string };
+    params: { id: string; lang: string };
 }
 
-async function LoadDataAndRenderForm({ expenseId }: { expenseId: string }) {
+async function LoadDataAndRenderForm({ expenseId, lang }: { expenseId: string, lang: string }) {
     const supabase = createClient();
+    const dictionary = await getDictionary(lang as 'en' | 'sq');
 
     // Fetch expense and categories concurrently
     const [expenseResult, categories] = await Promise.all([
@@ -42,18 +44,18 @@ async function LoadDataAndRenderForm({ expenseId }: { expenseId: string }) {
     };
 
 
-    return <ExpenseForm initialData={initialFormData} categories={categories} />;
+    return <ExpenseForm initialData={initialFormData} categories={categories} dictionary={dictionary} />;
 }
 
 
 export default function EditExpensePage({ params }: EditExpensePageProps) {
-  const { id } = params;
+  const { id, lang } = params;
 
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-6">Edit Expense</h1>
        <Suspense fallback={<div>Loading expense data...</div>}>
-           <LoadDataAndRenderForm expenseId={id} />
+           <LoadDataAndRenderForm expenseId={id} lang={lang} />
        </Suspense>
     </div>
   );

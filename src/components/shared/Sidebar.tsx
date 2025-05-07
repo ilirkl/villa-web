@@ -1,7 +1,8 @@
 "use client"; // Needs client hooks for path checking
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -13,20 +14,35 @@ import {
   CalendarDays,
   CreditCard,
   LineChart,
-  Settings, // Example icon
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/bookings", label: "Bookings", icon: CalendarDays },
-  { href: "/expenses", label: "Expenses", icon: CreditCard },
-  { href: "/revenue", label: "Revenue", icon: LineChart },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+import { getDictionary } from "@/lib/dictionary";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { lang } = useParams();
+  const [dictionary, setDictionary] = useState<any>({});
+
+  useEffect(() => {
+    async function loadDictionary() {
+      try {
+        const dict = await getDictionary(lang as 'en' | 'sq');
+        setDictionary(dict);
+      } catch (error) {
+        console.error('Failed to load dictionary:', error);
+      }
+    }
+    loadDictionary();
+  }, [lang]);
+
+  const navItems = [
+    { href: "/dashboard", label: dictionary.dashboard || "Dashboard", icon: Home },
+    { href: "/bookings", label: dictionary.bookings || "Bookings", icon: CalendarDays },
+    { href: "/expenses", label: dictionary.expenses || "Expenses", icon: CreditCard },
+    { href: "/revenue", label: dictionary.revenue || "Revenue", icon: LineChart },
+    { href: "/settings", label: dictionary.settings || "Settings", icon: Settings },
+  ];
 
   return (
     <aside className="fixed bottom-0 left-0 right-0 z-10 border-t bg-background sm:border-t">

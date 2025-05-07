@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 import { sq } from 'date-fns/locale';
+import { translateExpenseCategory } from '@/lib/translations';
 
 // Define styles for the PDF
 const styles = StyleSheet.create({
@@ -131,6 +132,8 @@ interface MonthlyReportPDFProps {
       percentage: number;
     }>;
   };
+  lang?: 'en' | 'sq';
+  dictionary?: any;
 }
 
 // Helper function to format currency with space
@@ -138,99 +141,125 @@ const formatCurrencyValue = (amount: number) => {
   return `€ ${amount.toLocaleString()}`; // Note the space after €
 };
 
-export const MonthlyReportPDF = ({ month, year, data }: MonthlyReportPDFProps) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Monthly Financial Report</Text>
-        <Text style={styles.subtitle}>{`${month} ${year}`}</Text>
-      </View>
+export const MonthlyReportPDF = ({ month, year, data, lang = 'en', dictionary = {} }: MonthlyReportPDFProps) => {
+  // Use dictionary for translations if available
+  const report = dictionary.monthly_report || {};
+  
+  // Process expense breakdown to ensure names are translated
+  const translatedExpenseBreakdown = data.expenseBreakdown.map(expense => ({
+    ...expense,
+    // Only translate if the language is English and we have a dictionary
+    name: lang === 'en' && dictionary.expense_categories ? 
+      (dictionary.expense_categories[expense.name] || expense.name) : 
+      expense.name
+  }));
+  
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>{report.title || 'Monthly Financial Report'}</Text>
+          <Text style={styles.subtitle}>{`${month} ${year}`}</Text>
+        </View>
 
-      {/* Financial Summary Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Financial Summary</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Gross Profit</Text>
-          <Text style={styles.currencyValue}>
-            {formatCurrencyValue(data.grossProfit)}
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Total Expenses</Text>
-          <Text style={styles.currencyValue}>
-            {formatCurrencyValue(data.totalExpenses)}
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Net Profit</Text>
-          <Text style={styles.highlightedValue}>
-            {formatCurrencyValue(data.netProfit)}
-          </Text>
-        </View>
-      </View>
-
-      {/* Performance Metrics */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Performance Metrics</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Occupancy Rate</Text>
-          <Text style={styles.highlightedValue}>
-            {data.occupancyRate.toFixed(1)}%
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Total Nights Reserved</Text>
-          <Text style={styles.value}>
-            {data.totalNightsReserved.toFixed(0)}
-          </Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Average Stay Duration</Text>
-          <Text style={styles.value}>
-            {data.averageStay.toFixed(1)} nights
-          </Text>
-        </View>
-      </View>
-
-      {/* Updated Expense Breakdown Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Expense Breakdown</Text>
-        {data.expenseBreakdown.map((expense, index) => (
-          <View key={index} style={styles.expenseRow}>
-            {/* Expense Header with Name and Amount */}
-            <View style={styles.expenseHeader}>
-              <Text style={styles.expenseName}>{expense.name}</Text>
-              <Text style={styles.expenseAmount}>
-                {formatCurrencyValue(expense.value)}
-              </Text>
-            </View>
-            
-            {/* Progress Bar Row */}
-            <View style={styles.progressRow}>
-              {/* Progress Bar */}
-              <View style={[styles.progressBarContainer, { flex: 1 }]}>
-                <View 
-                  style={[
-                    styles.progressBarFill, 
-                    { width: `${Math.min(expense.percentage, 100)}%` }
-                  ]} 
-                />
-              </View>
-              {/* Percentage Text */}
-              <Text style={styles.percentageText}>
-                {expense.percentage.toFixed(1)}%
-              </Text>
-            </View>
+        {/* Financial Summary Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{report.financial_summary || 'Financial Summary'}</Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>{report.gross_profit || 'Gross Profit'}</Text>
+            <Text style={styles.currencyValue}>
+              {formatCurrencyValue(data.grossProfit)}
+            </Text>
           </View>
-        ))}
-      </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>{report.total_expenses || 'Total Expenses'}</Text>
+            <Text style={styles.currencyValue}>
+              {formatCurrencyValue(data.totalExpenses)}
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>{report.net_profit || 'Net Profit'}</Text>
+            <Text style={styles.highlightedValue}>
+              {formatCurrencyValue(data.netProfit)}
+            </Text>
+          </View>
+        </View>
 
-      {/* Footer */}
-      <Text style={styles.footer}>
-        Generated on {format(new Date(), 'PPP', { locale: sq })}
-      </Text>
-    </Page>
-  </Document>
-);
+        {/* Performance Metrics */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{report.performance_metrics || 'Performance Metrics'}</Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>{report.occupancy_rate || 'Occupancy Rate'}</Text>
+            <Text style={styles.highlightedValue}>
+              {data.occupancyRate.toFixed(1)}%
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>{report.total_nights_reserved || 'Total Nights Reserved'}</Text>
+            <Text style={styles.value}>
+              {data.totalNightsReserved.toFixed(0)}
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>{report.average_stay || 'Average Stay Duration'}</Text>
+            <Text style={styles.value}>
+              {data.averageStay.toFixed(1)} {report.nights || 'nights'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Updated Expense Breakdown Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{report.expense_breakdown || 'Expense Breakdown'}</Text>
+          {translatedExpenseBreakdown.map((expense, index) => (
+            <View key={index} style={styles.expenseRow}>
+              {/* Expense Header with Name and Amount */}
+              <View style={styles.expenseHeader}>
+                <Text style={styles.expenseName}>{expense.name}</Text>
+                <Text style={styles.expenseAmount}>
+                  {formatCurrencyValue(expense.value)}
+                </Text>
+              </View>
+              
+              {/* Progress Bar Row */}
+              <View style={styles.progressRow}>
+                {/* Progress Bar */}
+                <View style={[styles.progressBarContainer, { flex: 1 }]}>
+                  <View 
+                    style={[
+                      styles.progressBarFill, 
+                      { width: `${Math.min(expense.percentage, 100)}%` }
+                    ]} 
+                  />
+                </View>
+                {/* Percentage Text */}
+                <Text style={styles.percentageText}>
+                  {expense.percentage.toFixed(1)}%
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* Footer */}
+        <Text style={styles.footer}>
+          {report.generated_on || 'Generated on'} {format(new Date(), 'PPP', { locale: lang === 'sq' ? sq : undefined })}
+        </Text>
+      </Page>
+    </Document>
+  );
+};
+
+
+
+
+
+
+
+
+
+
+
+
 

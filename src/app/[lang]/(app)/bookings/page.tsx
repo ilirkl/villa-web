@@ -9,6 +9,8 @@ import { createClient } from '@/lib/supabase/client';
 import { SearchBar } from '@/components/SearchBar';
 import { FilterSheet } from '@/components/FilterSheet';
 import { parse, format } from 'date-fns';
+import { getDictionary } from '@/lib/dictionary';
+import { useParams } from 'next/navigation';
 
 const bookingSourceOptions = [
   { id: 'DIRECT', name: 'Direct', color: '#34d399' },
@@ -44,6 +46,28 @@ export default function BookingsPage() {
   const [sourceFilter, setSourceFilter] = useState<BookingSource | 'all'>('all');
   // Add refresh trigger state
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [dictionary, setDictionary] = useState<any>({});
+  const { lang } = useParams();
+
+  // Load dictionary
+  useEffect(() => {
+    async function loadDictionary() {
+      try {
+        const dict = await getDictionary(lang as 'en' | 'sq');
+        setDictionary(dict);
+      } catch (error) {
+        console.error('Failed to load dictionary:', error);
+      }
+    }
+    loadDictionary();
+  }, [lang]);
+
+  // Update sort options with translations
+  useEffect(() => {
+    if (dictionary.check_in_date) {
+      sortOptions[0].label = dictionary.check_in_date;
+    }
+  }, [dictionary]);
 
   // Add refresh handler
   const handleRefresh = () => {
@@ -89,14 +113,14 @@ export default function BookingsPage() {
     setFilteredBookings(result);
   }, [bookings, sourceFilter, searchTerm]);
 
-  if (isLoading) return <div>Loading bookings...</div>;
-  if (error) return <p>Error loading bookings: {error}</p>;
-  if (!bookings || bookings.length === 0) return <p>No bookings found.</p>;
+  if (isLoading) return <div>{dictionary.loading_bookings || 'Loading bookings...'}</div>;
+  if (error) return <p>{dictionary.error_loading_bookings || 'Error loading bookings:'} {error}</p>;
+  if (!bookings || bookings.length === 0) return <p>{dictionary.no_bookings_found || 'No bookings found.'}</p>;
 
   return (
     <div className="pb-18">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Bookings</h1>
+        <h1 className="text-2xl font-semibold">{dictionary.bookings || 'Bookings'}</h1>
         <Link href="/bookings/add" className="group relative">
           <PlusCircle 
             className="h-8 w-8 transition-all duration-300 ease-in-out transform 
@@ -114,11 +138,11 @@ export default function BookingsPage() {
         <div className="flex-1">
           <SearchBar 
             onSearch={setSearchTerm}
-            placeholder="Search guest name..."
+            placeholder={dictionary.search_guest_name || "Search guest name..."}
           />
         </div>
         <FilterSheet 
-          title="Filter Bookings"
+          title={dictionary.filter_bookings || "Filter Bookings"}
           sortOptions={sortOptions}
           filterOptions={bookingSourceOptions}
           currentSortField="start_date"

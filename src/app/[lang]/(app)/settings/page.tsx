@@ -2,16 +2,18 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Profile } from '@/lib/definitions'; // Ensure this path is correct
+import { Profile } from '@/lib/definitions';
 import { LogOut, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { getDictionary } from '@/lib/dictionary';
 import 'react-image-crop/dist/ReactCrop.css';
 import {
   Dialog,
@@ -48,6 +50,20 @@ export default function SettingsPage() {
   const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+  const { lang } = useParams();
+  const [dictionary, setDictionary] = useState<any>(null);
+
+  useEffect(() => {
+    async function loadDictionary() {
+      try {
+        const dict = await getDictionary(lang as 'en' | 'sq');
+        setDictionary(dict);
+      } catch (error) {
+        console.error('Failed to load dictionary:', error);
+      }
+    }
+    loadDictionary();
+  }, [lang]);
 
   // --- Fetch Profile Logic (Unchanged) ---
   const fetchProfile = useCallback(async () => {
@@ -435,100 +451,131 @@ export default function SettingsPage() {
   const displayAvatarSrc = avatarPreview || getImageUrl(profile?.avatar_url || null);
 
   return (
-    // Outer container
-    <div className="max-w-2xl mx-auto p-4 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Settings</h1>
-        {/* Avatar Display & Upload Trigger */}
-        <div className="relative group">
-          <Label htmlFor="avatar-upload" className="cursor-pointer" aria-label="Change profile picture">
-            <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
-              <Image
-                src={displayAvatarSrc} alt={profile?.full_name ? `${profile.full_name}'s avatar` : 'Avatar'} fill sizes="64px" className="object-cover" priority key={displayAvatarSrc}
-                onError={(e) => { console.error('Image load error:', e); e.currentTarget.src = '/default-avatar.png'; }}
-              />
-              {(isProcessing || isUploading || isSaving) && (
-                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10"><div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin"></div></div>
-              )}
-              {!(isProcessing || isUploading || isSaving) && (
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"><Upload className="h-6 w-6 text-white" /></div>
-              )}
-            </div>
-          </Label>
-          <input type="file" id="avatar-upload" accept="image/*" onChange={handleAvatarChange} className="hidden" disabled={isProcessing || isUploading || isSaving} />
-          {(avatarPreview || profile?.avatar_url) && !(isProcessing || isUploading || isSaving) && (
-            <button type="button" onClick={removeAvatar} className="absolute -top-1 -right-1 z-20 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200" aria-label="Remove avatar"><X className="h-3 w-3" /></button>
-          )}
-        </div>
-      </div>
-
-      {/* Crop Dialog */}
-      <Dialog open={isCropDialogOpen} onOpenChange={(open) => { if (!open) { setImageToCrop(null); setCrop(undefined); } setIsCropDialogOpen(open); }}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader><DialogTitle>Crop Image</DialogTitle></DialogHeader>
-          <div className="py-4 flex justify-center items-center min-h-[300px]">
-            {imageToCrop ? (
-              <ReactCrop crop={crop} onChange={(_, percentCrop) => { setCrop(percentCrop); }} aspect={1} circularCrop minWidth={100} minHeight={100} ruleOfThirds>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img ref={imgRef} src={imageToCrop} alt="Image to crop" style={{ display: 'block', maxHeight: '70vh', objectFit: 'contain' }} onLoad={onImageLoad} crossOrigin="anonymous" />
-              </ReactCrop>
-            ) : ( <div className="text-center text-gray-500">Loading image...</div> )}
+    <div className="container mx-auto py-6">
+      <div className="max-w-2xl mx-auto p-4 space-y-6">
+        {/* Header with title and avatar on same line */}
+        <div className="flex justify-between items-center mb-6">
+          {/* Title on the left */}
+          <h1 className="text-3xl font-bold">{dictionary?.settings || 'Settings'}</h1>
+          
+          {/* Avatar Display & Upload Trigger on the right */}
+          <div className="relative group">
+            <Label htmlFor="avatar-upload" className="cursor-pointer" aria-label={dictionary?.change_profile_picture || "Change profile picture"}>
+              <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+                <Image
+                  src={displayAvatarSrc} 
+                  alt={profile?.full_name ? `${profile.full_name}'s avatar` : (dictionary?.avatar || 'Avatar')} 
+                  fill 
+                  sizes="64px" 
+                  className="object-cover" 
+                  priority 
+                  key={displayAvatarSrc}
+                  onError={(e) => { console.error('Image load error:', e); e.currentTarget.src = '/default-avatar.png'; }}
+                />
+                {(isProcessing || isUploading || isSaving) && (
+                  <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10">
+                    <div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                  </div>
+                )}
+                {!(isProcessing || isUploading || isSaving) && (
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <Upload className="h-6 w-6 text-white" />
+                  </div>
+                )}
+              </div>
+            </Label>
+            <input type="file" id="avatar-upload" accept="image/*" onChange={handleAvatarChange} className="hidden" disabled={isProcessing || isUploading || isSaving} />
+            {(avatarPreview || profile?.avatar_url) && !(isProcessing || isUploading || isSaving) && (
+              <button 
+                type="button" 
+                onClick={removeAvatar} 
+                className="absolute -top-1 -right-1 z-20 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200" 
+                aria-label={dictionary?.remove_avatar || "Remove avatar"}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => { setIsCropDialogOpen(false); setImageToCrop(null); setCrop(undefined); }} disabled={isProcessing} >Cancel</Button>
-            <Button type="button" onClick={handleCropComplete} disabled={!crop?.width || !crop?.height || isProcessing || !imgRef.current} >
-              {isProcessing ? (<> {/* Spinner */} Processing...</>) : ('Apply Crop')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+        
+        {/* Language Switcher */}
+        <LanguageSwitcher />
+        
+        {/* Crop Dialog */}
+        <Dialog open={isCropDialogOpen} onOpenChange={(open) => { if (!open) { setImageToCrop(null); setCrop(undefined); } setIsCropDialogOpen(open); }}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>{dictionary?.crop_image || 'Crop Image'}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 flex justify-center items-center min-h-[300px]">
+              {imageToCrop ? (
+                <ReactCrop crop={crop} onChange={(_, percentCrop) => { setCrop(percentCrop); }} aspect={1} circularCrop minWidth={100} minHeight={100} ruleOfThirds>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img ref={imgRef} src={imageToCrop} alt={dictionary?.image_to_crop || "Image to crop"} style={{ display: 'block', maxHeight: '70vh', objectFit: 'contain' }} onLoad={onImageLoad} crossOrigin="anonymous" />
+                </ReactCrop>
+              ) : ( <div className="text-center text-gray-500">{dictionary?.loading_image || 'Loading image...'}</div> )}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => { setIsCropDialogOpen(false); setImageToCrop(null); setCrop(undefined); }} disabled={isProcessing}>
+                {dictionary?.cancel || 'Cancel'}
+              </Button>
+              <Button type="button" onClick={handleCropComplete} disabled={!crop?.width || !crop?.height || isProcessing || !imgRef.current}>
+                {isProcessing ? (dictionary?.processing || 'Processing...') : (dictionary?.apply_crop || 'Apply Crop')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-      {/* Profile Form Card */}
-      <Card>
-        <CardHeader><CardTitle>Profile Settings</CardTitle></CardHeader>
-        <CardContent>
-          {profile ? (
-            <form onSubmit={handleSubmit}>
-              {/* Form fields with updated layout */}
-              <div className="space-y-4">
-                {/* Full Name and Company Name */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5"><Label htmlFor="full_name">Full Name</Label><Input id="full_name" value={profile.full_name || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, full_name: e.target.value } : null)} disabled={isSaving} /></div>
-                  <div className="space-y-1.5"><Label htmlFor="company_name">Company Name</Label><Input id="company_name" value={profile.company_name || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, company_name: e.target.value } : null)} disabled={isSaving} /></div>
+        {/* Profile Form Card */}
+        <Card>
+          <CardHeader><CardTitle>{dictionary?.profile_settings || 'Profile Settings'}</CardTitle></CardHeader>
+          <CardContent>
+            {profile ? (
+              <form onSubmit={handleSubmit}>
+                {/* Form fields with updated layout */}
+                <div className="space-y-4">
+                  {/* Full Name and Company Name */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5"><Label htmlFor="full_name">{dictionary?.full_name || 'Full Name'}</Label><Input id="full_name" value={profile.full_name || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, full_name: e.target.value } : null)} disabled={isSaving} /></div>
+                    <div className="space-y-1.5"><Label htmlFor="company_name">{dictionary?.company_name || 'Company Name'}</Label><Input id="company_name" value={profile.company_name || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, company_name: e.target.value } : null)} disabled={isSaving} /></div>
+                  </div>
+                  {/* Email and Phone Number */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5"><Label htmlFor="email">{dictionary?.email || 'Email'}</Label><Input id="email" type="email" value={profile.email || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, email: e.target.value } : null)} disabled={isSaving} aria-describedby="email-desc"/><p id="email-desc" className="text-xs text-muted-foreground">{dictionary?.email_desc || 'May affect login.'}</p></div>
+                    <div className="space-y-1.5"><Label htmlFor="phone_number">{dictionary?.phone_number || 'Phone Number'}</Label><Input id="phone_number" type="tel" value={profile.phone_number || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, phone_number: e.target.value } : null)} disabled={isSaving}/></div>
+                  </div>
+                  {/* Website and VAT Number */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5"><Label htmlFor="website">{dictionary?.website || 'Website'}</Label><Input id="website" type="url" value={profile.website || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, website: e.target.value } : null)} disabled={isSaving} placeholder="https://..."/></div>
+                    <div className="space-y-1.5"><Label htmlFor="vat_number">{dictionary?.vat_number || 'VAT Number'}</Label><Input id="vat_number" value={profile.vat_number || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, vat_number: e.target.value } : null)} disabled={isSaving}/></div>
+                  </div>
+                  {/* Address */}
+                  <div className="space-y-1.5"><Label htmlFor="address">{dictionary?.address || 'Address'}</Label><Input id="address" value={profile.address || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, address: e.target.value } : null)} disabled={isSaving}/></div>
                 </div>
-                {/* Email and Phone Number */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={profile.email || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, email: e.target.value } : null)} disabled={isSaving} aria-describedby="email-desc"/><p id="email-desc" className="text-xs text-muted-foreground">May affect login.</p></div>
-                  <div className="space-y-1.5"><Label htmlFor="phone_number">Phone Number</Label><Input id="phone_number" type="tel" value={profile.phone_number || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, phone_number: e.target.value } : null)} disabled={isSaving}/></div>
-                </div>
-                {/* Website and VAT Number */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5"><Label htmlFor="website">Website</Label><Input id="website" type="url" value={profile.website || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, website: e.target.value } : null)} disabled={isSaving} placeholder="https://..."/></div>
-                  <div className="space-y-1.5"><Label htmlFor="vat_number">VAT Number</Label><Input id="vat_number" value={profile.vat_number || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, vat_number: e.target.value } : null)} disabled={isSaving}/></div>
-                </div>
-                {/* Address */}
-                <div className="space-y-1.5"><Label htmlFor="address">Address</Label><Input id="address" value={profile.address || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, address: e.target.value } : null)} disabled={isSaving}/></div>
-              </div>
+                
+                {/* Remove duplicate language switcher */}
 
-              {/* Action Buttons with updated layout */}
-              <div className="flex flex-row justify-between items-center gap-4 mt-6 pt-4 border-t dark:border-gray-700">
-                <Button variant="outline" type="button" onClick={handleSignOut} className="flex items-center justify-center gap-2" disabled={isSaving || isUploading || isProcessing}>
-                  <LogOut className="h-4 w-4" /><span>Sign Out</span>
-                </Button>
-                <Button type="submit" className="flex items-center justify-center" disabled={isSaving || isUploading || isProcessing}>
-                  {(isSaving || isUploading) && (<div className="w-4 h-4 border-t-2 border-white rounded-full animate-spin mr-2"></div>)}
-                  {isSaving ? 'Saving...' : (isUploading ? 'Uploading...' : 'Save Changes')}
-                </Button>
-              </div>
-            </form>
-          ) : ( /* No Profile Message */
-            <div className="text-center text-gray-500 py-6">Profile data could not be loaded.</div>
-          )}
-        </CardContent>
-      </Card>
-    </div> // End outer container
-  ); // End return
+                {/* Action Buttons with updated layout */}
+                <div className="flex flex-row justify-between items-center gap-4 mt-6 pt-4 border-t dark:border-gray-700">
+                  <Button variant="outline" type="button" onClick={handleSignOut} className="flex items-center justify-center gap-2" disabled={isSaving || isUploading || isProcessing}>
+                    <LogOut className="h-4 w-4" /><span>{dictionary?.sign_out || 'Sign Out'}</span>
+                  </Button>
+                  <Button type="submit" className="flex items-center justify-center" disabled={isSaving || isUploading || isProcessing}>
+                    {(isSaving || isUploading) && (<div className="w-4 h-4 border-t-2 border-white rounded-full animate-spin mr-2"></div>)}
+                    {isSaving ? (dictionary?.saving || 'Saving...') : (isUploading ? (dictionary?.uploading || 'Uploading...') : (dictionary?.save_changes || 'Save Changes'))}
+                  </Button>
+                </div>
+              </form>
+            ) : ( /* No Profile Message */
+              <div className="text-center text-gray-500 py-6">{dictionary?.profile_data_not_loaded || 'Profile data could not be loaded.'}</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 } // End component
+
+
 
 

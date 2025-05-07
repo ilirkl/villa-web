@@ -9,6 +9,8 @@ import { useState, useEffect } from 'react';
 import { Expense, ExpenseCategory } from '@/lib/definitions';
 import { FilterSheet } from '@/components/FilterSheet'; // Updated import
 import { SearchBar } from '@/components/SearchBar';
+import { getDictionary } from '@/lib/dictionary';
+import { useParams } from 'next/navigation';
 
 type ExpenseWithCategory = Expense & {
     expense_categories: Pick<ExpenseCategory, 'name'> | null;
@@ -51,6 +53,29 @@ export default function ExpensesPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [filterOptions, setFilterOptions] = useState<Array<{ id: string; name: string; color: string }>>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [dictionary, setDictionary] = useState<any>({});
+  const { lang } = useParams();
+
+  // Load dictionary
+  useEffect(() => {
+    async function loadDictionary() {
+      try {
+        const dict = await getDictionary(lang as 'en' | 'sq');
+        setDictionary(dict);
+      } catch (error) {
+        console.error('Failed to load dictionary:', error);
+      }
+    }
+    loadDictionary();
+  }, [lang]);
+
+  // Update sort options with translations
+  useEffect(() => {
+    if (dictionary.date && dictionary.amount) {
+      sortOptions[0].label = dictionary.date;
+      sortOptions[1].label = dictionary.amount;
+    }
+  }, [dictionary]);
 
   // Fetch categories for filter options
   useEffect(() => {
@@ -120,14 +145,14 @@ export default function ExpensesPage() {
     setFilteredExpenses(result);
   }, [expenses, categoryFilter, searchTerm]);
 
-  if (isLoading) return <div>Loading expenses...</div>;
-  if (error) return <p className="text-red-500">Error loading expenses: {error}</p>;
-  if (!expenses || expenses.length === 0) return <p>No expenses recorded yet.</p>;
+  if (isLoading) return <div>{dictionary.loading_expenses || 'Loading expenses...'}</div>;
+  if (error) return <p className="text-red-500">{dictionary.error_loading_expenses || 'Error loading expenses:'} {error}</p>;
+  if (!expenses || expenses.length === 0) return <p>{dictionary.no_expenses || 'No expenses recorded yet.'}</p>;
 
   return (
     <div className="pb-18">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Expenses</h1>
+        <h1 className="text-2xl font-semibold">{dictionary.expenses || 'Expenses'}</h1>
         <Link href="/expenses/add" className="group relative">
           <PlusCircle 
             className="h-8 w-8 transition-all duration-300 ease-in-out transform 
@@ -145,11 +170,11 @@ export default function ExpensesPage() {
         <div className="flex-1">
           <SearchBar 
             onSearch={setSearchTerm}
-            placeholder="Search description or category..."
+            placeholder={dictionary.search_expenses || "Search description or category..."}
           />
         </div>
         <FilterSheet 
-          title="Filter Expenses"
+          title={dictionary.filter_expenses || "Filter Expenses"}
           sortOptions={sortOptions}
           filterOptions={filterOptions}
           currentSortField={sortField}

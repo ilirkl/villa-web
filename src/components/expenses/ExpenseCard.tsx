@@ -28,6 +28,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { getDictionary } from '@/lib/dictionary';
+import { translateExpenseCategory } from '@/lib/translations';
 
 type ExpenseWithCategory = Expense & {
     expense_categories: Pick<ExpenseCategory, 'name'> | null;
@@ -43,6 +47,21 @@ const formatCurrency = (amount: number) => {
 };
 
 export function ExpenseCard({ expense, onDelete }: ExpenseCardProps) {
+  const { lang } = useParams();
+  const [dictionary, setDictionary] = useState<any>({});
+
+  useEffect(() => {
+    async function loadDictionary() {
+      try {
+        const dict = await getDictionary(lang as 'en' | 'sq');
+        setDictionary(dict);
+      } catch (error) {
+        console.error('Failed to load dictionary:', error);
+      }
+    }
+    loadDictionary();
+  }, [lang]);
+
   // Add a function to determine badge styling based on category
   const getCategoryBadgeStyle = (categoryName: string | undefined) => {
     switch (categoryName?.toLowerCase()) {
@@ -113,7 +132,7 @@ export function ExpenseCard({ expense, onDelete }: ExpenseCardProps) {
             className={`flex items-center gap-1 text-xs ${getCategoryBadgeStyle(expense.expense_categories.name)}`}
           >
             <Tag className="h-3 w-3" />
-            {expense.expense_categories.name}
+            {translateExpenseCategory(expense.expense_categories.name, dictionary, lang as string)}
           </Badge>
         )}
         <div className="flex gap-2">

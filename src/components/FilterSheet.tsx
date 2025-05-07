@@ -3,7 +3,10 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal, ArrowUp, ArrowDown, Tag } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import { getDictionary } from "@/lib/dictionary";
+import { translateExpenseCategory } from '@/lib/translations';
 
 interface FilterOption {
   id: string;
@@ -43,6 +46,20 @@ export function FilterSheet({
   const [tempSortField, setTempSortField] = useState(currentSortField);
   const [tempSortOrder, setTempSortOrder] = useState(currentSortOrder);
   const [tempFilter, setTempFilter] = useState(currentFilter);
+  const { lang } = useParams();
+  const [dictionary, setDictionary] = useState<any>({});
+
+  useEffect(() => {
+    async function loadDictionary() {
+      try {
+        const dict = await getDictionary(lang as 'en' | 'sq');
+        setDictionary(dict);
+      } catch (error) {
+        console.error('Failed to load dictionary:', error);
+      }
+    }
+    loadDictionary();
+  }, [lang]);
 
   const handleSortClick = (field: string) => {
     if (field === tempSortField) {
@@ -88,6 +105,13 @@ export function FilterSheet({
     setOpen(false);
   };
 
+  // Get translations with fallbacks
+  const sortByText = dictionary?.filter_sheet?.sort_by || "Sort by";
+  const filterByText = dictionary?.filter_sheet?.filter_by || "Filter by";
+  const allText = dictionary?.filter_sheet?.all || "All";
+  const resetText = dictionary?.filter_sheet?.reset || "Reset";
+  const applyFiltersText = dictionary?.filter_sheet?.apply_filters || "Apply Filters";
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -102,7 +126,7 @@ export function FilterSheet({
         <div className="space-y-4 mt-2 px-4 pb-4">
           {/* Sort Section */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Sort by</label>
+            <label className="text-sm font-medium">{sortByText}</label>
             <div className="space-y-2">
               {sortOptions.map((option) => (
                 <div 
@@ -127,14 +151,14 @@ export function FilterSheet({
 
           {/* Filter Section */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Filter by</label>
+            <label className="text-sm font-medium">{filterByText}</label>
             <div className="flex flex-wrap gap-2">
               <div
                 onClick={() => setTempFilter('all')}
                 className={getFilterBadgeStyle('all', tempFilter === 'all')}
               >
                 <Tag className="h-4 w-4" />
-                <span>All</span>
+                <span>{allText}</span>
               </div>
               {filterOptions.map((option) => (
                 <div
@@ -143,7 +167,7 @@ export function FilterSheet({
                   className={getFilterBadgeStyle(option.id, tempFilter === option.id)}
                 >
                   <Tag className="h-4 w-4" />
-                  <span>{option.name}</span>
+                  <span>{translateExpenseCategory(option.name, dictionary, lang as string)}</span>
                 </div>
               ))}
             </div>
@@ -156,13 +180,13 @@ export function FilterSheet({
               className="flex-1" 
               onClick={handleReset}
             >
-              Reset
+              {resetText}
             </Button>
             <Button 
               className="flex-1 bg-[#ff5a5f] hover:bg-[#ff5a5f]/90" 
               onClick={handleApplyFilters}
             >
-              Apply Filters
+              {applyFiltersText}
             </Button>
           </div>
         </div>
@@ -170,3 +194,5 @@ export function FilterSheet({
     </Sheet>
   );
 }
+
+

@@ -1,15 +1,16 @@
-// src/components/revenue/MonthlySummaryCard.tsx
+'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils'; // *** IMPORT THE UTILITY ***
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/utils";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getDictionary } from "@/lib/dictionary";
 
 interface MonthlySummaryCardProps {
     currentMonthProfit: number;
-    pendingGross: number;      // Renamed conceptually to futureGross, but prop name kept for now
+    pendingGross: number;
     currentMonthGross: number;
     currentMonthExpenses: number;
-    // formatCurrency prop removed
 }
 
 export default function MonthlySummaryCard({
@@ -18,32 +19,63 @@ export default function MonthlySummaryCard({
     currentMonthGross,
     currentMonthExpenses,
 }: MonthlySummaryCardProps) {
+    const params = useParams();
+    const lang = params?.lang as string || 'en';
+    const [dictionary, setDictionary] = useState<any>({});
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    useEffect(() => {
+        async function loadDictionary() {
+            try {
+                const dict = await getDictionary(lang as 'en' | 'sq');
+                setDictionary(dict);
+                setIsLoaded(true);
+            } catch (error) {
+                console.error('Failed to load dictionary:', error);
+                setIsLoaded(true); // Set loaded even on error to avoid infinite loading
+            }
+        }
+        loadDictionary();
+    }, [lang]);
+
+    if (!isLoaded) {
+        return (
+            <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Loading...
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1">
+                    <div className="text-3xl font-bold">...</div>
+                </CardContent>
+            </Card>
+        );
+    }
+
     return (
         <Card>
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Fitimi Neto
+                    {dictionary.monthly_net_profit || 'Monthly Net Profit'}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
                 <div className="text-3xl font-bold">
-                    {/* *** USE IMPORTED FUNCTION *** */}
                     {formatCurrency(currentMonthProfit)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                    këtë muaj
+                    {dictionary.this_month || 'this month'}
                 </p>
                 <div className="flex items-center text-sm text-muted-foreground pt-2">
-                    {/* Title might need update depending on meaning of pendingGross */}
-                    <span>Bruto në Pritje {formatCurrency(pendingGross)}</span>
+                    <span>{dictionary.pending_gross || 'Pending Gross'} {formatCurrency(pendingGross)}</span>
                     {pendingGross > 0 && (
-                         <TrendingUp className="ml-1 h-4 w-4 text-green-500" />
+                        <span className="ml-auto text-green-500">+{formatCurrency(pendingGross)}</span>
                     )}
                 </div>
-                 <p className="text-sm text-muted-foreground">
-                    {/* *** USE IMPORTED FUNCTION *** */}
-                    Bruto: {formatCurrency(currentMonthGross)} | Shpenzime: {formatCurrency(currentMonthExpenses)}
-                 </p>
+                <div className="text-xs text-muted-foreground">
+                    {dictionary.gross || 'Gross'}: {formatCurrency(currentMonthGross)} | {dictionary.expenses || 'Expenses'}: {formatCurrency(currentMonthExpenses)}
+                </div>
             </CardContent>
         </Card>
     );

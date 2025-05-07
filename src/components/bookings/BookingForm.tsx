@@ -4,7 +4,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Constants } from '@/lib/database.types'; // <--- IMPORT Constants
+import { Constants } from '@/lib/database.types';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -27,7 +27,7 @@ import { BookingFormData } from '@/lib/definitions';
 import { createOrUpdateBooking, BookingState } from '@/lib/actions/bookings';
 import { useFormState, useFormStatus } from 'react-dom';
 import { useEffect } from 'react';
-import { toast } from "sonner"; // Import sonner toast
+import { toast } from "sonner";
 import { useRouter } from 'next/navigation';
 
 // Zod schema update
@@ -51,21 +51,22 @@ type FormSchemaType = z.infer<typeof FormSchema>;
 
 interface BookingFormProps {
   initialData?: BookingFormData | null;
+  dictionary?: any;
 }
 
-function SubmitButton({ isEditing }: { isEditing: boolean }) {
+function SubmitButton({ isEditing, dictionary }: { isEditing: boolean, dictionary?: any }) {
     const { pending } = useFormStatus();
     return (
         <Button type="submit" disabled={pending} aria-disabled={pending}>
-        {pending ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Booking' : 'Create Booking')}
+        {pending ? (isEditing ? dictionary?.updating || 'Updating...' : dictionary?.saving || 'Creating...') : 
+                  (isEditing ? dictionary?.update_booking || 'Update Booking' : dictionary?.create_booking || 'Create Booking')}
         </Button>
     );
 }
 
-export function BookingForm({ initialData }: BookingFormProps) {
+export function BookingForm({ initialData, dictionary = {} }: BookingFormProps) {
   const isEditing = !!initialData?.id;
   const router = useRouter();
-  // Remove useToast hook: const { toast } = useToast();
 
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(FormSchema),
@@ -89,13 +90,13 @@ export function BookingForm({ initialData }: BookingFormProps) {
      if (state?.message) {
         if (state.errors && Object.keys(state.errors).length > 0) {
              // Error Toast
-             toast.error("Action Failed", {
+             toast.error(dictionary.action_failed || "Action Failed", {
                  description: state.message,
-                 // you can add duration, action buttons etc. here
              });
         } else if (!state.errors) {
              // Success Toast
-             toast.success(isEditing ? "Booking Updated" : "Booking Created", {
+             toast.success(isEditing ? (dictionary.booking_updated || "Booking Updated") : 
+                                      (dictionary.booking_created || "Booking Created"), {
                  description: state.message,
              });
              if (!isEditing) {
@@ -109,8 +110,7 @@ export function BookingForm({ initialData }: BookingFormProps) {
              }
         }
      }
-     // Remove toast from dependency array
- }, [state, isEditing, router]);
+ }, [state, isEditing, router, dictionary]);
 
   // onSubmit remains the same
   const onSubmit = (formData: FormSchemaType) => {
@@ -147,9 +147,9 @@ export function BookingForm({ initialData }: BookingFormProps) {
             name="guest_name"
             render={({ field }) => (
               <FormItem className="flex-1">
-                <FormLabel>Guest Name</FormLabel>
+                <FormLabel>{dictionary.guest_name || "Guest Name"}</FormLabel>
                 <FormControl>
-                  <Input placeholder="John Doe" {...field} />
+                  <Input placeholder={dictionary.guest_name_placeholder || "John Doe"} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -161,11 +161,11 @@ export function BookingForm({ initialData }: BookingFormProps) {
             name="source"
             render={({ field }) => (
               <FormItem className="w-[200px]">
-                <FormLabel>Source</FormLabel>
+                <FormLabel>{dictionary.source || "Source"}</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select booking source" />
+                      <SelectValue placeholder={dictionary.select_booking_source || "Select booking source"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -189,7 +189,7 @@ export function BookingForm({ initialData }: BookingFormProps) {
             name="start_date"
             render={({ field }) => (
               <FormItem className="flex-1">
-                <FormLabel>Start Date</FormLabel>
+                <FormLabel>{dictionary.start_date || "Start Date"}</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -200,7 +200,7 @@ export function BookingForm({ initialData }: BookingFormProps) {
                           !field.value && 'text-muted-foreground'
                         )}
                       >
-                        {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                        {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
@@ -224,7 +224,7 @@ export function BookingForm({ initialData }: BookingFormProps) {
             name="end_date"
             render={({ field }) => (
               <FormItem className="flex-1">
-                <FormLabel>End Date</FormLabel>
+                <FormLabel>{dictionary.end_date || "End Date"}</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -235,7 +235,7 @@ export function BookingForm({ initialData }: BookingFormProps) {
                           !field.value && 'text-muted-foreground'
                         )}
                       >
-                        {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                        {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
@@ -268,7 +268,7 @@ export function BookingForm({ initialData }: BookingFormProps) {
             name="total_amount"
             render={({ field }) => (
               <FormItem className="flex-1">
-                <FormLabel>Total Amount (€)</FormLabel>
+                <FormLabel>{dictionary.total_amount || "Total Amount"} (€)</FormLabel>
                 <FormControl>
                   <Input type="number" step="0.01" min="0" {...field} />
                 </FormControl>
@@ -281,7 +281,7 @@ export function BookingForm({ initialData }: BookingFormProps) {
             name="prepayment"
             render={({ field }) => (
               <FormItem className="flex-1">
-                <FormLabel>Prepayment (€)</FormLabel>
+                <FormLabel>{dictionary.prepayment || "Prepayment"} (€)</FormLabel>
                 <FormControl>
                   <Input type="number" step="0.01" min="0" {...field} />
                 </FormControl>
@@ -297,10 +297,10 @@ export function BookingForm({ initialData }: BookingFormProps) {
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes</FormLabel>
+              <FormLabel>{dictionary.notes || "Notes"}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Any relevant notes about the booking..."
+                  placeholder={dictionary.booking_notes_placeholder || "Any relevant notes about the booking..."}
                   className="resize-none"
                   {...field}
                   value={field.value ?? ''}
@@ -318,9 +318,9 @@ export function BookingForm({ initialData }: BookingFormProps) {
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => router.back()}>
-            Cancel
+            {dictionary.cancel || "Cancel"}
           </Button>
-          <SubmitButton isEditing={isEditing} />
+          <SubmitButton isEditing={isEditing} dictionary={dictionary} />
         </div>
       </form>
     </Form>

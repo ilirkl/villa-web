@@ -1,4 +1,4 @@
-// src/app/(app)/revenue/page.tsx
+// src/app/[lang]/(app)/revenue/page.tsx
 
 import { createClient } from '@/lib/supabase/server'; // Supabase server client
 import { Suspense } from 'react'; // For loading states
@@ -31,6 +31,8 @@ import RevenueLineChart from '@/components/revenue/RevenueLineChart';
 import BookingListCard from '@/components/revenue/BookingListCard';
 import ExpenseBreakdownCard from '@/components/revenue/ExpenseBreakdownCard';
 import MonthlyReportsCarousel from '@/components/revenue/MonthlyReportsCarousel';
+import { getDictionary } from '@/lib/dictionary';
+import { translateExpenseCategory } from '@/lib/translations';
 
 // --- Import Types ---
 // Import types generated from your Supabase schema
@@ -45,27 +47,6 @@ type ExpenseCategory = Tables<'expense_categories'>;
 type PartialBooking = Pick<Booking, 'id' | 'start_date' | 'end_date' | 'total_amount'>;
 type PartialExpense = Pick<Expense, 'id' | 'date' | 'amount' | 'category_id'>;
 type PartialExpenseCategory = Pick<ExpenseCategory, 'id' | 'name'>;
-
-// Define types needed for child components' props (can be moved to a definitions file)
-interface RevenueChartItem {
-    name: string;           // Month Abbreviation (e.g., 'Shk', 'Mar')
-    "Fitimi Neto": number;  // Net Profit value for the month
-    "Rezervime": number;    // Gross Revenue / Bookings value for the month
-}
-// Minimal booking data needed for the list component
-interface BookingListItem extends Pick<Booking, 'id' | 'start_date' | 'total_amount'> { }
-interface ExpenseBreakdownItem {
-    name: string;
-    value: number;
-    percentage: number;
-}
-// Modified MonthlyReportItem to include the key for linking
-interface MonthlyReportItem {
-    key: string; // YYYY-MM key
-    year: string;
-    month: string; // Full month name
-    amount: number; // Keep amount as number here
-}
 
 // --- Helper Functions --- Defined in utils.ts ---
 // import { formatCurrency } from '@/lib/utils';
@@ -121,8 +102,9 @@ function allocateBookingRevenueAcrossMonths(booking: PartialBooking): { monthKey
 
 // --- Server Component: RevenueData ---
 // Fetches data and performs calculations on the server
-async function RevenueData() {
+async function RevenueData({ params }: { params: { lang: string } }) {
     const supabase = createClient(); // Initialize Supabase server client
+    const dictionary = await getDictionary(params.lang as 'en' | 'sq');
     const now = new Date();
     const currentMonthStart = startOfMonth(now);
     const currentMonthEnd = endOfMonth(now);
@@ -130,6 +112,31 @@ async function RevenueData() {
     // Adjust the date range to 3 months past and 3 months future
     const threeMonthsAgo = startOfMonth(subMonths(now, 3));
     const threeMonthsAhead = endOfMonth(addMonths(now, 3));
+
+    // Define interfaces for data structures
+    interface RevenueChartItem {
+        name: string;
+        [key: string]: string | number; // Allow dynamic keys for translated labels
+    }
+
+    interface BookingListItem {
+        id: string | number;
+        start_date: string;
+        total_amount: number | null;
+    }
+
+    interface ExpenseBreakdownItem {
+        name: string;
+        value: number;
+        percentage: number;
+    }
+
+    interface MonthlyReportItem {
+        key: string;
+        year: string;
+        month: string;
+        amount: number;
+    }
 
     // Initialize data variables with default empty/zero states to prevent errors
     let allBookings: PartialBooking[] = [];
@@ -141,6 +148,7 @@ async function RevenueData() {
     let currentMonthTotalExpenses = 0;
     let currentMonthNetProfit = 0;
     let futureGrossRevenue = 0;
+
     let monthlyChartData: RevenueChartItem[] = [];
     let futureBookings: BookingListItem[] = [];
     let pastBookings: BookingListItem[] = [];
@@ -168,23 +176,22 @@ async function RevenueData() {
                 .select('id, name'),
         ]);
 
-        // *** Stricter Error Handling and Assignment ***
+        // Check for errors and assign data
         if (bookingsRes.error) throw new Error(`Bookings fetch error: ${bookingsRes.error.message}`);
-        allBookings = bookingsRes.data ?? []; // Assign data or empty array
-
         if (expensesRes.error) throw new Error(`Expenses fetch error: ${expensesRes.error.message}`);
-        allExpenses = expensesRes.data ?? []; // Assign data or empty array
-
         if (categoriesRes.error) throw new Error(`Categories fetch error: ${categoriesRes.error.message}`);
-        categories = categoriesRes.data ?? []; // Assign data or empty array
 
-        // Proceed only if categories were fetched ok
-        categoryMap = new Map(categories.map(c => [c.id, c.name || 'Uncategorized']));
+        allBookings = bookingsRes.data || [];
+        allExpenses = expensesRes.data || [];
+        categories = categoriesRes.data || [];
+
+        // Create a map of category IDs to names for easier lookup
+        categoryMap = new Map(categories.map(cat => [cat.id, cat.name]));
 
     } catch (error: any) {
         console.error("Error fetching revenue data:", error);
         // Render an error message if fetching fails
-        return <p className="text-red-500 text-center p-4">Error loading revenue data: {error.message}</p>;
+        return <p className="text-red-500 text-center p-4">{dictionary.error_loading_revenue_data} {error.message}</p>;
     }
 
     // --- Perform Calculations ---
@@ -232,7 +239,8 @@ async function RevenueData() {
         for (let i = -3; i <= 2; i++) {
             const monthDate = addMonths(now, i);
             const monthKey = format(monthDate, 'yyyy-MM');
-            const monthShort = format(monthDate, 'MMM', { locale: sq });
+            // Use the appropriate locale based on language
+            const monthShort = format(monthDate, 'MMM', { locale: params.lang === 'sq' ? sq : undefined });
             monthlyDataMap[monthKey] = { revenue: 0, expenses: 0, name: monthShort };
         }
 
@@ -277,13 +285,11 @@ async function RevenueData() {
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([_, data]) => ({
                 name: data.name,
-                "Rezervime": Math.round(data.revenue * 100) / 100,
-                "Fitimi Neto": Math.round((data.revenue - data.expenses) * 100) / 100
+                [dictionary.bookings_label]: Math.round(data.revenue * 100) / 100,
+                [dictionary.net_profit_label]: Math.round((data.revenue - data.expenses) * 100) / 100
             }));
 
-        // Add debug logging
-        console.log('Monthly Data Map:', monthlyDataMap);
-        console.log('Monthly Chart Data:', monthlyChartData);
+        
 
         // 3. Future / Past Bookings for Lists
         if (!Array.isArray(allBookings)) throw new Error("allBookings corrupted before future/past list calculation."); // Check again
@@ -316,8 +322,11 @@ async function RevenueData() {
          if (!Array.isArray(allExpenses)) throw new Error("allExpenses corrupted before breakdown calculation."); // Check again
         const expensesByCategory = allExpenses.reduce((acc, expense) => {
             if (!expense) return acc;
-            const categoryName = expense.category_id ? categoryMap.get(expense.category_id) : 'Uncategorized';
-            acc[categoryName!] = (acc[categoryName!] || 0) + (expense.amount || 0);
+            const categoryId = expense.category_id;
+            const originalCategoryName = categoryId ? categoryMap.get(categoryId) : 'Uncategorized';
+            // Translate the category name based on the current language
+            const categoryName = translateExpenseCategory(originalCategoryName, dictionary, params.lang);
+            acc[categoryName] = (acc[categoryName] || 0) + (expense.amount || 0);
             return acc;
         }, {} as Record<string, number>);
 
@@ -341,7 +350,7 @@ async function RevenueData() {
                     return {
                         key: key,
                         year: format(date, 'yyyy'),
-                        month: format(date, 'MMMM', { locale: sq }),
+                        month: format(date, 'MMMM', { locale: params.lang === 'sq' ? sq : undefined }),
                         amount: Math.round(data.revenue * 100) / 100,
                     };
                 } catch { return null; }
@@ -365,18 +374,17 @@ async function RevenueData() {
                 pendingGross={futureGrossRevenue}
                 currentMonthGross={currentMonthGrossRevenue}
                 currentMonthExpenses={currentMonthTotalExpenses}
-                // formatCurrency prop removed
             />
             {/* Revenue Chart Card */}
             <Card>
-                <CardHeader><CardTitle>Fitimi Neto Mujor</CardTitle></CardHeader>
+                <CardHeader><CardTitle>{dictionary.monthly_net_profit}</CardTitle></CardHeader>
                 <CardContent className="h-[300px] md:h-[350px]">
-                    <Suspense fallback={<div className="flex items-center justify-center h-full">Loading Chart...</div>}>
+                    <Suspense fallback={<div className="flex items-center justify-center h-full">{dictionary.loading_chart}</div>}>
                         {monthlyChartData && monthlyChartData.length > 0 ? (
                             <RevenueLineChart data={monthlyChartData} />
                         ) : (
                             <div className="flex items-center justify-center h-full text-muted-foreground">
-                                No data available for the selected period.
+                                {dictionary.no_chart_data || 'No chart data available.'}
                             </div>
                         )}
                     </Suspense>
@@ -384,33 +392,28 @@ async function RevenueData() {
             </Card>
             {/* Future Bookings List Card */}
             <BookingListCard
-                title="Rezervime të Ardhshme"
+                title={dictionary.future_bookings}
                 bookings={futureBookings}
-                statusLabel="E Ardhshme"
-                locale={sq} // Pass Albanian locale for date formatting
-                // formatCurrency prop removed
+                statusLabel={dictionary.future}
+                seeAllLink="/bookings?filter=future"
             />
             {/* Past Bookings List Card */}
             <BookingListCard
-                title="Rezervime të Kaluara"
+                title={dictionary.past_bookings}
                 bookings={pastBookings}
-                statusLabel="E Kaluar"
-                locale={sq} // Pass Albanian locale
+                statusLabel={dictionary.past}
                 showSeeAllButton={true}
-                seeAllLink="/bookings?filter=past" // Adjust if needed
-                // formatCurrency prop removed
+                seeAllLink="/bookings?filter=past"
             />
             {/* Expense Breakdown Card */}
             <ExpenseBreakdownCard
-                title="Shpenzimet"
+                title={dictionary.expense_breakdown}
                 data={expenseBreakdownData}
-                // formatCurrency prop removed
-             />
+            />
             {/* Monthly Reports Carousel */}
             <MonthlyReportsCarousel
-                title="Raporte mujore"
-                reports={monthlyReportData} // Pass data including the 'key'
-                // formatCurrency prop removed
+                title={dictionary.monthly_reports}
+                reports={monthlyReportData}
             />
         </div>
     );
@@ -418,18 +421,20 @@ async function RevenueData() {
 
 // --- Main Page Component ---
 // Wraps the data fetching component with Suspense for loading state
-export default function RevenuePage() {
+export default async function RevenuePage({ params }: { params: { lang: string } }) {
+    const dictionary = await getDictionary(params.lang as 'en' | 'sq');
+    
     return (
         // Main page container with padding, including bottom padding
         <div className="p-4 md:p-6 pb-20"> {/* Added bottom padding */}
             {/* Page Title */}
             <h1 className="text-2xl font-semibold mb-6 text-gray-800 dark:text-gray-100">
-                Financat {/* Page Title: Finances */}
+                {dictionary.finances}
             </h1>
             {/* Suspense handles the loading state while RevenueData fetches */}
-            <Suspense fallback={<div className="text-center p-10">Loading revenue data...</div>}>
+            <Suspense fallback={<div className="text-center p-10">{dictionary.loading_revenue_data}</div>}>
                 {/* Render the server component that fetches and processes data */}
-                <RevenueData />
+                <RevenueData params={params} />
             </Suspense>
         </div>
     );

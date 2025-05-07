@@ -45,18 +45,20 @@ type FormSchemaType = z.infer<typeof FormSchema>;
 interface ExpenseFormProps {
   initialData?: ExpenseFormData | null;
   categories: ExpenseCategory[];
+  dictionary: any;
 }
 
-function SubmitButton({ isEditing }: { isEditing: boolean }) {
+function SubmitButton({ isEditing, dictionary }: { isEditing: boolean, dictionary: any }) {
     const { pending } = useFormStatus();
     return (
         <Button type="submit" disabled={pending} aria-disabled={pending}>
-        {pending ? (isEditing ? 'Updating...' : 'Saving...') : (isEditing ? 'Update Expense' : 'Save Expense')}
+        {pending ? (isEditing ? dictionary.updating || 'Updating...' : dictionary.saving || 'Saving...') : 
+                  (isEditing ? dictionary.update_expense || 'Update Expense' : dictionary.save_expense || 'Save Expense')}
         </Button>
     );
 }
 
-export function ExpenseForm({ initialData, categories = [] }: ExpenseFormProps) {
+export function ExpenseForm({ initialData, categories = [], dictionary = {} }: ExpenseFormProps) {
   const isEditing = !!initialData?.id;
   const router = useRouter();
 
@@ -83,12 +85,13 @@ export function ExpenseForm({ initialData, categories = [] }: ExpenseFormProps) 
      if (state?.message) {
         if (state.errors && Object.keys(state.errors).length > 0) {
             // Error Toast
-             toast.error("Action Failed", {
+             toast.error(dictionary.action_failed || "Action Failed", {
                  description: state.message,
              });
         } else if (!state.errors) {
              // Success Toast
-             toast.success(isEditing ? "Expense Updated" : "Expense Saved", {
+             toast.success(isEditing ? (dictionary.expense_updated || "Expense Updated") : 
+                                      (dictionary.expense_saved || "Expense Saved"), {
                  description: state.message,
              });
               // Debounce or delay redirect slightly to allow user to see toast
@@ -96,7 +99,7 @@ export function ExpenseForm({ initialData, categories = [] }: ExpenseFormProps) 
         }
      }
      // Remove toast from dependency array
- }, [state, isEditing, router]);
+ }, [state, isEditing, router, dictionary]);
 
   // onSubmit remains the same
   const onSubmit = (formData: FormSchemaType) => {
@@ -126,7 +129,7 @@ export function ExpenseForm({ initialData, categories = [] }: ExpenseFormProps) 
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount (€)</FormLabel>
+              <FormLabel>{dictionary.amount || "Amount"} (€)</FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -150,7 +153,7 @@ export function ExpenseForm({ initialData, categories = [] }: ExpenseFormProps) 
             name="date"
             render={({ field }) => (
               <FormItem className="flex-1">
-                <FormLabel>Date</FormLabel>
+                <FormLabel>{dictionary.date || "Date"}</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -161,7 +164,7 @@ export function ExpenseForm({ initialData, categories = [] }: ExpenseFormProps) 
                           !field.value && 'text-muted-foreground'
                         )}
                       >
-                        {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                        {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
@@ -186,14 +189,14 @@ export function ExpenseForm({ initialData, categories = [] }: ExpenseFormProps) 
             name="category_id"
             render={({ field }) => (
               <FormItem className="flex-1">
-                <FormLabel>Category</FormLabel>
+                <FormLabel>{dictionary.category || "Category"}</FormLabel>
                 <Select
                   onValueChange={(value) => field.onChange(value === 'none' ? null : value)}
                   defaultValue={field.value ?? furnizimCategory?.id ?? 'none'}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
+                      <SelectValue placeholder={dictionary.select_category || "Select a category"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -216,10 +219,10 @@ export function ExpenseForm({ initialData, categories = [] }: ExpenseFormProps) 
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>{dictionary.description || "Description"}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="e.g., Cleaning supplies, Electricity bill March"
+                  placeholder={dictionary.expense_description_placeholder || "e.g., Cleaning supplies, Electricity bill March"}
                   className="resize-y min-h-[80px]"
                   {...field}
                   value={field.value ?? ''}
@@ -238,9 +241,9 @@ export function ExpenseForm({ initialData, categories = [] }: ExpenseFormProps) 
         {/* Buttons */}
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={() => router.back()}>
-            Cancel
+            {dictionary.cancel || "Cancel"}
           </Button>
-          <SubmitButton isEditing={isEditing} />
+          <SubmitButton isEditing={isEditing} dictionary={dictionary} />
         </div>
       </form>
     </Form>

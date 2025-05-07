@@ -1,6 +1,10 @@
-// src/components/revenue/report/ProfitBreakdownCard.tsx
+'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getDictionary } from "@/lib/dictionary";
 
 interface ProfitBreakdownCardProps {
     netProfit: number;
@@ -8,34 +12,63 @@ interface ProfitBreakdownCardProps {
     totalExpenses: number;
 }
 
-export default function ProfitBreakdownCard({ netProfit, grossProfit, totalExpenses }: ProfitBreakdownCardProps) {
+export default function ProfitBreakdownCard({
+    netProfit,
+    grossProfit,
+    totalExpenses,
+}: ProfitBreakdownCardProps) {
+    const params = useParams();
+    const lang = params?.lang as string || 'en';
+    const [dictionary, setDictionary] = useState<any>({});
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    useEffect(() => {
+        async function loadDictionary() {
+            try {
+                const dict = await getDictionary(lang as 'en' | 'sq');
+                setDictionary(dict);
+                setIsLoaded(true);
+            } catch (error) {
+                console.error('Failed to load dictionary:', error);
+                setIsLoaded(true);
+            }
+        }
+        loadDictionary();
+    }, [lang]);
+
+    if (!isLoaded) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Loading...</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="animate-pulse h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                </CardContent>
+            </Card>
+        );
+    }
+
     return (
         <Card>
-            <CardHeader className="pb-2 text-center"> {/* Center title */}
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Fitimi Neto {/* Net Profit */}
-                </CardTitle>
+            <CardHeader>
+                <CardTitle>{dictionary.profit_breakdown || 'Profit Breakdown'}</CardTitle>
             </CardHeader>
-            <CardContent className="text-center pb-4">
-                <p className="text-3xl font-bold mb-4 text-[#ff5a5f]"> {/* Added Airbnb red color */}
-                    {formatCurrency(netProfit)}
-                </p>
-                <h3 className="text-lg font-semibold mb-2 border-t pt-4">Ndarja e Fitimeve</h3> {/* Profit Breakdown */}
-                <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                        <span>Fitimet Bruto</span>{/* Gross Profit */}
-                        <span>{formatCurrency(grossProfit)}</span>
+            <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="flex flex-col">
+                        <span className="text-sm text-muted-foreground mb-1">{dictionary.net_profit || 'Net Profit'}</span>
+                        <span className={`text-xl font-bold ${netProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                            {formatCurrency(netProfit)}
+                        </span>
                     </div>
-                    <div className="flex justify-between">
-                        <span>Shpenzimet</span>{/* Expenses */}
-                        {/* Display expenses as negative */}
-                        <span className={totalExpenses > 0 ? "text-red-600" : ""}>
-                            {formatCurrency(-totalExpenses)}
-                         </span>
+                    <div className="flex flex-col">
+                        <span className="text-sm text-muted-foreground mb-1">{dictionary.gross_profit || 'Gross Profit'}</span>
+                        <span className="text-xl font-bold">{formatCurrency(grossProfit)}</span>
                     </div>
-                    <div className="flex justify-between border-t mt-2 pt-2 font-semibold">
-                        <span>Totali (Neto)</span>{/* Total (Net) */}
-                        <span className="text-[#ff5a5f]">{formatCurrency(netProfit)}</span> {/* Added Airbnb red color */}
+                    <div className="flex flex-col">
+                        <span className="text-sm text-muted-foreground mb-1">{dictionary.expenses || 'Expenses'}</span>
+                        <span className="text-xl font-bold text-red-500">-{formatCurrency(totalExpenses)}</span>
                     </div>
                 </div>
             </CardContent>
