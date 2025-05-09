@@ -151,8 +151,8 @@ export default function ExpensesPage() {
 
   return (
     <div className="pb-18">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">{dictionary.expenses || 'Expenses'}</h1>
+      <div className="flex justify-between items-center mb-1">
+        <h3 className="text-1xl font-semibold">{dictionary.expenses || 'Expenses'}</h3>
         <Link href="/expenses/add" className="group relative">
           <PlusCircle 
             className="h-8 w-8 transition-all duration-300 ease-in-out transform 

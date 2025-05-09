@@ -456,7 +456,7 @@ export default function SettingsPage() {
         {/* Header with title and avatar on same line */}
         <div className="flex justify-between items-center mb-6">
           {/* Title on the left */}
-          <h1 className="text-3xl font-bold">{dictionary?.settings || 'Settings'}</h1>
+          <h3 className="text-1xl font-bold">{dictionary?.settings || 'Settings'}</h3>
           
           {/* Avatar Display & Upload Trigger on the right */}
           <div className="relative group">
@@ -528,7 +528,7 @@ export default function SettingsPage() {
 
         {/* Profile Form Card */}
         <Card>
-          <CardHeader><CardTitle>{dictionary?.profile_settings || 'Profile Settings'}</CardTitle></CardHeader>
+          
           <CardContent>
             {profile ? (
               <form onSubmit={handleSubmit}>

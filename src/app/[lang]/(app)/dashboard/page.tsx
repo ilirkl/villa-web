@@ -1,6 +1,5 @@
 // app/(app)/dashboard/page.tsx
 import { createClient } from '@/lib/supabase/server';
-import BookingCalendar from '@/components/dashboard/BookingCalendar';
 import { Suspense } from 'react';
 import {
   startOfToday,
@@ -15,8 +14,8 @@ import { BookingCard } from '@/components/bookings/BookingCard';
 import { getDictionary } from '@/lib/dictionary';
 import { sq } from 'date-fns/locale';
 
-// Import our custom Albanian locale for FullCalendar
-import sqLocale from '@/lib/fullcalendar-sq-locale';
+// Import our custom calendar component instead of FullCalendar
+import CustomBookingCalendar from '@/components/dashboard/CustomBookingCalendar';
 
 // Helper function to safely parse and format dates with locale support
 const formatBookingDate = (dateString: string | null | undefined, locale: string): string => {
@@ -52,7 +51,7 @@ export default async function DashboardPage({ params }: { params: { lang: string
   // Fetch all bookings for calendar
   const { data: bookingsData, error: calendarError } = await supabase
     .from('bookings')
-    .select('id, start_date, end_date, guest_name');
+    .select('id, start_date, end_date, guest_name, source'); // Add source to the selection
 
   // Fetch today's check-ins
   const { data: todayCheckInsData, error: checkInsError } = await supabase
@@ -88,9 +87,9 @@ export default async function DashboardPage({ params }: { params: { lang: string
     bookingsData?.map((booking) => ({
       id: booking.id,
       title: booking.guest_name,
-      // Ensure start/end have time component if needed by calendar, or handle TZ
-      start: booking.start_date, // Adjust if calendar needs ISO strings or Date objects
-      end: booking.end_date, // Adjust if calendar needs ISO strings or Date objects
+      start: booking.start_date,
+      end: booking.end_date,
+      source: booking.source, // Add the source property
     })) || [];
 
   // Prepare data for BookingCards with pre-formatted dates
@@ -115,10 +114,10 @@ export default async function DashboardPage({ params }: { params: { lang: string
   return (
     <div className="space-y-8 pb-20">
       {/* Calendar */}
-      <h1 className="text-2xl font-semibold mb-4">{dictionary.booking_calendar}</h1>
+      <h3 className="text-1xl font-semibold mb-1">{dictionary.booking_calendar}</h3>
 
       <Suspense fallback={<div>{dictionary.loading_calendar}</div>}>
-        <BookingCalendar 
+        <CustomBookingCalendar 
           initialEvents={events} 
         />
       </Suspense>

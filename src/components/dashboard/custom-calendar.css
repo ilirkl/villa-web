@@ -1,0 +1,183 @@
+/* custom-calendar.css */
+
+.custom-calendar-outer-container {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 10px;
+  user-select: none;
+  overflow: hidden; 
+}
+
+.custom-calendar {
+  width: 100%;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 7px;
+}
+
+.calendar-title {
+  font-size: 1.125rem; /* 18px */
+  font-weight: 600;
+  color: #1f2937; /* Tailwind gray-800 */
+}
+
+.nav-button {
+  background-color: #fff;
+  border: 1px solid #d1d5db; /* Tailwind gray-300 */
+  border-radius: 12px;
+  padding: 6px; 
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563; /* Tailwind gray-600 */
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.nav-button:hover {
+  background-color: #f9fafb; /* Tailwind gray-50 */
+  border-color: #9ca3af; /* Tailwind gray-400 */
+}
+.nav-button:focus-visible {
+  outline: 2px solid #3b82f6; /* Tailwind blue-500 */
+  outline-offset: 1px;
+}
+
+.calendar-grid-container {
+  border: 1px solid #e5e7eb; /* Tailwind gray-200 */
+  border-radius: 12px;
+  box-shadow: 2px 4px 4px rgba(0, 0, 0, 0.08);
+  overflow: hidden; 
+}
+
+.calendar-weekday-header-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr)); 
+  background-color: #f9fafb; /* Tailwind gray-50 */
+  border-radius: 12px;
+  border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
+}
+
+.weekday-header-cell {
+  padding: 10px 4px; 
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.875rem; /* 14px */
+  color: #4b5563; /* Tailwind gray-600 */
+}
+
+.calendar-week-row {
+  position: relative; 
+  min-height: 50px; 
+  display: flex; 
+  flex-direction: column; 
+  border-radius: 12px;
+  border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
+}
+.calendar-week-row:last-child {
+  border-bottom: none;
+}
+
+.calendar-day-cells-container {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  width: 100%;
+  z-index: 0; 
+}
+
+.calendar-day-cell {
+  min-height: 60px; 
+  padding: 8px; 
+  border-radius: 12px;
+  border-right: 1px solid #e5e7eb; /* Tailwind gray-200 */
+  box-sizing: border-box; 
+  position: relative; 
+}
+
+.calendar-day-cell:last-child {
+  border-right: none;
+}
+
+.calendar-day-cell.is-today::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 1px solid black; /* Your desired border */
+  border-radius: 12px;
+  box-sizing: border-box;  /* Important: border is inside the pseudo-element's dimensions */
+  z-index: 0;              /* Place it behind the cell's direct content and event bars */
+  }
+
+.day-number {
+  font-size: 0.65rem; /* 14px */
+  text-align: right;
+  color: #374151; /* Tailwind gray-700 */
+  margin-bottom: 4px;
+}
+
+.current-month .day-number {
+  font-weight: 600; 
+}
+
+
+.other-month {
+  background-color: #f9fafb; /* Tailwind gray-50, or #f8fafc */
+}
+
+.other-month .day-number {
+  color: #9ca3af; /* Tailwind gray-400 */
+}
+
+/* Container for all event bars within a week */
+.calendar-event-bars-container {
+  position: absolute; 
+  top: 5px;
+  left: 0;
+  width: 100%;
+  height: 100%; 
+  pointer-events: none; 
+  z-index: 1; 
+}
+
+/* Wrapper for a single event bar segment (controls overall position and width of the segment) */
+.event-bar-segment-wrapper {
+  position: absolute; /* Positioned by JS (left, width, top) */
+  height: 22px; /* Height of the event bar */
+  box-sizing: border-box;
+  pointer-events: auto; /* Segments can be interactive */
+  cursor: grab; /* Or default, or pointer based on interaction needs */
+  transition: opacity 0.2s; 
+}
+.event-bar-segment-wrapper:hover {
+  opacity: 0.85;
+}
+
+/* The visual part of the event bar (controls background, actual visual width/offset, border-radius, title) */
+.event-bar-visual {
+ 
+  color: white;
+  font-size: 0.75rem; /* 12px */
+  font-weight: 500;
+  display: flex; /* For aligning the title */
+  align-items: center; /* Vertically center title */
+  padding: 0 6px; /* Horizontal padding for the title within the bar */
+  box-sizing: border-box; /* CRITICAL for padding and width/height to work as expected */
+  overflow: hidden; /* To clip the event title if it's too long */
+}
+
+
+
+.event-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Padding is handled by the parent .event-bar-visual */
+}

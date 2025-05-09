@@ -41,7 +41,7 @@ export default function LanguageSwitcher() {
   };
 
   return (
-    <div style={{ marginBottom: "1rem" }}>
+    <div style={{ marginBottom: "1rem", fontSize: "12px" }}>
       <label htmlFor="language-select" style={{ marginRight: 8 }}>
         {dictionary?.language || "Language"}:
       </label>
@@ -49,6 +49,7 @@ export default function LanguageSwitcher() {
         id="language-select"
         value={currentLocale}
         onChange={handleChange}
+        style={{ fontSize: "12px" }}
       >
         {languages.map((lang) => (
           <option key={lang.code} value={lang.code}>{lang.label}</option>

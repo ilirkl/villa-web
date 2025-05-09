@@ -428,9 +428,9 @@ export default async function RevenuePage({ params }: { params: { lang: string }
         // Main page container with padding, including bottom padding
         <div className="p-4 md:p-6 pb-20"> {/* Added bottom padding */}
             {/* Page Title */}
-            <h1 className="text-2xl font-semibold mb-6 text-gray-800 dark:text-gray-100">
+            <h3 className="text-1xl font-semibold mb-1">
                 {dictionary.finances}
-            </h1>
+            </h3>
             {/* Suspense handles the loading state while RevenueData fetches */}
             <Suspense fallback={<div className="text-center p-10">{dictionary.loading_revenue_data}</div>}>
                 {/* Render the server component that fetches and processes data */}
