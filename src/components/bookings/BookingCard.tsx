@@ -31,6 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import Image from 'next/image';
 
 interface BookingCardProps {
   booking: Booking;

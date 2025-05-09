@@ -1,16 +1,21 @@
 'use client';
 
-import { BookingCard } from '@/components/bookings/BookingCard';
-import Link from 'next/link';
+import { useEffect, useState, Suspense } from 'react';
 import { PlusCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Booking, BookingSource } from '@/lib/definitions';
 import { createClient } from '@/lib/supabase/client';
 import { SearchBar } from '@/components/SearchBar';
-import { FilterSheet } from '@/components/FilterSheet';
-import { parse, format } from 'date-fns';
-import { getDictionary } from '@/lib/dictionary';
 import { useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { parse, format } from 'date-fns';
+
+// Dynamically import components
+const BookingCard = dynamic(() => import('@/components/bookings/BookingCard').then(mod => ({ default: mod.BookingCard })), {
+  loading: () => <div className="animate-pulse h-32 bg-muted rounded-lg"></div>
+});
+
+const FilterSheet = dynamic(() => import('@/components/FilterSheet').then(mod => ({ default: mod.FilterSheet })));
 
 const bookingSourceOptions = [
   { id: 'DIRECT', name: 'Direct', color: '#10b981' },
@@ -53,7 +58,7 @@ export default function BookingsPage() {
   useEffect(() => {
     async function loadDictionary() {
       try {
-        const dict = await getDictionary(lang as 'en' | 'sq');
+        const dict = await import('@/lib/dictionary').then(mod => mod.getDictionary(lang as 'en' | 'sq'));
         setDictionary(dict);
       } catch (error) {
         console.error('Failed to load dictionary:', error);

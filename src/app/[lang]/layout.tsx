@@ -5,7 +5,14 @@ import { ThemeProvider } from "@/components/theme-provider"; // If using dark mo
 
 
 
-const inter = Inter({ subsets: ["latin"] });
+// Optimize font loading by specifying only needed characters
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+  // Optional: specify only characters you need
+  // variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: "Villa Management App",
