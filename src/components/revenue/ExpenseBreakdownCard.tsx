@@ -60,7 +60,7 @@ export default function ExpenseBreakdownCard({
 
     return (
         <Card>
-            <CardHeader className="pb-4">
+            <CardHeader className="pb-0 pt-0">
                 <CardTitle>{title}</CardTitle>
             </CardHeader>
             <CardContent>

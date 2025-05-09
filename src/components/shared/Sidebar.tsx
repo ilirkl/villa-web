@@ -52,7 +52,7 @@ export function Sidebar() {
 
   return (
     <aside className="fixed bottom-4 left-1/2 -translate-x-1/2 z-10 rounded-full bg-white/80 backdrop-blur-sm shadow-sm px-4 py-2 border">
-      <nav className="flex items-center justify-center gap-4">
+      <nav className="flex items-center justify-center gap-2">
         <TooltipProvider>
           {navItems.map((item) => (
             <Tooltip key={item.href}>
@@ -60,13 +60,13 @@ export function Sidebar() {
                 <Link
                   href={`/${lang}${item.href}`}
                   className={cn(
-                    "flex items-center justify-center rounded-full p-2 transition-colors",
+                    "flex items-center justify-center rounded-full p-4 transition-colors",
                     isActive(item.href)
                       ? "bg-[#ff5a5f]/10 text-[#ff5a5f]"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
+                  <item.icon className="h-7 w-7" />
                 </Link>
               </TooltipTrigger>
               <TooltipContent side="top">{item.label}</TooltipContent>

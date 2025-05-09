@@ -51,7 +51,7 @@ export default async function DashboardPage({ params }: { params: { lang: string
   // Fetch all bookings for calendar
   const { data: bookingsData, error: calendarError } = await supabase
     .from('bookings')
-    .select('id, start_date, end_date, guest_name, source'); // Add source to the selection
+    .select('id, start_date, end_date, guest_name, source, total_amount, prepayment, notes');
 
   // Fetch today's check-ins
   const { data: todayCheckInsData, error: checkInsError } = await supabase
@@ -89,7 +89,10 @@ export default async function DashboardPage({ params }: { params: { lang: string
       title: booking.guest_name,
       start: booking.start_date,
       end: booking.end_date,
-      source: booking.source, // Add the source property
+      source: booking.source,
+      total_amount: booking.total_amount,
+      prepayment: booking.prepayment,
+      notes: booking.notes,
     })) || [];
 
   // Prepare data for BookingCards with pre-formatted dates

@@ -1,10 +1,11 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getDictionary } from "@/lib/dictionary";
+import { ArrowUpCircle, Wallet, CreditCard, ReceiptText } from "lucide-react";
 
 interface MonthlySummaryCardProps {
     currentMonthProfit: number;
@@ -32,7 +33,7 @@ export default function MonthlySummaryCard({
                 setIsLoaded(true);
             } catch (error) {
                 console.error('Failed to load dictionary:', error);
-                setIsLoaded(true); // Set loaded even on error to avoid infinite loading
+                setIsLoaded(true);
             }
         }
         loadDictionary();
@@ -40,41 +41,74 @@ export default function MonthlySummaryCard({
 
     if (!isLoaded) {
         return (
-            <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                        Loading...
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-1">
-                    <div className="text-3xl font-bold">...</div>
+            <Card className="w-full animate-pulse">
+                <CardContent className="p-4">
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="h-16 bg-muted rounded"></div>
+                        <div className="h-16 bg-muted rounded"></div>
+                        <div className="h-16 bg-muted rounded"></div>
+                        <div className="h-16 bg-muted rounded"></div>
+                    </div>
                 </CardContent>
             </Card>
         );
     }
 
     return (
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {dictionary.monthly_net_profit || 'Monthly Net Profit'}
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1">
-                <div className="text-3xl font-bold">
-                    {formatCurrency(currentMonthProfit)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                    {dictionary.this_month || 'this month'}
-                </p>
-                <div className="flex items-center text-sm text-muted-foreground pt-2">
-                    <span>{dictionary.pending_gross || 'Pending Gross'} {formatCurrency(pendingGross)}</span>
-                    {pendingGross > 0 && (
-                        <span className="ml-auto text-green-500">+{formatCurrency(pendingGross)}</span>
-                    )}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                    {dictionary.gross || 'Gross'}: {formatCurrency(currentMonthGross)} | {dictionary.expenses || 'Expenses'}: {formatCurrency(currentMonthExpenses)}
+        <Card className="w-full p-1">
+            <CardContent className="p-2">
+                <div className="grid grid-cols-2 gap-3">
+                    {/* Net Profit */}
+                    <div className="flex items-center p-3 rounded-md border bg-background hover:bg-accent/10 transition-colors">
+                        <Wallet className="h-8 w-8 text-primary mr-3" />
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground">
+                                {dictionary.monthly_net_profit || 'Net Profit'}
+                            </p>
+                            <p className="text-lg font-bold">
+                                {formatCurrency(currentMonthProfit)}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Pending Gross */}
+                    <div className="flex items-center p-3 rounded-md border bg-background hover:bg-accent/10 transition-colors">
+                        <ArrowUpCircle className="h-8 w-8 text-green-500 mr-3" />
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground">
+                                {dictionary.pending_gross || 'Pending'}
+                            </p>
+                            <p className="text-lg font-bold text-green-500">
+                                {formatCurrency(pendingGross)}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Gross Income */}
+                    <div className="flex items-center p-3 rounded-md border bg-background hover:bg-accent/10 transition-colors">
+                        <CreditCard className="h-8 w-8 text-blue-500 mr-3" />
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground">
+                                {dictionary.gross || 'Gross'}
+                            </p>
+                            <p className="text-lg font-bold text-blue-500">
+                                {formatCurrency(currentMonthGross)}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Expenses */}
+                    <div className="flex items-center p-3 rounded-md border bg-background hover:bg-accent/10 transition-colors">
+                        <ReceiptText className="h-8 w-8 text-red-500 mr-3" />
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground">
+                                {dictionary.expenses || 'Expenses'}
+                            </p>
+                            <p className="text-lg font-bold text-red-500">
+                                {formatCurrency(currentMonthExpenses)}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </CardContent>
         </Card>

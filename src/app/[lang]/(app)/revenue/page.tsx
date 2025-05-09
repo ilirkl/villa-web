@@ -367,7 +367,7 @@ async function RevenueData({ params }: { params: { lang: string } }) {
     // --- Render Components ---
     // Pass the calculated data to the respective presentation components
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
             {/* Summary Card */}
             <MonthlySummaryCard
                 currentMonthProfit={currentMonthNetProfit}

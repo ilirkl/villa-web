@@ -2,8 +2,8 @@
 
 .custom-calendar-outer-container {
   background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm); /* 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) */
   padding: 10px;
   user-select: none;
   overflow: hidden; 
@@ -51,7 +51,7 @@
 .calendar-grid-container {
   border: 1px solid #e5e7eb; /* Tailwind gray-200 */
   border-radius: 12px;
-  box-shadow: 2px 4px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: 1px 2px 2px rgba(0, 0, 0, 0.08);
   overflow: hidden; 
 }
 
@@ -180,4 +180,63 @@
   overflow: hidden;
   text-overflow: ellipsis;
   /* Padding is handled by the parent .event-bar-visual */
+}
+
+
+/* Booking popup styles */
+/* Booking popup overlay */
+.booking-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Booking popup */
+.booking-popup {
+  width: 350px;
+  max-width: 90vw;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: zoomIn 0.2s ease-out;
+  transform-origin: center;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Make event bars clickable with hover effect */
+.event-bar-segment-wrapper {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.event-bar-segment-wrapper:hover {
+  transform: translateY(-2px);
+  z-index: 10;
 }

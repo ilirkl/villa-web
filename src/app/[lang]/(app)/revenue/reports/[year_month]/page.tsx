@@ -259,9 +259,9 @@ export default async function MonthlyReportPage({ params }: PageProps) {
 
     return (
         // Main container with padding (including bottom)
-        <div className="p-4 md:p-6 pb-20">
+        <div className="p-2 md:p-2 pb-20">
             {/* Header Section */}
-            <div className="flex items-center mb-6 gap-4">
+            <div className="flex items-center mb-6 gap-2">
                 {/* Back Button */}
                 <Button variant="ghost" size="icon" asChild>
                     <Link href="/revenue" aria-label={dictionary.back_to_finances || "Back to Finances"}>
@@ -269,13 +269,13 @@ export default async function MonthlyReportPage({ params }: PageProps) {
                     </Link>
                 </Button>
                 {/* Page Title */}
-                <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
+                <h3 className="text-1xl font-semibold text-gray-800 dark:text-gray-100">
                     {formattedMonthYear}
-                </h1>
+                </h3>
             </div>
 
             {/* Main Content Area */}
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-3">
                 {/* Profit Breakdown Card */}
                 <ProfitBreakdownCard
                     netProfit={netProfit}
@@ -285,7 +285,7 @@ export default async function MonthlyReportPage({ params }: PageProps) {
 
                 {/* Performance Statistics Card */}
                 <Card>
-                    <CardHeader><CardTitle>{dictionary.performance_stats || "Performance Statistics"}</CardTitle></CardHeader>
+                    <CardHeader className="pb-0"><CardTitle>{dictionary.performance_stats || "Performance Statistics"}</CardTitle></CardHeader>
                     <CardContent>
                         {/* Grid component displaying the stats */}
                         <PerformanceStatsGrid

@@ -2,13 +2,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import type { EventInput } from '@fullcalendar/core';
 import { useSwipeable } from 'react-swipeable';
 import './custom-calendar.css';
+import { BookingCard } from '@/components/bookings/BookingCard';
+import { format } from 'date-fns';
+import { Booking } from '@/lib/definitions';
 
 
-// ... (Interfaces and other functions remain the same)
 interface CustomBookingCalendarProps {
   initialEvents: EventInput[];
 }
@@ -22,6 +24,7 @@ interface CalendarEvent {
   originalStart: Date; 
   originalEnd: Date;   
   source?: string;  // Add this new field
+  extendedProps?: any; // Add this to store additional booking data
 }
 
 const bookingSourceOptions = [ 
@@ -44,6 +47,9 @@ const parseDateStringAsLocal = (dateStr: string): Date => {
 const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEvents }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [isPopupVisible, setIsPopupVisible] = useState(false);
+  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
   
   useEffect(() => {
     const processedEvents = initialEvents.map(event => {
@@ -80,13 +86,32 @@ const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEv
         end: endDate,
         originalStart: new Date(startDate.getTime()), 
         originalEnd: new Date(endDate.getTime()),     
-        source: event.source?.toString(),  // Add this line to capture the source
-        color: getSourceColor(event.source?.toString()),  // Use source-based color instead of event.color
+        source: event.source?.toString(),
+        color: getSourceColor(event.source?.toString()),
+        extendedProps: {
+          total_amount: event.total_amount || 0,
+          prepayment: event.prepayment || 0,
+          notes: event.notes || '',
+          ...event
+        }, // Store the original event data with explicit extraction of important fields
       };
     }).filter(Boolean) as CalendarEvent[]; 
     
     setEvents(processedEvents);
   }, [initialEvents]);
+  
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (isPopupVisible && !(e.target as Element).closest('.booking-popup') && 
+          !(e.target as Element).closest('.event-bar-segment-wrapper')) {
+        setIsPopupVisible(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isPopupVisible]);
   
   const goToPreviousMonth = () => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   const goToNextMonth = () => setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
@@ -98,6 +123,33 @@ const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEv
     trackMouse: true,
     delta: 50, 
   });
+  
+  const handleBookingClick = (event: CalendarEvent, e: React.MouseEvent) => {
+// Validate the source value
+    const validSources = ['DIRECT', 'AIRBNB', 'BOOKING'] as const;
+    const sourceValue = event.source && validSources.includes(event.source as any) 
+      ? (event.source as "DIRECT" | "AIRBNB" | "BOOKING") 
+      : "DIRECT";
+    
+    // Create a booking object from the event data
+    const booking: Booking = {
+      id: event.id,
+      guest_name: event.title,
+      start_date: format(event.originalStart, 'yyyy-MM-dd'),
+      end_date: format(event.originalEnd, 'yyyy-MM-dd'),
+      source: sourceValue,
+      total_amount: event.extendedProps?.total_amount || 0,
+      prepayment: event.extendedProps?.prepayment || 0,
+      notes: event.extendedProps?.notes || '',
+      created_at: null,
+      updated_at: null,
+      user_id: null
+    };
+    
+    
+    setSelectedBooking(booking);
+    setIsPopupVisible(true);
+  };
   
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay(); 
@@ -199,7 +251,6 @@ const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEv
                 {/* Event Bars */}
                 <div className="calendar-event-bars-container">
                   {events.map(event => {
-                    // ... (event rendering logic remains the same)
                     if (event.originalEnd.getTime() < weekStartDate.getTime() || event.originalStart.getTime() > weekEndDate.getTime()) {
                       return null; 
                     }
@@ -285,6 +336,7 @@ const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEv
                         role="button" 
                         tabIndex={0}  
                         aria-label={`Booking: ${event.title} from ${event.originalStart.toLocaleDateString()} to ${event.originalEnd.toLocaleDateString()}`}
+                        onClick={(e) => handleBookingClick(event, e)}
                       >
                         <div 
                           className={visualClassesArray.join(' ')} 
@@ -300,12 +352,35 @@ const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEv
             );
           })}
         </div>
+        
+        {/* Booking Popup */}
+        {isPopupVisible && selectedBooking && (
+          <div className="booking-popup-overlay">
+            <div className="booking-popup">
+              <div className="relative">
+                <button 
+                  className="absolute right-2 top-2 z-10 rounded-full bg-white/90 p-1 text-gray-600 shadow-sm hover:text-gray-900"
+                  onClick={() => setIsPopupVisible(false)}
+                >
+                  <X size={16} />
+                </button>
+                <BookingCard 
+                  booking={selectedBooking}
+                  formattedStartDate={format(new Date(selectedBooking.start_date), 'dd MMM')}
+                  formattedEndDate={format(new Date(selectedBooking.end_date), 'dd MMM')}
+                  hideFooter={false}
+                  hideNotes={false}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
   
   return (
-    <div className="custom-calendar-outer-container" {...handlers}>
+    <div className="custom-calendar-outer-container shadow-sm" {...handlers}>
       {renderCalendar()}
     </div>
   );

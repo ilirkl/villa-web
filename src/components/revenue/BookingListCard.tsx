@@ -54,7 +54,7 @@ export default function BookingListCard({
     if (!isLoaded) {
         return (
             <Card>
-                <CardHeader className="pb-4">
+                <CardHeader className="pb-0">
                     <CardTitle>Loading...</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -69,12 +69,12 @@ export default function BookingListCard({
 
     return (
         <Card>
-            <CardHeader className="pb-4">
-                <CardTitle>{title}</CardTitle>
+            <CardHeader className="pb-0 pt-0">
+                <CardTitle >{title}</CardTitle>
             </CardHeader>
             <CardContent>
                 {bookings.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
+                    <p className="text-sm text-muted-foreground text-center py-2">
                         {dictionary.no_bookings?.replace('{type}', title.toLowerCase()) || `No ${title.toLowerCase()} bookings.`}
                     </p>
                 ) : (
@@ -109,7 +109,7 @@ export default function BookingListCard({
                     </ul>
                 )}
                 {showSeeAllButton && seeAllLink && (
-                    <div className="mt-4 pt-4 border-t border-border">
+                    <div className="mt-2 pt-2 border-t border-border">
                         <Button variant="outline" className="w-full" asChild>
                             <Link href={seeAllLink}>{dictionary.see_all || 'See All'}</Link>
                         </Button>
