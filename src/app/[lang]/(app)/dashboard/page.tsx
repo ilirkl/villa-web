@@ -37,6 +37,15 @@ export default async function DashboardPage({ params }: { params: { lang: string
   const supabase = createClient();
   const dictionary = await getDictionary(params.lang as 'en' | 'sq');
 
+  // Get the current authenticated user
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Check if user is authenticated
+  if (!user) {
+    // This shouldn't happen due to middleware protection, but handle it gracefully
+    throw new Error('Authentication required');
+  }
+
   // Get today's date boundaries (use UTC for consistency if needed, but date comparison should be fine)
   const today = new Date();
   const todayStart = startOfToday(); // Keep as Date object initially
@@ -48,27 +57,31 @@ export default async function DashboardPage({ params }: { params: { lang: string
   const todayDateString = format(todayStart, 'yyyy-MM-dd');
   const weekEndDateString = format(weekEnd, 'yyyy-MM-dd');
 
-  // Fetch all bookings for calendar
+  // Fetch bookings for calendar with explicit user filtering
   const { data: bookingsData, error: calendarError } = await supabase
     .from('bookings')
-    .select('id, start_date, end_date, guest_name, source, total_amount, prepayment, notes');
+    .select('id, start_date, end_date, guest_name, source, total_amount, prepayment, notes')
+    .eq('user_id', user.id);
 
-  // Fetch today's check-ins
+  // Fetch today's check-ins with user filtering
   const { data: todayCheckInsData, error: checkInsError } = await supabase
     .from('bookings')
     .select('*') // Select all fields needed by BookingCard
+    .eq('user_id', user.id)
     .eq('start_date', todayDateString);
 
-  // Fetch today's check-outs
+  // Fetch today's check-outs with user filtering
   const { data: todayCheckOutsData, error: checkOutsError } = await supabase
     .from('bookings')
     .select('*') // Select all fields needed by BookingCard
+    .eq('user_id', user.id)
     .eq('end_date', todayDateString);
 
-  // Fetch upcoming check-ins this week
+  // Fetch upcoming check-ins this week with user filtering
   const { data: upcomingCheckInsData, error: upcomingError } = await supabase
     .from('bookings')
     .select('*') // Select all fields needed by BookingCard
+    .eq('user_id', user.id)
     .gt('start_date', todayDateString)
     .lte('start_date', weekEndDateString)
     .order('start_date', { ascending: true });

@@ -1,3 +1,5 @@
+// next.config.js
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -12,7 +14,7 @@ const nextConfig = {
   },
   reactStrictMode: true,
   experimental: {
-    optimizePackageImports: ['@radix-ui/react-*', '@fullcalendar/*', '@react-pdf/renderer'],
+    optimizePackageImports: ['@radix-ui/react-*', '@fullcalendar/*'],
     webpackBuildWorker: true,
   },
   webpack: (config, { dev, isServer }) => {
@@ -48,5 +50,10 @@ const nextConfig = {
 };
 
 const { i18n } = require('./next-i18next.config');
+module.exports = {
+  i18n,
+  // ...other config
+};
+
 module.exports = nextConfig; // Use CommonJS export
 

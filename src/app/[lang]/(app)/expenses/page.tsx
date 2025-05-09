@@ -146,8 +146,67 @@ export default function ExpensesPage() {
   }, [expenses, categoryFilter, searchTerm]);
 
   if (isLoading) return <div>{dictionary.loading_expenses || 'Loading expenses...'}</div>;
-  if (error) return <p className="text-red-500">{dictionary.error_loading_expenses || 'Error loading expenses:'} {error}</p>;
-  if (!expenses || expenses.length === 0) return <p>{dictionary.no_expenses || 'No expenses recorded yet.'}</p>;
+  if (error) return (
+    <div className="pb-18">
+      <div className="flex justify-between items-center mb-1">
+        <h3 className="text-1xl font-semibold">{dictionary.expenses || 'Expenses'}</h3>
+        <Link href="/expenses/add" className="group relative">
+          <PlusCircle 
+            className="h-8 w-8 transition-all duration-300 ease-in-out transform 
+                       group-hover:scale-110 group-hover:rotate-90 group-hover:shadow-lg 
+                       active:scale-95 active:rotate-180" 
+            style={{ 
+              color: '#ff5a5f',
+              filter: 'drop-shadow(0 0 0.5rem rgba(255, 90, 95, 0.3))'
+            }} 
+          />
+        </Link>
+      </div>
+      <p className="text-red-500">{dictionary.error_loading_expenses || 'Error loading expenses:'} {error}</p>
+    </div>
+  );
+
+  // Show UI even when no expenses exist
+  if (!expenses || expenses.length === 0) return (
+    <div className="pb-18">
+      <div className="flex justify-between items-center mb-1">
+        <h3 className="text-1xl font-semibold">{dictionary.expenses || 'Expenses'}</h3>
+        <Link href="/expenses/add" className="group relative">
+          <PlusCircle 
+            className="h-8 w-8 transition-all duration-300 ease-in-out transform 
+                       group-hover:scale-110 group-hover:rotate-90 group-hover:shadow-lg 
+                       active:scale-95 active:rotate-180" 
+            style={{ 
+              color: '#ff5a5f',
+              filter: 'drop-shadow(0 0 0.5rem rgba(255, 90, 95, 0.3))'
+            }} 
+          />
+        </Link>
+      </div>
+
+      <div className="flex gap-2 mb-6">
+        <div className="flex-1">
+          <SearchBar 
+            onSearch={setSearchTerm}
+            placeholder={dictionary.search_expenses || "Search description or category..."}
+          />
+        </div>
+        <FilterSheet 
+          title={dictionary.filter_expenses || "Filter Expenses"}
+          sortOptions={sortOptions}
+          filterOptions={filterOptions}
+          currentSortField={sortField}
+          currentSortOrder={sortOrder}
+          currentFilter={categoryFilter}
+          onSortFieldChange={(field) => setSortField(field as 'date' | 'amount')}
+          onSortOrderChange={setSortOrder}
+          onFilterChange={setCategoryFilter}
+        />
+      </div>
+      
+      <p className="text-center py-10">{dictionary.no_expenses || 'No expenses recorded yet.'}</p>
+    </div>
+  );
 
   return (
     <div className="pb-18">

@@ -119,8 +119,67 @@ export default function BookingsPage() {
   }, [bookings, sourceFilter, searchTerm]);
 
   if (isLoading) return <div>{dictionary.loading_bookings || 'Loading bookings...'}</div>;
-  if (error) return <p>{dictionary.error_loading_bookings || 'Error loading bookings:'} {error}</p>;
-  if (!bookings || bookings.length === 0) return <p>{dictionary.no_bookings_found || 'No bookings found.'}</p>;
+  if (error) return (
+    <div className="pb-18">
+      <div className="flex justify-between items-center mb-1">
+        <h3 className="text-1xl font-semibold">{dictionary.bookings || 'Bookings'}</h3>
+        <Link href="/bookings/add" className="group relative">
+          <PlusCircle 
+            className="h-8 w-8 transition-all duration-300 ease-in-out transform 
+                       group-hover:scale-110 group-hover:rotate-90 group-hover:shadow-lg 
+                       active:scale-95 active:rotate-180" 
+            style={{ 
+              color: '#ff5a5f',
+              filter: 'drop-shadow(0 0 0.5rem rgba(255, 90, 95, 0.3))'
+            }} 
+          />
+        </Link>
+      </div>
+      <p>{dictionary.error_loading_bookings || 'Error loading bookings:'} {error}</p>
+    </div>
+  );
+
+  // Show UI even when no bookings exist
+  if (!bookings || bookings.length === 0) return (
+    <div className="pb-18">
+      <div className="flex justify-between items-center mb-1">
+        <h3 className="text-1xl font-semibold">{dictionary.bookings || 'Bookings'}</h3>
+        <Link href="/bookings/add" className="group relative">
+          <PlusCircle 
+            className="h-8 w-8 transition-all duration-300 ease-in-out transform 
+                       group-hover:scale-110 group-hover:rotate-90 group-hover:shadow-lg 
+                       active:scale-95 active:rotate-180" 
+            style={{ 
+              color: '#ff5a5f',
+              filter: 'drop-shadow(0 0 0.5rem rgba(255, 90, 95, 0.3))'
+            }} 
+          />
+        </Link>
+      </div>
+      
+      <div className="flex gap-2 mb-6">
+        <div className="flex-1">
+          <SearchBar 
+            onSearch={setSearchTerm}
+            placeholder={dictionary.search_guest_name || "Search guest name..."}
+          />
+        </div>
+        <FilterSheet 
+          title={dictionary.filter_bookings || "Filter Bookings"}
+          sortOptions={sortOptions}
+          filterOptions={bookingSourceOptions}
+          currentSortField="start_date"
+          currentSortOrder={sortOrder}
+          currentFilter={sourceFilter}
+          onSortFieldChange={() => {}}
+          onSortOrderChange={setSortOrder}
+          onFilterChange={(filter) => setSourceFilter(filter as BookingSource | 'all')}
+        />
+      </div>
+      
+      <p className="text-center py-10">{dictionary.no_bookings_found || 'No bookings found.'}</p>
+    </div>
+  );
 
   return (
     <div className="pb-18">
@@ -153,7 +212,7 @@ export default function BookingsPage() {
           currentSortField="start_date"
           currentSortOrder={sortOrder}
           currentFilter={sourceFilter}
-          onSortFieldChange={() => {}} // Only one sort field, so no need to change
+          onSortFieldChange={() => {}}
           onSortOrderChange={setSortOrder}
           onFilterChange={(filter) => setSourceFilter(filter as BookingSource | 'all')}
         />

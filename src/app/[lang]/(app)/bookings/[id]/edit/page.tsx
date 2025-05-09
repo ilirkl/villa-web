@@ -11,10 +11,19 @@ export default async function EditBookingPage({ params }: EditBookingPageProps) 
   const { id } = params;
   const supabase = createClient();
 
+  // Get the current authenticated user
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // Check if user is authenticated
+  if (!user) {
+    throw new Error('Authentication required');
+  }
+
   const { data: booking, error } = await supabase
     .from('bookings')
     .select('*')
     .eq('id', id)
+    .eq('user_id', user.id) // IMPORTANT: Explicitly check user ownership
     .single();
 
   if (error || !booking) {

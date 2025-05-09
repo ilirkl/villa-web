@@ -15,12 +15,21 @@ async function LoadDataAndRenderForm({ expenseId, lang }: { expenseId: string, l
     const supabase = createClient();
     const dictionary = await getDictionary(lang as 'en' | 'sq');
 
+    // Get the current authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Check if user is authenticated
+    if (!user) {
+      throw new Error('Authentication required');
+    }
+
     // Fetch expense and categories concurrently
     const [expenseResult, categories] = await Promise.all([
         supabase
             .from('expenses')
             .select('*') // Select all fields needed for the form
             .eq('id', expenseId)
+            .eq('user_id', user.id) // IMPORTANT: Explicitly check user ownership
             .single(),
         getExpenseCategories() // Fetch categories for the dropdown
     ]);

@@ -104,7 +104,7 @@ export async function createOrUpdateExpense(
           category_id: finalCategoryId,
           date: dateString,
           // months: finalMonths, // Uncomment if using months
-          user_id: user.id, // IMPORTANT: Ensure user_id is set on update for RLS/ownership
+          user_id: user.id, // IMPORTANT: Always set user_id explicitly on update
           updated_at: new Date().toISOString(),
         })
         .eq('id', id)
@@ -120,7 +120,7 @@ export async function createOrUpdateExpense(
           category_id: finalCategoryId,
           date: dateString,
           // months: finalMonths, // Uncomment if using months
-          // user_id is set by the 'set_expenses_user_id' trigger on INSERT
+          user_id: user.id, // IMPORTANT: Always set user_id explicitly on insert
         })
         .select()
         .single();

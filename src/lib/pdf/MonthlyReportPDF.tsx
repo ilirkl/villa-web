@@ -262,4 +262,3 @@ export const MonthlyReportPDF = ({ month, year, data, lang = 'en', dictionary = 
 
 
 
-

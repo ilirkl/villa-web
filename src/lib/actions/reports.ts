@@ -163,4 +163,3 @@ export async function generateMonthlyReport(month: string, year: string, lang: s
   }
 }
 
-

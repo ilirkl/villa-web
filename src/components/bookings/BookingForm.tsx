@@ -29,11 +29,13 @@ import { useFormState, useFormStatus } from 'react-dom';
 import { useEffect } from 'react';
 import { toast } from "sonner";
 import { useRouter } from 'next/navigation';
+import DOMPurify from 'dompurify';
 
 // Zod schema update
 const FormSchema = z.object({
   id: z.string().uuid().optional(),
-  guest_name: z.string().min(1, 'Guest name is required'),
+  guest_name: z.string().min(1, 'Guest name is required').transform(val => 
+    DOMPurify.sanitize(val)),
   start_date: z.date({ required_error: 'Start date is required.' }),
   end_date: z.date({ required_error: 'End date is required.' }),
   total_amount: z.coerce.number().min(0, 'Must be positive'),
@@ -41,7 +43,8 @@ const FormSchema = z.object({
   source: z.enum(Constants.public.Enums.booking_source, {
     errorMap: (issue, ctx) => ({ message: 'Please select a valid booking source.' })
   }),
-  notes: z.string().nullable().optional(),
+  notes: z.string().nullable().optional().transform(val => 
+    val ? DOMPurify.sanitize(val) : val),
 }).refine((data) => data.end_date > data.start_date, {
   message: 'End date must be after start date',
   path: ['end_date'],

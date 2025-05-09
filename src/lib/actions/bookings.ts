@@ -81,7 +81,7 @@ export async function createOrUpdateBooking(prevState: BookingState | undefined,
           ...bookingData,
           start_date: startDateString,
           end_date: endDateString,
-          user_id: user.id, // Ensure user_id is set on update too
+          user_id: user.id, // IMPORTANT: Always set user_id explicitly on update
           updated_at: new Date().toISOString(),
          })
         .eq('id', id)
@@ -96,7 +96,7 @@ export async function createOrUpdateBooking(prevState: BookingState | undefined,
            ...bookingData,
            start_date: startDateString,
            end_date: endDateString,
-           // user_id is set by trigger 'set_bookings_user_id'
+           user_id: user.id, // IMPORTANT: Always set user_id explicitly on insert
          })
         .select()
         .single();

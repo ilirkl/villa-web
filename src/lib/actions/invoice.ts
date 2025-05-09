@@ -16,15 +16,16 @@ export async function generateInvoice(bookingId: string): Promise<Uint8Array> {
       throw new Error('Authentication required');
     }
 
-    // Fetch booking
+    // Fetch booking with explicit user_id check
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select('*')
       .eq('id', bookingId)
+      .eq('user_id', user.id) // IMPORTANT: Explicitly check user ownership
       .single();
 
     if (bookingError || !booking) {
-      throw new Error('Booking not found');
+      throw new Error('Booking not found or access denied');
     }
 
     // Fetch profile using the user's ID
@@ -75,6 +76,7 @@ export async function generateInvoice(bookingId: string): Promise<Uint8Array> {
     throw error;
   }
 }
+
 
 
 

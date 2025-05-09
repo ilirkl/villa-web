@@ -157,17 +157,27 @@ async function RevenueData({ params }: { params: { lang: string } }) {
 
     // --- Fetch Data from Supabase ---
     try {
+        // Get the current authenticated user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // Check if user is authenticated
+        if (!user) {
+          throw new Error('Authentication required');
+        }
+
         // Fetch bookings, expenses, and categories concurrently
         const [bookingsRes, expensesRes, categoriesRes] = await Promise.all([
             supabase
                 .from('bookings')
                 .select('id, start_date, end_date, total_amount') // NO 'status'
+                .eq('user_id', user.id) // IMPORTANT: Explicitly filter by user_id
                 .gte('start_date', format(threeMonthsAgo, 'yyyy-MM-dd'))
                 .lte('start_date', format(threeMonthsAhead, 'yyyy-MM-dd'))
                 .order('start_date', { ascending: false }),
             supabase
                 .from('expenses')
                 .select('id, date, amount, category_id')
+                .eq('user_id', user.id) // IMPORTANT: Explicitly filter by user_id
                 .gte('date', format(threeMonthsAgo, 'yyyy-MM-dd'))
                 .lte('date', format(threeMonthsAhead, 'yyyy-MM-dd'))
                 .order('date', { ascending: false }),
