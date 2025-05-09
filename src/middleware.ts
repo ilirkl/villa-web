@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { match } from '@formatjs/intl-localematcher';
 import Negotiator from 'negotiator';
+import { checkAuth } from './lib/supabase/middleware';
 
 const locales = ['en', 'sq'];
 const defaultLocale = 'en';
@@ -20,7 +21,7 @@ function getLocale(request: NextRequest) {
   return match(languages, locales, defaultLocale);
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
   // Skip public files and API routes
@@ -38,19 +39,59 @@ export function middleware(request: NextRequest) {
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   );
 
-  if (pathnameHasLocale) return;
-
-  // Redirect if there is no locale
+  // Get the locale for potential redirects
   const locale = getLocale(request);
-  request.nextUrl.pathname = `/${locale}${pathname}`;
-  
-  // Create response
-  const response = NextResponse.redirect(request.nextUrl);
-  
-  // Set cookie for future requests
-  response.cookies.set('NEXT_LOCALE', locale);
-  
-  return response;
+
+  // Check if the route is protected (part of the app layout)
+  const isProtectedRoute = 
+    (pathnameHasLocale && (
+      pathname.includes('/(app)') || 
+      pathname.includes('/dashboard') || 
+      pathname.includes('/revenue') || 
+      pathname.includes('/bookings') ||
+      pathname.includes('/expenses')
+    )) || 
+    (!pathnameHasLocale && (
+      pathname.includes('/dashboard') || 
+      pathname.includes('/revenue') || 
+      pathname.includes('/bookings') ||
+      pathname.includes('/expenses')
+    ));
+
+  // If it's a protected route, check authentication
+  if (isProtectedRoute) {
+    const session = await checkAuth(request);
+    
+    // If no session, redirect to login
+    if (!session) {
+      const loginPath = `/${locale}/login`;
+      const redirectUrl = new URL(loginPath, request.url);
+      
+      // Add the current path as 'next' parameter for redirect after login
+      if (pathnameHasLocale) {
+        redirectUrl.searchParams.set('next', pathname);
+      } else {
+        redirectUrl.searchParams.set('next', `/${locale}${pathname}`);
+      }
+      
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
+  // Handle locale redirects (only if not already handled)
+  if (!pathnameHasLocale) {
+    request.nextUrl.pathname = `/${locale}${pathname}`;
+    
+    // Create response
+    const response = NextResponse.redirect(request.nextUrl);
+    
+    // Set cookie for future requests
+    response.cookies.set('NEXT_LOCALE', locale);
+    
+    return response;
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
