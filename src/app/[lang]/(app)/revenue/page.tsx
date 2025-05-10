@@ -377,7 +377,7 @@ async function RevenueData({ params }: { params: { lang: string } }) {
     // --- Render Components ---
     // Pass the calculated data to the respective presentation components
     return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1 md:gap-2"> {/* Reduced gap on mobile */}
             {/* Summary Card */}
             <MonthlySummaryCard
                 currentMonthProfit={currentMonthNetProfit}
@@ -387,8 +387,8 @@ async function RevenueData({ params }: { params: { lang: string } }) {
             />
             {/* Revenue Chart Card */}
             <Card>
-                <CardHeader><CardTitle>{dictionary.monthly_net_profit}</CardTitle></CardHeader>
-                <CardContent className="h-[300px] md:h-[350px]">
+                <CardHeader className="p-3 md:p-6"><CardTitle className="text-base md:text-lg">{dictionary.monthly_net_profit}</CardTitle></CardHeader>
+                <CardContent className="p-2 md:p-6 h-[250px] md:h-[350px]">
                     <Suspense fallback={<div className="flex items-center justify-center h-full">{dictionary.loading_chart}</div>}>
                         {monthlyChartData && monthlyChartData.length > 0 ? (
                             <RevenueLineChart data={monthlyChartData} />
@@ -437,13 +437,13 @@ export default async function RevenuePage({ params }: { params: { lang: string }
     
     return (
         // Main page container with padding, including bottom padding
-        <div className="p-4 md:p-6 pb-20"> {/* Added bottom padding */}
+        <div className="p-2 md:p-6 pb-20"> {/* Reduced padding on mobile */}
             {/* Page Title */}
-            <h3 className="text-1xl font-semibold mb-1">
+            <h3 className="text-xl font-semibold mb-1 hidden">
                 {dictionary.finances}
             </h3>
             {/* Suspense handles the loading state while RevenueData fetches */}
-            <Suspense fallback={<div className="text-center p-10">{dictionary.loading_revenue_data}</div>}>
+            <Suspense fallback={<div className="text-center p-4">{dictionary.loading_revenue_data}</div>}>
                 {/* Render the server component that fetches and processes data */}
                 <RevenueData params={params} />
             </Suspense>

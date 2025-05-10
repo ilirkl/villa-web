@@ -206,7 +206,6 @@ export default function BookingsPage() {
     return (
       <div className="pb-18">
         <div className="flex justify-between items-center mb-1">
-          <h3 className="text-1xl font-semibold">{dictionary.bookings || 'Bookings'}</h3>
           <AddButton />
         </div>
         <p>{dictionary.error_loading_bookings || 'Error loading bookings:'} {error}</p>
@@ -234,7 +233,6 @@ export default function BookingsPage() {
     return (
       <div className="pb-18">
         <div className="flex justify-between items-center mb-1">
-          <h3 className="text-1xl font-semibold">{dictionary.bookings || 'Bookings'}</h3>
           <AddButton />
         </div>
         
@@ -299,7 +297,6 @@ export default function BookingsPage() {
   return (
     <div className="pb-18">
       <div className="flex justify-between items-center mb-1">
-        <h3 className="text-1xl font-semibold">{dictionary.bookings || 'Bookings'}</h3>
         <AddButton />
       </div>
 

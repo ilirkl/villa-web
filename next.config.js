@@ -57,3 +57,4 @@ module.exports = {
 
 module.exports = nextConfig; // Use CommonJS export
 
+

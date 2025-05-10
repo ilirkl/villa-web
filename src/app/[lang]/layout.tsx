@@ -15,8 +15,35 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Villa Management App",
-  description: "Manage your villa rentals",
+  title: "Villa Ime",
+  description: "Manage your rentals",
+  icons: {
+    icon: [
+      { url: '/images/favicon/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/images/favicon/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/images/favicon/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    other: [
+      {
+        rel: 'manifest',
+        url: '/images/favicon/site.webmanifest',
+      },
+      {
+        rel: 'icon',
+        url: '/images/favicon/android-chrome-192x192.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
+      {
+        rel: 'icon',
+        url: '/images/favicon/android-chrome-512x512.png',
+        sizes: '512x512',
+        type: 'image/png',
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -39,3 +66,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+

@@ -218,7 +218,6 @@ export default function ExpensesPage() {
   if (error) return (
     <div className="pb-18">
       <div className="flex justify-between items-center mb-1">
-        <h3 className="text-1xl font-semibold">{dictionary.expenses || 'Expenses'}</h3>
         <AddButton />
       </div>
       <p className="text-red-500">{dictionary.error_loading_expenses || 'Error loading expenses:'} {error}</p>
@@ -245,7 +244,6 @@ export default function ExpensesPage() {
   if (!expenses || expenses.length === 0) return (
     <div className="pb-18">
       <div className="flex justify-between items-center mb-1">
-        <h3 className="text-1xl font-semibold">{dictionary.expenses || 'Expenses'}</h3>
         <AddButton />
       </div>
 
@@ -292,7 +290,6 @@ export default function ExpensesPage() {
   return (
     <div className="pb-18">
       <div className="flex justify-between items-center mb-1">
-        <h3 className="text-1xl font-semibold">{dictionary.expenses || 'Expenses'}</h3>
         <AddButton />
       </div>
 

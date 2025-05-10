@@ -128,9 +128,8 @@ export default async function DashboardPage({ params }: { params: { lang: string
   }));
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-2 pb-20">
       {/* Calendar */}
-      <h3 className="text-1xl font-semibold mb-1">{dictionary.booking_calendar}</h3>
 
       <Suspense fallback={<div>{dictionary.loading_calendar}</div>}>
         <CustomBookingCalendar 
@@ -138,7 +137,7 @@ export default async function DashboardPage({ params }: { params: { lang: string
         />
       </Suspense>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-2 md:grid-cols-2">
         {/* Today's Activity Card */}
         <Card className="[&>*:last-child]:!pb-0">
           <CardHeader>
@@ -146,10 +145,10 @@ export default async function DashboardPage({ params }: { params: { lang: string
               {dictionary.todays_activity}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-3">
             {/* Check-ins Section */}
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-3">
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">
                 {dictionary.check_ins} ({todayCheckIns?.length || 0})
               </h3>
               <div className="space-y-4">

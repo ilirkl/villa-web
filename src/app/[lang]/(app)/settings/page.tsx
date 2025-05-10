@@ -452,21 +452,23 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="max-w-2xl mx-auto p-4 space-y-6">
-        {/* Header with title and avatar on same line */}
-        <div className="flex justify-between items-center mb-6">
-          {/* Title on the left */}
-          <h3 className="text-1xl font-bold">{dictionary?.settings || 'Settings'}</h3>
-          
-          {/* Avatar Display & Upload Trigger on the right */}
+      <div className="max-w-2xl mt-0 p-0 space-y-0">
+        {/* Language Switcher - moved to top left */}
+        <div className="flex justify-start mb-0">
+          <LanguageSwitcher />
+        </div>
+        
+        {/* Header with avatar centered */}
+        <div className="flex justify-center items-center mb-6">
+          {/* Avatar Display & Upload Trigger */}
           <div className="relative group">
             <Label htmlFor="avatar-upload" className="cursor-pointer" aria-label={dictionary?.change_profile_picture || "Change profile picture"}>
-              <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+              <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
                 <Image
                   src={displayAvatarSrc} 
                   alt={profile?.full_name ? `${profile.full_name}'s avatar` : (dictionary?.avatar || 'Avatar')} 
                   fill 
-                  sizes="64px" 
+                  sizes="96px" 
                   className="object-cover" 
                   priority 
                   key={displayAvatarSrc}
@@ -497,9 +499,6 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
-        
-        {/* Language Switcher */}
-        <LanguageSwitcher />
         
         {/* Crop Dialog */}
         <Dialog open={isCropDialogOpen} onOpenChange={(open) => { if (!open) { setImageToCrop(null); setCrop(undefined); } setIsCropDialogOpen(open); }}>
@@ -553,7 +552,6 @@ export default function SettingsPage() {
                   <div className="space-y-1.5"><Label htmlFor="address">{dictionary?.address || 'Address'}</Label><Input id="address" value={profile.address || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, address: e.target.value } : null)} disabled={isSaving}/></div>
                 </div>
                 
-                {/* Remove duplicate language switcher */}
 
                 {/* Action Buttons with updated layout */}
                 <div className="flex flex-row justify-between items-center gap-4 mt-6 pt-4 border-t dark:border-gray-700">
@@ -577,6 +575,8 @@ export default function SettingsPage() {
     </div>
   );
 } // End component
+
+
 
 
 
