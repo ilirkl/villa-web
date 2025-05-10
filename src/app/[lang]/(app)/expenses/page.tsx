@@ -2,45 +2,27 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { ExpenseCard } from '@/components/expenses/ExpenseCard';
+import { ExpenseForm } from '@/components/expenses/ExpenseForm';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import { PlusCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Expense, ExpenseCategory } from '@/lib/definitions';
-import { FilterSheet } from '@/components/FilterSheet'; // Updated import
+import { Expense, ExpenseCategory, ExpenseFormData } from '@/lib/definitions';
+import { FilterSheet } from '@/components/FilterSheet';
 import { SearchBar } from '@/components/SearchBar';
 import { getDictionary } from '@/lib/dictionary';
 import { useParams } from 'next/navigation';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 type ExpenseWithCategory = Expense & {
     expense_categories: Pick<ExpenseCategory, 'name'> | null;
 };
 
-// Define sort options for expenses
+// Define sort options
 const sortOptions = [
   { field: 'date', label: 'Date' },
   { field: 'amount', label: 'Amount' }
 ];
-
-// Category color mapping
-const getCategoryColor = (categoryName: string): string => {
-  switch (categoryName.toLowerCase()) {
-    case 'furnizim':
-      return '#34d399'; // Green
-    case 'mirembajtje':
-      return '#f59e0b'; // Amber
-    case 'pastrim':
-      return '#3b82f6'; // Blue
-    case 'komunalite':
-      return '#8b5cf6'; // Purple
-    case 'tjera':
-      return '#ef4444'; // Red
-    case 'komision':
-      return '#ec4899'; // Pink
-    default:
-      return '#6366f1'; // Default indigo
-  }
-};
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<ExpenseWithCategory[]>([]);
@@ -54,115 +36,208 @@ export default function ExpensesPage() {
   const [filterOptions, setFilterOptions] = useState<Array<{ id: string; name: string; color: string }>>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [dictionary, setDictionary] = useState<any>({});
+  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  
+  // New state for modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentExpense, setCurrentExpense] = useState<ExpenseFormData | null>(null);
+  
   const { lang } = useParams();
 
-  // Load dictionary
+  // Define modalTitle based on whether we're adding or editing
+  const modalTitle = currentExpense?.id 
+    ? (dictionary.edit_expense || "Edit Expense") 
+    : (dictionary.add_new_expense || "Add New Expense");
+
+  // Load dictionary and categories when the component mounts
   useEffect(() => {
-    async function loadDictionary() {
+    const loadInitialData = async () => {
       try {
+        // Load dictionary
         const dict = await getDictionary(lang as 'en' | 'sq');
         setDictionary(dict);
-      } catch (error) {
-        console.error('Failed to load dictionary:', error);
-      }
-    }
-    loadDictionary();
-  }, [lang]);
-
-  // Update sort options with translations
-  useEffect(() => {
-    if (dictionary.date && dictionary.amount) {
-      sortOptions[0].label = dictionary.date;
-      sortOptions[1].label = dictionary.amount;
-    }
-  }, [dictionary]);
-
-  // Fetch categories for filter options
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('expense_categories')
-        .select('*')
-        .order('name');
-      
-      if (data) {
-        setFilterOptions(data.map(cat => ({
+        
+        // Load categories
+        const supabase = createClient();
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('expense_categories')
+          .select('*')
+          .order('name');
+          
+        if (categoriesError) throw categoriesError;
+        
+        setCategories(categoriesData || []);
+        
+        // Also update filter options
+        const options = categoriesData?.map(cat => ({
           id: cat.id,
           name: cat.name,
-          color: getCategoryColor(cat.name)
-        })));
+          color: '#' + Math.floor(Math.random()*16777215).toString(16) // Random color
+        })) || [];
+        
+        setFilterOptions(options);
+      } catch (err: any) {
+        console.error('Error loading initial data:', err);
+        setError(err.message);
       }
     };
+    
+    loadInitialData();
+  }, [lang]);
 
-    fetchCategories();
-  }, []);
+  // Add a useEffect to load expenses
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      setIsLoading(true);
+      try {
+        const supabase = createClient();
+        
+        // First, fetch expenses with their categories
+        const { data, error } = await supabase
+          .from('expenses')
+          .select(`
+            *,
+            expense_categories (
+              name
+            )
+          `)
+          .order(sortField, { ascending: sortOrder === 'asc' });
+          
+        if (error) throw error;
+        
+        setExpenses(data || []);
+        setFilteredExpenses(data || []);
+      } catch (err: any) {
+        console.error('Error fetching expenses:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchExpenses();
+  }, [sortField, sortOrder, refreshTrigger]);
 
-  // Modify the fetchExpenses function to be reusable
-  const fetchExpenses = async () => {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('expenses')
-      .select('*, expense_categories ( name )')
-      .order(sortField, { ascending: sortOrder === 'asc' });
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setExpenses(data || []);
+  // Add useEffect for filtering expenses
+  useEffect(() => {
+    if (!expenses) return;
+    
+    let filtered = [...expenses];
+    
+    // Apply category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(expense => expense.category_id === categoryFilter);
     }
-    setIsLoading(false);
+    
+    // Apply search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(expense => 
+        expense.description?.toLowerCase().includes(term) || 
+        expense.expense_categories?.name?.toLowerCase().includes(term)
+      );
+    }
+    
+    setFilteredExpenses(filtered);
+  }, [expenses, categoryFilter, searchTerm]);
+
+  // Function to handle opening the modal for adding a new expense
+  const handleAddExpense = () => {
+    setCurrentExpense(null); // Reset current expense (for adding new)
+    setIsModalOpen(true);
   };
 
-  // Pass the refresh function down to ExpenseCard
+  // Function to handle opening the modal for editing an existing expense
+  const handleEditExpense = async (expenseId: string) => {
+    try {
+      // Don't set isLoading to true here, as it affects the whole page
+      // Instead, we could add a separate loading state for the modal
+      const supabase = createClient();
+      
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('id', expenseId)
+        .single();
+        
+      if (error) throw error;
+      
+      // Convert date string to Date object for the form
+      const expenseData: ExpenseFormData = {
+        ...data,
+        date: data.date ? new Date(data.date + 'T00:00:00') : undefined,
+      };
+      
+      setCurrentExpense(expenseData);
+      setIsModalOpen(true);
+    } catch (err: any) {
+      console.error('Error fetching expense:', err);
+      toast.error(dictionary.error_loading_expense || "Error loading expense");
+    }
+  };
+
+  // Function to handle form submission success
+  const handleFormSuccess = () => {
+    setIsModalOpen(false);
+    setCurrentExpense(null);
+    handleRefresh();
+  };
+
+  // Function to refresh the expenses list
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  // Modify the useEffect to include refreshTrigger
-  useEffect(() => {
-    fetchExpenses();
-  }, [sortField, sortOrder, refreshTrigger]);
+  // Replace the Add button with a button that opens the modal
+  const AddButton = () => (
+    <button 
+      onClick={handleAddExpense}
+      className="fixed bottom-25 right-6 z-10 group"
+    >
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-white shadow-lg"></div>
+        <PlusCircle 
+          className="h-12 w-12 transition-all duration-300 ease-in-out transform 
+                    group-hover:scale-110 group-hover:rotate-90
+                    active:scale-95 active:rotate-180 relative z-10" 
+          style={{ 
+            color: '#ff5a5f',
+            filter: 'drop-shadow(0 0 0.75rem rgba(255, 90, 95, 0.5))'
+          }} 
+        />
+        <div className="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-20 
+                      transition-opacity duration-300 z-20"></div>
+      </div>
+    </button>
+  );
 
-  // Apply filters and search
-  useEffect(() => {
-    let result = [...expenses];
-
-    // Apply category filter
-    if (categoryFilter !== 'all') {
-      result = result.filter(expense => expense.category_id === categoryFilter);
-    }
-
-    // Apply search to description and category name
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      result = result.filter(expense =>
-        expense.description?.toLowerCase().includes(searchLower) ||
-        expense.expense_categories?.name.toLowerCase().includes(searchLower)
-      );
-    }
-
-    setFilteredExpenses(result);
-  }, [expenses, categoryFilter, searchTerm]);
+  // Existing loading, error, and empty states...
 
   if (isLoading) return <div>{dictionary.loading_expenses || 'Loading expenses...'}</div>;
+  
   if (error) return (
     <div className="pb-18">
       <div className="flex justify-between items-center mb-1">
         <h3 className="text-1xl font-semibold">{dictionary.expenses || 'Expenses'}</h3>
-        <Link href="/expenses/add" className="group relative">
-          <PlusCircle 
-            className="h-8 w-8 transition-all duration-300 ease-in-out transform 
-                       group-hover:scale-110 group-hover:rotate-90 group-hover:shadow-lg 
-                       active:scale-95 active:rotate-180" 
-            style={{ 
-              color: '#ff5a5f',
-              filter: 'drop-shadow(0 0 0.5rem rgba(255, 90, 95, 0.3))'
-            }} 
-          />
-        </Link>
+        <AddButton />
       </div>
       <p className="text-red-500">{dictionary.error_loading_expenses || 'Error loading expenses:'} {error}</p>
+      
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{modalTitle}</DialogTitle>
+          </DialogHeader>
+          {isModalOpen && (
+            <ExpenseForm 
+              initialData={currentExpense} 
+              categories={categories}
+              dictionary={dictionary} 
+              onSuccess={handleFormSuccess} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 
@@ -171,17 +246,7 @@ export default function ExpensesPage() {
     <div className="pb-18">
       <div className="flex justify-between items-center mb-1">
         <h3 className="text-1xl font-semibold">{dictionary.expenses || 'Expenses'}</h3>
-        <Link href="/expenses/add" className="group relative">
-          <PlusCircle 
-            className="h-8 w-8 transition-all duration-300 ease-in-out transform 
-                       group-hover:scale-110 group-hover:rotate-90 group-hover:shadow-lg 
-                       active:scale-95 active:rotate-180" 
-            style={{ 
-              color: '#ff5a5f',
-              filter: 'drop-shadow(0 0 0.5rem rgba(255, 90, 95, 0.3))'
-            }} 
-          />
-        </Link>
+        <AddButton />
       </div>
 
       <div className="flex gap-2 mb-6">
@@ -205,6 +270,22 @@ export default function ExpensesPage() {
       </div>
       
       <p className="text-center py-10">{dictionary.no_expenses || 'No expenses recorded yet.'}</p>
+      
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{modalTitle}</DialogTitle>
+          </DialogHeader>
+          {isModalOpen && (
+            <ExpenseForm 
+              initialData={currentExpense} 
+              categories={categories}
+              dictionary={dictionary} 
+              onSuccess={handleFormSuccess} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 
@@ -212,17 +293,7 @@ export default function ExpensesPage() {
     <div className="pb-18">
       <div className="flex justify-between items-center mb-1">
         <h3 className="text-1xl font-semibold">{dictionary.expenses || 'Expenses'}</h3>
-        <Link href="/expenses/add" className="group relative">
-          <PlusCircle 
-            className="h-8 w-8 transition-all duration-300 ease-in-out transform 
-                       group-hover:scale-110 group-hover:rotate-90 group-hover:shadow-lg 
-                       active:scale-95 active:rotate-180" 
-            style={{ 
-              color: '#ff5a5f',
-              filter: 'drop-shadow(0 0 0.5rem rgba(255, 90, 95, 0.3))'
-            }} 
-          />
-        </Link>
+        <AddButton />
       </div>
 
       <div className="flex gap-2 mb-6">
@@ -251,9 +322,26 @@ export default function ExpensesPage() {
             key={expense.id} 
             expense={expense} 
             onDelete={handleRefresh}
+            onEdit={() => handleEditExpense(expense.id)}
           />
         ))}
       </div>
+      
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{modalTitle}</DialogTitle>
+          </DialogHeader>
+          {isModalOpen && (
+            <ExpenseForm 
+              initialData={currentExpense} 
+              categories={categories}
+              dictionary={dictionary} 
+              onSuccess={handleFormSuccess} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

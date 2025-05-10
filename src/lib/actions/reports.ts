@@ -15,6 +15,23 @@ export async function generateMonthlyReport(month: string, year: string, lang: s
     console.log('Starting report generation for:', { month, year, lang });
     const supabase = createClient();
 
+    // Get the authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Fetch profile image if user is authenticated
+    let profileImageUrl = undefined;
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .single();
+      
+      if (profile?.avatar_url) {
+        profileImageUrl = profile.avatar_url;
+      }
+    }
+
     // Parse the month and year as numbers
     const monthNum = parseInt(month, 10);
     const yearNum = parseInt(year, 10);
@@ -137,6 +154,7 @@ export async function generateMonthlyReport(month: string, year: string, lang: s
       year: year,
       lang: lang as 'en' | 'sq',
       dictionary,
+      profileImageUrl,
       data: {
         grossProfit,
         totalExpenses,
@@ -162,4 +180,5 @@ export async function generateMonthlyReport(month: string, year: string, lang: s
     throw error;
   }
 }
+
 

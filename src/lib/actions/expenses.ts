@@ -47,6 +47,15 @@ export async function createOrUpdateExpense(
   const cookieStore = cookies();
   const supabase = createActionClient();
 
+  // Check if formData is defined
+  if (!formData || !(formData instanceof FormData)) {
+    console.error("Invalid or missing FormData:", formData);
+    return { 
+      errors: { database: ["Invalid form data submission"] },
+      message: "Invalid form data submission" 
+    };
+  }
+
   // 1. Authenticate User
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -54,24 +63,60 @@ export async function createOrUpdateExpense(
   }
 
   // 2. Validate Form Data
-  // Convert category_id empty string to null before validation if necessary
   const rawFormData = Object.fromEntries(formData.entries());
-  
+  console.log('Raw form data received:', rawFormData);
+
   // Create a new object with explicit typing to allow null values
   const formDataForValidation: Record<string, string | number | null | Date> = {};
-  
+
   // Manually copy and convert values as needed
   Object.entries(rawFormData).forEach(([key, value]) => {
     // Only handle string values (ignore File objects if any)
     if (typeof value === 'string') {
       if (key === 'category_id' && value === '') {
         formDataForValidation[key] = null;
+      } else if (key === 'date') {
+        // Parse date string to Date object
+        try {
+          console.log('Parsing date string:', value);
+          // Ensure we have a valid date format (YYYY-MM-DD)
+          const dateObj = new Date(value);
+          console.log('Parsed date object:', dateObj);
+          console.log('Date is valid:', !isNaN(dateObj.getTime()));
+          
+          if (!isNaN(dateObj.getTime())) {
+            formDataForValidation[key] = dateObj;
+          } else {
+            throw new Error('Invalid date');
+          }
+        } catch (e) {
+          console.error('Error parsing date:', value, e);
+          // Try to fix the date format if possible
+          const parts = value.split(/[-T]/);
+          if (parts.length >= 3) {
+            try {
+              const fixedDate = new Date(`${parts[0]}-${parts[1]}-${parts[2]}`);
+              if (!isNaN(fixedDate.getTime())) {
+                formDataForValidation[key] = fixedDate;
+              } else {
+                formDataForValidation[key] = new Date(); // Use current date as fallback
+              }
+            } catch {
+              formDataForValidation[key] = new Date(); // Use current date as fallback
+            }
+          } else {
+            formDataForValidation[key] = new Date(); // Use current date as fallback
+          }
+        }
+      } else if (key === 'amount') {
+        formDataForValidation[key] = parseFloat(value);
       } else {
         formDataForValidation[key] = value;
       }
     }
   });
 
+  console.log('Form data for validation:', formDataForValidation);
   const validatedFields = ExpenseSchema.safeParse(formDataForValidation);
 
   if (!validatedFields.success) {

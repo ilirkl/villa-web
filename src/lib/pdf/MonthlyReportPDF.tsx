@@ -1,118 +1,165 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 import { sq } from 'date-fns/locale';
-import { translateExpenseCategory } from '@/lib/translations';
+// Assuming translateExpenseCategory is still needed for 'sq' if not in dictionary
+// import { translateExpenseCategory } from '@/lib/translations';
 
 // Define styles for the PDF
 const styles = StyleSheet.create({
   page: {
-    padding: 30,
+    padding: 25, // Reduced padding slightly for more content space
     fontFamily: 'Helvetica',
+    backgroundColor: '#FFFFFF', // Explicit white background for the page
   },
-  header: {
-    marginBottom: 20,
+  // --- HEADER ---
+  reportHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 25,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EAEAEA',
   },
-  title: {
-    fontSize: 24,
-    marginBottom: 10,
-    color: '#1a1a1a',
+  reportHeaderText: {
+    flex: 1,
   },
-  subtitle: {
+  mainTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#1a202c', // Darker, more modern title color
+    marginBottom: 4,
+  },
+  subTitle: {
     fontSize: 14,
-    color: '#666666',
-    marginBottom: 20,
+    color: '#718096', // Softer subtitle color
   },
-  section: {
+  logo: {
+    width: 80, // Adjust as needed
+    height: 40, // Adjust as needed
+    // If you have a logo, you can add it here:
+    // E.g., border: 1, borderColor: '#DDDDDD', padding: 5, textAlign: 'center'
+  },
+  logoPlaceholderText: {
+    fontSize: 10,
+    color: '#A0AEC0',
+    textAlign: 'center',
+  },
+
+  // --- SECTION STYLING ---
+  sectionContainer: {
     marginBottom: 20,
+    backgroundColor: '#F7FAFC', // Light background for sections
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333333',
-    padding: 5,
-    backgroundColor: '#f5f5f5',
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 5,
+    color: '#2D3748', // Section title color
+    marginBottom: 12,
+    paddingBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
+    borderBottomColor: '#E2E8F0',
   },
-  label: {
-    fontSize: 12,
-    color: '#666666',
-  },
-  value: {
-    fontFamily: 'Helvetica',
-    fontSize: 12,
-  },
-  currencyValue: {
-    fontFamily: 'Helvetica',
-    fontSize: 12,
-  },
-  highlightedValue: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 12,
-    color: '#ff5a5f', // Airbnb-style red
-  },
-  valueGroup: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  percentage: {
-    fontSize: 12,
-    color: '#666666',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 30,
-    left: 30,
-    right: 30,
-    textAlign: 'center',
-    fontSize: 10,
-    color: '#999999',
-  },
-  chart: {
-    marginVertical: 10,
-    height: 150,
-  },
-  // Add new styles for expense breakdown
-  expenseRow: {
-    marginBottom: 10, // Space between expense items
-  },
-  expenseHeader: {
+
+  // --- TWO COLUMN LAYOUT FOR SUMMARY & METRICS ---
+  twoColumnContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 2,
+    gap: 15, // Space between columns
+    marginBottom: 20,
   },
-  expenseName: {
+  column: {
+    flex: 1, // Each column takes up equal space
+  },
+
+  // --- DATA ROW STYLING (for summary/metrics) ---
+  dataRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EDF2F7',
+  },
+  dataRowLast: { // No bottom border for the last item in a list
+    borderBottomWidth: 0,
+  },
+  dataLabel: {
     fontSize: 11,
-    color: '#333333',
+    color: '#4A5568', // Label color
   },
-  expenseAmount: {
+  dataValue: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 12,
+    color: '#2D3748', // Value color
+  },
+  dataValueCurrency: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 12,
+    color: '#2D3748',
+  },
+  highlightedDataValue: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 14, // Slightly larger for emphasis
+    color: '#FF5A5F', // A warm, less aggressive accent (could be Airbnb red too: '#FF5A5F')
+  },
+
+  // --- EXPENSE BREAKDOWN STYLING ---
+  expenseItemContainer: {
+    marginBottom: 12,
+  },
+  expenseItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+  expenseItemName: {
+    fontSize: 11,
+    color: '#4A5568',
+    flex: 1, // Allow name to take available space
+    marginRight: 5,
+  },
+  expenseItemAmount: {
     fontSize: 11,
     fontFamily: 'Helvetica-Bold',
+    color: '#2D3748',
+  },
+  expenseItemDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   progressBarContainer: {
-    height: 6,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 3,
+    flex: 1, // Take remaining width
+    height: 8,
+    backgroundColor: '#E2E8F0', // Lighter background for progress bar
+    borderRadius: 4,
+    marginRight: 8,
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#ff5a5f',
-    borderRadius: 3,
+    backgroundColor: '#FF5A5F', // A calmer blue, or use an accent: '#DD6B20' or '#FF5A5F'
+    borderRadius: 4,
   },
   percentageText: {
     fontSize: 10,
-    color: '#666666',
-    marginLeft: 4,
+    color: '#718096',
+    minWidth: 35, // Ensure space for "100.0%"
+    textAlign: 'right',
   },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+
+  // --- FOOTER ---
+  footer: {
+    position: 'absolute',
+    bottom: 20, // Slightly higher
+    left: 25,
+    right: 25,
+    textAlign: 'center',
+    fontSize: 9,
+    color: '#A0AEC0', // Softer footer text
   },
 });
 
@@ -127,138 +174,165 @@ interface MonthlyReportPDFProps {
     totalNightsReserved: number;
     averageStay: number;
     expenseBreakdown: Array<{
-      name: string;
+      name: string; // This should be the key for translation
       value: number;
       percentage: number;
     }>;
   };
   lang?: 'en' | 'sq';
-  dictionary?: any;
+  dictionary?: any; // Your dictionary structure
+  logoUrl?: string; // Optional URL for the logo
+  profileImageUrl?: string; // Optional URL for the profile image
 }
 
 // Helper function to format currency with space
 const formatCurrencyValue = (amount: number) => {
-  return `€ ${amount.toLocaleString()}`; // Note the space after €
+  return `€ ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
-export const MonthlyReportPDF = ({ month, year, data, lang = 'en', dictionary = {} }: MonthlyReportPDFProps) => {
-  // Use dictionary for translations if available
-  const report = dictionary.monthly_report || {};
+export const MonthlyReportPDF = ({
+  month,
+  year,
+  data,
+  lang = 'en',
+  dictionary = {},
+  logoUrl,
+  profileImageUrl
+}: MonthlyReportPDFProps) => {
+  const t = (key: string, section?: string, defaultValue?: string) => {
+    if (section && dictionary[section] && dictionary[section][key]) {
+      return dictionary[section][key];
+    }
+    if (dictionary.monthly_report && dictionary.monthly_report[key]) {
+      return dictionary.monthly_report[key];
+    }
+    return defaultValue || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const translateExpenseName = (expenseKey: string) => {
+    if (dictionary.expense_categories && dictionary.expense_categories[expenseKey]) {
+      return dictionary.expense_categories[expenseKey];
+    }
+    // Fallback if using translateExpenseCategory function was intended for 'sq'
+    // if (lang === 'sq') {
+    //   return translateExpenseCategory(expenseKey, 'sq');
+    // }
+    return expenseKey; // Return the key if no translation is found
+  };
   
-  // Process expense breakdown to ensure names are translated
   const translatedExpenseBreakdown = data.expenseBreakdown.map(expense => ({
     ...expense,
-    // Only translate if the language is English and we have a dictionary
-    name: lang === 'en' && dictionary.expense_categories ? 
-      (dictionary.expense_categories[expense.name] || expense.name) : 
-      expense.name
+    name: translateExpenseName(expense.name)
   }));
-  
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>{report.title || 'Monthly Financial Report'}</Text>
-          <Text style={styles.subtitle}>{`${month} ${year}`}</Text>
+        {/* --- HEADER --- */}
+        <View style={styles.reportHeader}>
+          <View style={styles.reportHeaderText}>
+            <Text style={styles.mainTitle}>{t('title', 'monthly_report', 'Monthly Financial Report')}</Text>
+            <Text style={styles.subTitle}>{`${month} ${year}`}</Text>
+          </View>
+          {logoUrl ? (
+            <Image style={styles.logo} src={logoUrl} />
+          ) : profileImageUrl ? (
+            <Image style={styles.logo} src={profileImageUrl} />
+          ) : (
+            <View style={styles.logo}>
+              <Text style={styles.logoPlaceholderText}>{t('company_name', 'monthly_report', 'Your Company')}</Text>
+            </View>
+          )}
         </View>
 
-        {/* Financial Summary Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{report.financial_summary || 'Financial Summary'}</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>{report.gross_profit || 'Gross Profit'}</Text>
-            <Text style={styles.currencyValue}>
-              {formatCurrencyValue(data.grossProfit)}
-            </Text>
+        {/* --- TWO COLUMN LAYOUT FOR SUMMARY & METRICS --- */}
+        <View style={styles.twoColumnContainer}>
+          {/* --- FINANCIAL SUMMARY --- */}
+          <View style={[styles.column, styles.sectionContainer]}>
+            <Text style={styles.sectionTitle}>{t('financial_summary', 'monthly_report', 'Financial Summary')}</Text>
+            <View style={styles.dataRow}>
+              <Text style={styles.dataLabel}>{t('gross_profit', 'monthly_report', 'Gross Profit')}</Text>
+              <Text style={styles.dataValueCurrency}>
+                {formatCurrencyValue(data.grossProfit)}
+              </Text>
+            </View>
+            <View style={styles.dataRow}>
+              <Text style={styles.dataLabel}>{t('total_expenses', 'monthly_report', 'Total Expenses')}</Text>
+              <Text style={styles.dataValueCurrency}>
+                {formatCurrencyValue(data.totalExpenses)}
+              </Text>
+            </View>
+            <View style={[styles.dataRow, styles.dataRowLast]}>
+              <Text style={styles.dataLabel}>{t('net_profit', 'monthly_report', 'Net Profit')}</Text>
+              <Text style={styles.highlightedDataValue}>
+                {formatCurrencyValue(data.netProfit)}
+              </Text>
+            </View>
           </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>{report.total_expenses || 'Total Expenses'}</Text>
-            <Text style={styles.currencyValue}>
-              {formatCurrencyValue(data.totalExpenses)}
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>{report.net_profit || 'Net Profit'}</Text>
-            <Text style={styles.highlightedValue}>
-              {formatCurrencyValue(data.netProfit)}
-            </Text>
+
+          {/* --- PERFORMANCE METRICS --- */}
+          <View style={[styles.column, styles.sectionContainer]}>
+            <Text style={styles.sectionTitle}>{t('performance_metrics', 'monthly_report', 'Performance Metrics')}</Text>
+            <View style={styles.dataRow}>
+              <Text style={styles.dataLabel}>{t('occupancy_rate', 'monthly_report', 'Occupancy Rate')}</Text>
+              <Text style={styles.highlightedDataValue}>
+                {data.occupancyRate.toFixed(1)}%
+              </Text>
+            </View>
+            <View style={styles.dataRow}>
+              <Text style={styles.dataLabel}>{t('total_nights_reserved', 'monthly_report', 'Total Nights Reserved')}</Text>
+              <Text style={styles.dataValue}>
+                {data.totalNightsReserved.toFixed(0)}
+              </Text>
+            </View>
+            <View style={[styles.dataRow, styles.dataRowLast]}>
+              <Text style={styles.dataLabel}>{t('average_stay', 'monthly_report', 'Average Stay')}</Text>
+              <Text style={styles.dataValue}>
+                {data.averageStay.toFixed(1)} {t('nights', 'monthly_report', 'nights')}
+              </Text>
+            </View>
           </View>
         </View>
 
-        {/* Performance Metrics */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{report.performance_metrics || 'Performance Metrics'}</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>{report.occupancy_rate || 'Occupancy Rate'}</Text>
-            <Text style={styles.highlightedValue}>
-              {data.occupancyRate.toFixed(1)}%
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>{report.total_nights_reserved || 'Total Nights Reserved'}</Text>
-            <Text style={styles.value}>
-              {data.totalNightsReserved.toFixed(0)}
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>{report.average_stay || 'Average Stay Duration'}</Text>
-            <Text style={styles.value}>
-              {data.averageStay.toFixed(1)} {report.nights || 'nights'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Updated Expense Breakdown Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{report.expense_breakdown || 'Expense Breakdown'}</Text>
+        {/* --- EXPENSE BREAKDOWN --- */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>{t('expense_breakdown', 'monthly_report', 'Expense Breakdown')}</Text>
           {translatedExpenseBreakdown.map((expense, index) => (
-            <View key={index} style={styles.expenseRow}>
-              {/* Expense Header with Name and Amount */}
-              <View style={styles.expenseHeader}>
-                <Text style={styles.expenseName}>{expense.name}</Text>
-                <Text style={styles.expenseAmount}>
+            <View key={index} style={styles.expenseItemContainer}>
+              <View style={styles.expenseItemHeader}>
+                <Text style={styles.expenseItemName}>{expense.name}</Text>
+                <Text style={styles.expenseItemAmount}>
                   {formatCurrencyValue(expense.value)}
                 </Text>
               </View>
-              
-              {/* Progress Bar Row */}
-              <View style={styles.progressRow}>
-                {/* Progress Bar */}
-                <View style={[styles.progressBarContainer, { flex: 1 }]}>
-                  <View 
+              <View style={styles.expenseItemDetails}>
+                <View style={styles.progressBarContainer}>
+                  <View
                     style={[
-                      styles.progressBarFill, 
+                      styles.progressBarFill,
                       { width: `${Math.min(expense.percentage, 100)}%` }
-                    ]} 
+                    ]}
                   />
                 </View>
-                {/* Percentage Text */}
                 <Text style={styles.percentageText}>
                   {expense.percentage.toFixed(1)}%
                 </Text>
               </View>
             </View>
           ))}
+          {translatedExpenseBreakdown.length === 0 && (
+            <Text style={styles.dataLabel}>{t('no_expenses_recorded', 'monthly_report', 'No expenses recorded for this period.')}</Text>
+          )}
         </View>
 
-        {/* Footer */}
+        {/* --- FOOTER --- */}
         <Text style={styles.footer}>
-          {report.generated_on || 'Generated on'} {format(new Date(), 'PPP', { locale: lang === 'sq' ? sq : undefined })}
+          {t('generated_on', 'monthly_report', 'Report generated on')}{' '}
+          {format(new Date(), 'PPP p', { locale: lang === 'sq' ? sq : undefined })}
         </Text>
       </Page>
     </Document>
   );
 };
-
-
-
-
-
-
-
-
-
-
 
 

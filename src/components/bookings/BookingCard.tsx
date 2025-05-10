@@ -40,6 +40,7 @@ interface BookingCardProps {
   hideFooter?: boolean;
   hideNotes?: boolean;
   onDelete?: () => void;
+  onEdit?: () => void; // Add this prop
 }
 
 export function BookingCard({
@@ -48,7 +49,8 @@ export function BookingCard({
   formattedEndDate,   // Destructure the new prop
   hideFooter = false,
   hideNotes = false,
-  onDelete
+  onDelete,
+  onEdit
 }: BookingCardProps) {
 
   // Function to determine badge styling based on source (Keep as is)
@@ -134,17 +136,15 @@ export function BookingCard({
   };
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="mb-3">{booking.guest_name}</CardTitle>
-            {/* --- CHANGE HERE --- */}
-            {/* Use the pre-formatted date strings directly */}
             <CardDescription>
               {formattedStartDate} - {formattedEndDate}
             </CardDescription>
-            {/* --- END CHANGE --- */}
+            
           </div>
           <div className="text-right">
             <div className="text-[#ff5a5f] font-bold">
@@ -166,14 +166,17 @@ export function BookingCard({
         </CardContent>
       )}
       {!hideFooter && (
-        <CardFooter className="flex justify-between items-center">
-          <Badge
-            variant="outline"
-            className={`flex items-center gap-1 text-xs ${getSourceBadgeStyle(booking.source)}`}
+        <CardFooter className="flex justify-between gap-2 pt-2">
+          {/* Source badge on the left */}
+          <Badge 
+            variant="outline" 
+            className={`${getSourceBadgeStyle(booking.source)}`}
           >
-            <Tag className="h-3 w-3" />
+            <Tag className="h-3 w-3 mr-1" />
             {booking.source}
           </Badge>
+          
+          {/* Icons on the right */}
           <div className="flex gap-2">
             <FileText
               className="h-6 w-6 text-[#ff5a5f] cursor-pointer transition-all duration-300 ease-in-out transform
@@ -199,11 +202,11 @@ export function BookingCard({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Link href={`/bookings/${booking.id}/edit`}>
+            <button onClick={onEdit} className="p-0 bg-transparent border-none">
               <Pencil className="h-6 w-6 transition-all duration-300 ease-in-out transform
-                            text-[#ff5a5f] hover:scale-110
-                            active:scale-95 active:rotate-12 cursor-pointer" />
-            </Link>
+                          text-[#ff5a5f] hover:scale-110
+                          active:scale-95 active:rotate-12 cursor-pointer" />
+            </button>
           </div>
         </CardFooter>
       )}

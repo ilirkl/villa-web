@@ -40,13 +40,14 @@ type ExpenseWithCategory = Expense & {
 interface ExpenseCardProps {
   expense: ExpenseWithCategory;
   onDelete?: () => void;
+  onEdit?: () => void; // Add this prop
 }
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(amount);
 };
 
-export function ExpenseCard({ expense, onDelete }: ExpenseCardProps) {
+export function ExpenseCard({ expense, onDelete, onEdit }: ExpenseCardProps) {
   const { lang } = useParams();
   const [dictionary, setDictionary] = useState<any>({});
 
@@ -100,7 +101,7 @@ export function ExpenseCard({ expense, onDelete }: ExpenseCardProps) {
   };
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
@@ -125,7 +126,7 @@ export function ExpenseCard({ expense, onDelete }: ExpenseCardProps) {
           <p className="text-sm text-muted-foreground italic">No details provided.</p>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between items-center">
+      <CardFooter className="flex justify-between gap-2 pt-2">
         {expense.expense_categories?.name && (
           <Badge 
             variant="outline" 
@@ -155,13 +156,11 @@ export function ExpenseCard({ expense, onDelete }: ExpenseCardProps) {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Link href={`/expenses/${expense.id}/edit`}>
-            <Pencil 
-              className="h-6 w-6 transition-all duration-300 ease-in-out transform 
-                        text-[#ff5a5f] hover:scale-110 
-                        active:scale-95 active:rotate-12" 
-            />
-          </Link>
+          <button onClick={onEdit} className="p-0 bg-transparent border-none">
+            <Pencil className="h-6 w-6 transition-all duration-300 ease-in-out transform
+                        text-[#ff5a5f] hover:scale-110
+                        active:scale-95 active:rotate-12 cursor-pointer" />
+          </button>
         </div>
       </CardFooter>
     </Card>

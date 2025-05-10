@@ -76,17 +76,3 @@ export async function generateInvoice(bookingId: string): Promise<Uint8Array> {
     throw error;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

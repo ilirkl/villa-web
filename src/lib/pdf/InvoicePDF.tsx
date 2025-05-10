@@ -1,117 +1,165 @@
 import React from 'react';
-import { Document, Page, Text, View, Font, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Font, StyleSheet, Image } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 import { Booking } from '@/lib/definitions';
+import path from 'path';
 
-// Register fonts using standard web-safe font
+// Construct absolute paths to the font files located in the 'public' directory
+const robotoRegularPath = path.join(process.cwd(), 'public', 'fonts', 'Roboto-Regular.ttf');
+const robotoBoldPath = path.join(process.cwd(), 'public', 'fonts', 'Roboto-Bold.ttf');
+
+// Register fonts using local paths
 Font.register({
-  family: 'Helvetica',
+  family: 'Roboto',
   fonts: [
-    { 
-      src: 'https://fonts.gstatic.com/s/helveticaneue/v70/1Ptsg8zYS_SKggPNyCg4TYFv.ttf',
-      fontWeight: 'normal'
+    {
+      src: robotoRegularPath,
+      fontWeight: 'normal',
     },
     {
-      src: 'https://fonts.gstatic.com/s/helveticaneue/v70/1Ptsg8zYS_SKggPNyCg4QIFv.ttf',
-      fontWeight: 'bold'
-    }
-  ]
+      src: robotoBoldPath,
+      fontWeight: 'bold',
+    },
+  ],
 });
 
 // Define styles for the PDF
 const styles = StyleSheet.create({
   page: {
-    padding: 30,
-    fontFamily: 'Helvetica',
+    padding: 40,
+    fontFamily: 'Roboto',
+    backgroundColor: '#FFFFFF',
   },
   header: {
-    marginBottom: 20,
-  },
-  headerRow: {
+    marginBottom: 30,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    alignItems: 'flex-start',
   },
-  hotelInfo: {
-    marginBottom: 20,
-    maxWidth: '60%', // Ensure company details don't overlap with invoice title
+  companyInfo: {
+    maxWidth: '60%',
   },
-  hotelName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: '#1a1a1a',
+  companyName: {
+    fontSize: 22,
+    marginBottom: 8,
+    color: '#222222',
   },
-  hotelAddress: {
+  companyDetails: {
     fontSize: 10,
-    color: '#666666',
-    marginBottom: 2,
-    lineHeight: 1.4,
+    color: '#555555',
+    marginBottom: 3,
+    lineHeight: 1.5,
+  },
+  invoiceInfo: {
+    textAlign: 'right',
   },
   invoiceTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    color: '#222222',
     marginBottom: 8,
-    color: '#1a1a1a',
+    textTransform: 'uppercase',
   },
-  invoiceDetails: {
+  invoiceSubText: {
     fontSize: 10,
-    color: '#666666',
+    color: '#767676',
+    marginBottom: 3,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 25,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontSize: 13,
     color: '#333333',
-    padding: 5,
-    backgroundColor: '#f5f5f5',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    marginBottom: 15,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 5,
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
+    borderBottomColor: '#F0F0F0',
+    alignItems: 'center',
+  },
+  rowNoBorder: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    alignItems: 'center',
   },
   label: {
-    fontSize: 12,
-    color: '#666666',
+    fontSize: 11,
+    color: '#555555',
+    flex: 1,
   },
   value: {
-    fontFamily: 'Helvetica',
-    fontSize: 12,
-  },
-  highlightedValue: {
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 12,
-    color: '#ff5a5f', // Airbnb-style red
-  },
-  prepaymentText: {
-    fontSize: 10,
-    color: '#666666',
+    fontSize: 11,
+    color: '#222222',
     textAlign: 'right',
-    marginTop: 2,
+    flex: 1,
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    alignItems: 'center',
+  },
+  paymentLabel: {
+    fontSize: 12,
+    color: '#333333',
+  },
+  paymentValue: {
+    fontSize: 12,
+    color: '#222222',
+  },
+  totalSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  grandTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    marginTop: 10,
+    borderTopWidth: 1.5,
+    borderTopColor: '#CCCCCC',
+    alignItems: 'center',
+  },
+  totalLabel: {
+    fontSize: 14,
+    color: '#333333',
+  },
+  totalValue: {
+    fontSize: 14,
+    color: '#ff5a5f',
   },
   footer: {
     position: 'absolute',
     bottom: 30,
-    left: 30,
-    right: 30,
+    left: 40,
+    right: 40,
     textAlign: 'center',
-    fontSize: 10,
-    color: '#999999',
+    fontSize: 9,
+    color: '#888888',
     borderTopWidth: 1,
-    borderTopColor: '#eeeeee',
-    paddingTop: 20,
+    borderTopColor: '#EAEAEA',
+    paddingTop: 15,
   },
 });
 
 // Helper function to format currency
-const formatCurrencyValue = (amount: number) => {
-  return `€ ${amount.toLocaleString()}`; // Note the space after €
+const formatCurrencyValue = (amount: number | undefined | null) => {
+  if (amount === undefined || amount === null) return '€ -';
+  return `€ ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 interface InvoicePDFProps {
@@ -130,114 +178,117 @@ interface InvoicePDFProps {
 
 export const InvoicePDF: React.FC<InvoicePDFProps> = ({ booking, profile }) => {
   const nights = Math.ceil(
-    (new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / 
+    (new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) /
     (1000 * 60 * 60 * 24)
   );
-  const pricePerNight = booking.total_amount / nights;
-  const remainingAmount = booking.total_amount - (booking.prepayment || 0);
+  const validNightsForCalc = nights > 0 ? nights : 1;
+  const pricePerNight = booking.total_amount / validNightsForCalc;
+  const actualPrepayment = booking.prepayment || 0;
+  const remainingAmount = booking.total_amount - actualPrepayment;
+
+  const formattedStartDate = format(new Date(booking.start_date), 'dd MMMM yyyy');
+  const formattedEndDate = format(new Date(booking.end_date), 'dd MMMM yyyy');
+  const formattedInvoiceDate = format(new Date(), 'dd MMMM yyyy');
+
+  // --- CHANGE HERE: Format booking.id for display ---
+  let displayInvoiceId: string;
+  const rawBookingId = String(booking.id);
+
+  if (/^\d{1,4}$/.test(rawBookingId)) {
+    // If it's purely numeric and 1 to 4 digits long, pad with leading zeros
+    displayInvoiceId = rawBookingId.padStart(4, '0');
+  } else if (rawBookingId.length > 4) {
+    // If it's longer than 4 characters (numeric or alphanumeric), take the last 4 characters
+    displayInvoiceId = rawBookingId.slice(-4);
+  } else {
+    // Otherwise (e.g., alphanumeric and 4 chars or less, like "AB12" or "A2C"), display as is
+    displayInvoiceId = rawBookingId;
+  }
+  // --- END CHANGE ---
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <View style={styles.hotelInfo}>
-              <Text style={styles.hotelName}>{profile.company_name}</Text>
-              <Text style={styles.hotelAddress}>{profile.full_name}</Text>
-              <Text style={styles.hotelAddress}>{profile.address}</Text>
-              <Text style={styles.hotelAddress}>{profile.email}</Text>
-              <Text style={styles.hotelAddress}>{profile.phone_number}</Text>
-              {profile.website && (
-                <Text style={styles.hotelAddress}>{profile.website}</Text>
-              )}
-              {profile.instagram && (
-                <Text style={styles.hotelAddress}>Instagram: {profile.instagram}</Text>
-              )}
-              {profile.vat_number && (
-                <Text style={styles.hotelAddress}>VAT: {profile.vat_number}</Text>
-              )}
-            </View>
-            <View>
-              <Text style={styles.invoiceTitle}>INVOICE</Text>
-              <Text style={styles.invoiceDetails}>Invoice #: {booking.id}</Text>
-              <Text style={styles.invoiceDetails}>
-                Date: {format(new Date(), 'dd/MM/yyyy')}
-              </Text>
-            </View>
+          <View style={styles.companyInfo}>
+            <Text style={[styles.companyName, { fontWeight: 'bold' }]}>{profile.company_name || 'Your Company Name'}</Text>
+            {profile.full_name && <Text style={styles.companyDetails}>{profile.full_name}</Text>}
+            {profile.address && <Text style={styles.companyDetails}>{profile.address}</Text>}
+            {profile.email && <Text style={styles.companyDetails}>Email: {profile.email}</Text>}
+            {profile.phone_number && <Text style={styles.companyDetails}>Phone: {profile.phone_number}</Text>}
+            {profile.website && <Text style={styles.companyDetails}>Website: {profile.website}</Text>}
+            {profile.instagram && <Text style={styles.companyDetails}>Instagram: @{profile.instagram}</Text>}
+            {profile.vat_number && <Text style={styles.companyDetails}>VAT: {profile.vat_number}</Text>}
+          </View>
+          <View style={styles.invoiceInfo}>
+            <Text style={[styles.invoiceTitle, { fontWeight: 'bold' }]}>INVOICE</Text>
+            {/* --- CHANGE HERE: Use the formatted displayInvoiceId --- */}
+            <Text style={styles.invoiceSubText}>Invoice #: {displayInvoiceId}</Text>
+            {/* --- END CHANGE --- */}
+            <Text style={styles.invoiceSubText}>Date: {formattedInvoiceDate}</Text>
           </View>
         </View>
 
         {/* Guest Information Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Guest Information</Text>
+          <Text style={[styles.sectionTitle, { fontWeight: 'bold' }]}>Guest Information</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Guest Name</Text>
-            <Text style={styles.value}>{booking.guest_name}</Text>
+            <Text style={[styles.value, { fontWeight: 'bold' }]}>{booking.guest_name}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Check-in Date</Text>
-            <Text style={styles.value}>
-              {format(new Date(booking.start_date), 'dd/MM/yyyy')}
-            </Text>
+            <Text style={[styles.value, { fontWeight: 'bold' }]}>{formattedStartDate}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Check-out Date</Text>
-            <Text style={styles.value}>
-              {format(new Date(booking.end_date), 'dd/MM/yyyy')}
-            </Text>
+            <Text style={[styles.value, { fontWeight: 'bold' }]}>{formattedEndDate}</Text>
           </View>
-          <View style={styles.row}>
+          <View style={styles.rowNoBorder}>
             <Text style={styles.label}>Number of Nights</Text>
-            <Text style={styles.value}>{nights}</Text>
+            <Text style={[styles.value, { fontWeight: 'bold' }]}>{nights}</Text>
           </View>
         </View>
 
-        {/* Payment Details Section */}
+        {/* Payment Summary Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment Details</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Price per Night</Text>
-            <Text style={styles.value}>
-              {formatCurrencyValue(pricePerNight)}
-            </Text>
+          <Text style={[styles.sectionTitle, { fontWeight: 'bold' }]}>Payment Summary</Text>
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>Price per Night</Text>
+            <Text style={[styles.paymentValue, { fontWeight: 'bold' }]}>{formatCurrencyValue(pricePerNight)}</Text>
           </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Total Amount</Text>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.highlightedValue}>
-                {formatCurrencyValue(booking.total_amount)}
-              </Text>
-              {booking.prepayment > 0 && (
-                <Text style={styles.prepaymentText}>
-                  (Prepaid: {formatCurrencyValue(booking.prepayment)})
-                </Text>
-              )}
-            </View>
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>Number of Nights</Text>
+            <Text style={[styles.paymentValue, { fontWeight: 'bold' }]}>{nights}</Text>
           </View>
-          {booking.prepayment > 0 && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Remaining Amount</Text>
-              <Text style={styles.highlightedValue}>
-                {formatCurrencyValue(remainingAmount)}
-              </Text>
+          
+          <View style={styles.grandTotalRow}>
+            <Text style={[styles.totalLabel, { fontWeight: 'bold' }]}>Total Amount</Text>
+            <Text style={[styles.totalValue, { fontWeight: 'bold' }]}>{formatCurrencyValue(booking.total_amount)}</Text>
+          </View>
+
+          {actualPrepayment > 0 && (
+            <View style={styles.totalSummaryRow}>
+              <Text style={styles.paymentLabel}>Amount Paid (Prepayment)</Text>
+              <Text style={[styles.paymentValue, { fontWeight: 'bold' }]}>{formatCurrencyValue(actualPrepayment)}</Text>
             </View>
           )}
+
+          <View style={[styles.grandTotalRow, { borderTopColor: '#ff5a5f', marginTop: actualPrepayment > 0 ? 5 : 10 }]}>
+            <Text style={[styles.totalLabel, { fontWeight: 'bold' }]}>{remainingAmount > 0 ? 'Amount Due' : 'Status'}</Text>
+            <Text style={[styles.totalValue, { fontWeight: 'bold' }]}>
+              {remainingAmount > 0 ? formatCurrencyValue(remainingAmount) : 'Fully Paid'}
+            </Text>
+          </View>
         </View>
 
         {/* Footer */}
         <Text style={styles.footer}>
-          Thank you for choosing {profile.company_name}
+          Thank you for your booking with {profile.company_name || 'us'}. We look forward to welcoming you!
+          {profile.email && `\nQuestions? Contact us at ${profile.email} or call ${profile.phone_number || 'our support line'}.`}
         </Text>
       </Page>
     </Document>
   );
 };
-
-
-
-
-
-
-
-

@@ -55,6 +55,7 @@ type FormSchemaType = z.infer<typeof FormSchema>;
 interface BookingFormProps {
   initialData?: BookingFormData | null;
   dictionary?: any;
+  onSuccess?: () => void; // New prop for modal integration
 }
 
 function SubmitButton({ isEditing, dictionary }: { isEditing: boolean, dictionary?: any }) {
@@ -67,7 +68,7 @@ function SubmitButton({ isEditing, dictionary }: { isEditing: boolean, dictionar
     );
 }
 
-export function BookingForm({ initialData, dictionary = {} }: BookingFormProps) {
+export function BookingForm({ initialData, dictionary = {}, onSuccess }: BookingFormProps) {
   const isEditing = !!initialData?.id;
   const router = useRouter();
 
@@ -102,18 +103,17 @@ export function BookingForm({ initialData, dictionary = {} }: BookingFormProps) 
                                       (dictionary.booking_created || "Booking Created"), {
                  description: state.message,
              });
-             if (!isEditing) {
-                // Debounce or delay redirect slightly to allow user to see toast
-                 setTimeout(() => router.push('/bookings'), 500);
+             
+             // Call onSuccess if provided (for modal use)
+             if (onSuccess) {
+               onSuccess();
              } else {
-                 // Force a hard refresh of the page data
-                 router.refresh();
-                 // Optional: redirect back to bookings list
-                 setTimeout(() => router.push('/bookings'), 500);
+               // Original redirect behavior for page-based form
+               setTimeout(() => router.push('/bookings'), 500);
              }
         }
      }
- }, [state, isEditing, router, dictionary]);
+ }, [state, isEditing, router, dictionary, onSuccess]);
 
   // onSubmit remains the same
   const onSubmit = (formData: FormSchemaType) => {
@@ -320,7 +320,11 @@ export function BookingForm({ initialData, dictionary = {} }: BookingFormProps) 
         )}
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => onSuccess ? onSuccess() : router.back()}
+          >
             {dictionary.cancel || "Cancel"}
           </Button>
           <SubmitButton isEditing={isEditing} dictionary={dictionary} />
