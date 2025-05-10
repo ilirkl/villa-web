@@ -560,7 +560,9 @@ export default function SettingsPage() {
                   <Button variant="outline" type="button" onClick={handleSignOut} className="flex items-center justify-center gap-2" disabled={isSaving || isUploading || isProcessing}>
                     <LogOut className="h-4 w-4" /><span>{dictionary?.sign_out || 'Sign Out'}</span>
                   </Button>
-                  <Button type="submit" className="flex items-center justify-center" disabled={isSaving || isUploading || isProcessing}>
+                  <Button type="submit" className="flex items-center justify-center" 
+                    style={{ backgroundColor: '#FF5A5F', color: 'white' }}
+                    disabled={isSaving || isUploading || isProcessing}>
                     {(isSaving || isUploading) && (<div className="w-4 h-4 border-t-2 border-white rounded-full animate-spin mr-2"></div>)}
                     {isSaving ? (dictionary?.saving || 'Saving...') : (isUploading ? (dictionary?.uploading || 'Uploading...') : (dictionary?.save_changes || 'Save Changes'))}
                   </Button>
@@ -575,6 +577,7 @@ export default function SettingsPage() {
     </div>
   );
 } // End component
+
 
 
 

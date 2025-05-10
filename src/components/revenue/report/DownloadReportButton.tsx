@@ -117,6 +117,7 @@ export default function DownloadReportButton({ month, yearMonth }: DownloadRepor
             onClick={handleDownload} 
             disabled={isLoading}
             className="w-full"
+            style={{ backgroundColor: '#FF5A5F', color: 'white' }}
         >
             {isLoading ? (
                 <span>{dictionary.downloading || 'Downloading...'}</span>

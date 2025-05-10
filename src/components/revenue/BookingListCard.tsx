@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { format, parseISO, isValid } from 'date-fns';
-import { sq } from 'date-fns/locale'; // Import the locale
+import { sq } from 'date-fns/locale';
 import { ChevronRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useParams } from "next/navigation";
@@ -54,7 +54,7 @@ export default function BookingListCard({
     if (!isLoaded) {
         return (
             <Card>
-                <CardHeader className="pb-0">
+                <CardHeader>
                     <CardTitle>Loading...</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -69,8 +69,19 @@ export default function BookingListCard({
 
     return (
         <Card>
-            <CardHeader className="pb-0 pt-0">
-                <CardTitle >{title}</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>{title}</CardTitle>
+                {showSeeAllButton && seeAllLink && (
+                    <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="hover:bg-[#FF5A5F]/10" 
+                        style={{ borderColor: '#FF5A5F', color: '#FF5A5F' }}
+                        asChild
+                    >
+                        <Link href={seeAllLink}>{dictionary.see_all || 'See All'}</Link>
+                    </Button>
+                )}
             </CardHeader>
             <CardContent>
                 {bookings.length === 0 ? (
@@ -78,13 +89,12 @@ export default function BookingListCard({
                         {dictionary.no_bookings?.replace('{type}', title.toLowerCase()) || `No ${title.toLowerCase()} bookings.`}
                     </p>
                 ) : (
-                    <ul className="divide-y divide-border -mx-6 px-6">
+                    <ul className="divide-y divide-border">
                         {bookings.map((booking) => {
                             let formattedDate = 'Invalid Date';
                             try {
                                 const parsed = parseISO(booking.start_date);
                                 if (isValid(parsed)) {
-                                    // Use the sq locale only if the language is Albanian
                                     formattedDate = format(parsed, 'd MMMM', { 
                                         locale: lang === 'sq' ? sq : undefined 
                                     });
@@ -107,13 +117,6 @@ export default function BookingListCard({
                             );
                         })}
                     </ul>
-                )}
-                {showSeeAllButton && seeAllLink && (
-                    <div className="mt-2 pt-2 border-t border-border">
-                        <Button variant="outline" className="w-full" asChild>
-                            <Link href={seeAllLink}>{dictionary.see_all || 'See All'}</Link>
-                        </Button>
-                    </div>
                 )}
             </CardContent>
         </Card>

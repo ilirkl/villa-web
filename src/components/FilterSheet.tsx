@@ -84,7 +84,7 @@ export function FilterSheet({
     const color = option?.color || '#6366f1';
     
     return baseStyle + (isSelected 
-      ? `bg-[${color}] text-white ring-[${color}]` 
+      ? `bg-[#ff5a5f] text-white ring-[#ff5a5f]` 
       : `bg-[${color}]/10 text-[${color}] hover:bg-[${color}]/20`);
   };
 
@@ -194,5 +194,7 @@ export function FilterSheet({
     </Sheet>
   );
 }
+
+
 
 

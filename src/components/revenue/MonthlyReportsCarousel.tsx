@@ -72,7 +72,7 @@ export default function MonthlyReportsCarousel({
                     </p>
                 ) : (
                     <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                        <CarouselContent className="pb-0">
+                        <CarouselContent className="-ml-2 pb-0">
                             {reports.map((report, index) => {
                                 // *** Construct href using the reliable 'key' ***
                                 const href = report.key ? `/revenue/reports/${report.key}` : '/revenue'; // Fallback if key missing
@@ -80,15 +80,19 @@ export default function MonthlyReportsCarousel({
                                 return (
                                     <CarouselItem
                                         key={report.key || index} // Use key for React key if available
-                                        className="basis-3/4 md:basis-1/2 lg:basis-1/3 pb-0" // Shows ~1.5 / 2 / 3 items
+                                        className="pl-2 basis-2/5 md:basis-1/3 lg:basis-1/4 pb-0" // Show 2.5 cards
                                     >
                                         <Link href={href} className="block p-0 hover:opacity-90 transition-opacity">
-                                            <Card className="text-center pb-1">
-                                                <p className="text-xs text-muted-foreground">{report.year}</p>
-                                                <p className="text-sm font-medium">{report.month}</p>
-                                                <p className="text-base font-semibold mt-0">
-                                                    {formatCurrency(report.amount)}
-                                                </p>
+                                            <Card className="bg-white border rounded-xl shadow-sm max-w-[120px] mx-auto p-3 flex flex-col h-[100px]">
+                                                <div className="text-left">
+                                                    <p className="text-xs text-gray-500 mb-0.5">{report.year}</p>
+                                                    <p className="text-lg font-medium text-gray-800 mt-4">{report.month}</p>
+                                                </div>
+                                                <div className="-mt-6">
+                                                    <p className="text-sm font-semibold text-left text-[#FF5A5F]">
+                                                        {formatCurrency(report.amount)}
+                                                    </p>
+                                                </div>
                                             </Card>
                                         </Link>
                                     </CarouselItem>

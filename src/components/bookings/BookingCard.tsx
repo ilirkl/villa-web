@@ -196,8 +196,12 @@ export function BookingCard({
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className='bg-destructive text-destructive-foreground hover:bg-destructive/90'>
-                       Delete
+                  <AlertDialogAction 
+                    onClick={handleDelete} 
+                    style={{ backgroundColor: '#FF5A5F', color: 'white' }}
+                    className='hover:bg-[#FF5A5F]/90'
+                  >
+                    Delete
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

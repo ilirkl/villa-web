@@ -406,6 +406,7 @@ async function RevenueData({ params }: { params: { lang: string } }) {
                 bookings={futureBookings}
                 statusLabel={dictionary.future}
                 seeAllLink="/bookings?filter=future"
+                showSeeAllButton={true}
             />
             {/* Past Bookings List Card */}
             <BookingListCard

@@ -25,7 +25,7 @@ import { format } from 'date-fns';
 import { ExpenseFormData, ExpenseCategory } from '@/lib/definitions';
 import { createOrUpdateExpense, ExpenseState } from '@/lib/actions/expenses';
 import { useFormState, useFormStatus } from 'react-dom';
-import React, { useEffect, useTransition } from 'react';
+import React, { useEffect, useTransition, useState } from 'react';
 import { toast } from "sonner"; // Import sonner toast
 import { useParams, useRouter } from 'next/navigation';
 import { translateExpenseCategory } from '@/lib/translations';
@@ -54,7 +54,13 @@ interface ExpenseFormProps {
 function SubmitButton({ isEditing, dictionary }: { isEditing: boolean, dictionary: any }) {
     const { pending } = useFormStatus();
     return (
-        <Button type="submit" disabled={pending} aria-disabled={pending}>
+        <Button 
+            type="submit" 
+            disabled={pending} 
+            aria-disabled={pending}
+            style={{ backgroundColor: '#FF5A5F', color: 'white' }}
+            className="hover:bg-[#FF5A5F]/90"
+        >
         {pending ? (isEditing ? dictionary.updating || 'Updating...' : dictionary.saving || 'Saving...') : 
                   (isEditing ? dictionary.update_expense || 'Update Expense' : dictionary.save_expense || 'Save Expense')}
         </Button>
@@ -65,6 +71,7 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
   const isEditing = !!initialData?.id;
   const router = useRouter();
   const { lang } = useParams();
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   
   // Find the "Furnizim" category if it exists
   const furnizimCategory = categories.find(cat => cat.name === "Furnizim");
@@ -228,7 +235,7 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>{dictionary.date || "Date"}</FormLabel>
-                <Popover>
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
@@ -254,6 +261,7 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
                       onSelect={(date) => {
                         console.log("Calendar date selected:", date); // Debug log
                         field.onChange(date);
+                        setDatePickerOpen(false);
                       }}
                       disabled={(date) =>
                         date > new Date() || date < new Date("1900-01-01")
@@ -334,7 +342,12 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
           >
             {dictionary.cancel || "Cancel"}
           </Button>
-          <Button type="submit" disabled={isPending}>
+          <Button 
+            type="submit" 
+            disabled={isPending}
+            style={{ backgroundColor: '#FF5A5F', color: 'white' }}
+            className="hover:bg-[#FF5A5F]/90"
+          >
             {isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : isEditing ? (

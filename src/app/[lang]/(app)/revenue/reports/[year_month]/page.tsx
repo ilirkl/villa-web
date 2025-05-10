@@ -261,17 +261,27 @@ export default async function MonthlyReportPage({ params }: PageProps) {
         // Main container with padding (including bottom)
         <div className="p-2 md:p-2 pb-20">
             {/* Header Section */}
-            <div className="flex items-center mb-6 gap-2">
-                {/* Back Button */}
-                <Button variant="ghost" size="icon" asChild>
-                    <Link href="/revenue" aria-label={dictionary.back_to_finances || "Back to Finances"}>
-                        <ChevronLeft className="h-5 w-5" />
-                    </Link>
-                </Button>
-                {/* Page Title */}
-                <h3 className="text-1xl font-semibold text-gray-800 dark:text-gray-100">
-                    {formattedMonthYear}
-                </h3>
+            <div className="flex items-center justify-between mb-6 gap-2">
+                <div className="flex items-center gap-2">
+                    {/* Back Button */}
+                    <Button variant="ghost" size="icon" asChild>
+                        <Link href="/revenue" aria-label={dictionary.back_to_finances || "Back to Finances"}>
+                            <ChevronLeft className="h-5 w-5" />
+                        </Link>
+                    </Button>
+                    {/* Page Title */}
+                    <h3 className="text-1xl font-semibold text-gray-800 dark:text-gray-100">
+                        {formattedMonthYear}
+                    </h3>
+                </div>
+                
+                {/* Download Report Button moved to header */}
+                <div className="w-auto">
+                    <DownloadReportButton 
+                        month={formattedMonthYear} 
+                        yearMonth={year_month} 
+                    />
+                </div>
             </div>
 
             {/* Main Content Area */}
@@ -302,11 +312,7 @@ export default async function MonthlyReportPage({ params }: PageProps) {
                     data={expenseBreakdown}
                 />
 
-                {/* Download Report Button - Pass both formatted month and the year_month parameter */}
-                <DownloadReportButton 
-                    month={formattedMonthYear} 
-                    yearMonth={year_month} 
-                />
+                {/* Remove the Download Report Button from here since it's now in the header */}
             </div>
         </div>
     );

@@ -30,6 +30,7 @@ import { useEffect } from 'react';
 import { toast } from "sonner";
 import { useRouter } from 'next/navigation';
 import DOMPurify from 'dompurify';
+import { useState } from 'react';
 
 // Zod schema update
 const FormSchema = z.object({
@@ -61,7 +62,13 @@ interface BookingFormProps {
 function SubmitButton({ isEditing, dictionary }: { isEditing: boolean, dictionary?: any }) {
     const { pending } = useFormStatus();
     return (
-        <Button type="submit" disabled={pending} aria-disabled={pending}>
+        <Button 
+            type="submit" 
+            disabled={pending} 
+            aria-disabled={pending}
+            style={{ backgroundColor: '#FF5A5F', color: 'white' }}
+            className="hover:bg-[#FF5A5F]/90"
+        >
         {pending ? (isEditing ? dictionary?.updating || 'Updating...' : dictionary?.saving || 'Creating...') : 
                   (isEditing ? dictionary?.update_booking || 'Update Booking' : dictionary?.create_booking || 'Create Booking')}
         </Button>
@@ -71,6 +78,8 @@ function SubmitButton({ isEditing, dictionary }: { isEditing: boolean, dictionar
 export function BookingForm({ initialData, dictionary = {}, onSuccess }: BookingFormProps) {
   const isEditing = !!initialData?.id;
   const router = useRouter();
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
 
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(FormSchema),
@@ -193,7 +202,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
             render={({ field }) => (
               <FormItem className="flex-1">
                 <FormLabel>{dictionary.start_date || "Start Date"}</FormLabel>
-                <Popover>
+                <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
@@ -212,7 +221,10 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                     <Calendar
                       mode="single"
                       selected={field.value}
-                      onSelect={field.onChange}
+                      onSelect={(date) => {
+                        field.onChange(date);
+                        setStartDateOpen(false);
+                      }}
                       disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                       initialFocus
                     />
@@ -228,7 +240,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
             render={({ field }) => (
               <FormItem className="flex-1">
                 <FormLabel>{dictionary.end_date || "End Date"}</FormLabel>
-                <Popover>
+                <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
@@ -247,7 +259,10 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                     <Calendar
                       mode="single"
                       selected={field.value}
-                      onSelect={field.onChange}
+                      onSelect={(date) => {
+                        field.onChange(date);
+                        setEndDateOpen(false);
+                      }}
                       disabled={(date) =>
                         date < (form.getValues("start_date") || new Date(new Date().setHours(0, 0, 0, 0)))
                       }
