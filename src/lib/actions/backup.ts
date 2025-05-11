@@ -1,7 +1,7 @@
 'use server';
 
 import { createActionClient } from '@/lib/supabase/server';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { getDictionary } from '@/lib/dictionary';
 import { translateExpenseCategory } from '@/lib/translations';
 
@@ -20,6 +20,10 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
 
     // Load dictionary for translations
     const dictionary = await getDictionary(lang as 'en' | 'sq');
+    console.log('Dictionary loaded for language:', lang);
+
+    // Check if we have translations in a different structure
+    console.log('Dictionary keys:', Object.keys(dictionary));
 
     console.log('Fetching bookings data...');
     // Fetch bookings with explicit user_id check
@@ -33,16 +37,28 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
     }
     console.log(`Retrieved ${bookings?.length || 0} bookings`);
 
+    // Fetch expense categories first to create a lookup map
+    console.log('Fetching expense categories...');
+    const { data: categories, error: categoriesError } = await supabase
+      .from('expense_categories')
+      .select('id, name');
+
+    if (categoriesError) {
+      throw new Error(`Failed to fetch categories: ${categoriesError.message}`);
+    }
+    console.log(`Retrieved ${categories?.length || 0} expense categories`);
+
+    // Create a map of category IDs to names
+    const categoryMap = new Map();
+    categories?.forEach(cat => {
+      categoryMap.set(cat.id, cat.name);
+    });
+
     console.log('Fetching expenses data...');
-    // Fetch expenses with categories
+    // Fetch expenses with category_id
     const { data: expenses, error: expensesError } = await supabase
       .from('expenses')
-      .select(`
-        date, 
-        amount, 
-        description, 
-        expense_categories(id, name)
-      `)
+      .select('id, date, amount, description, category_id')
       .eq('user_id', user.id);
 
     if (expensesError) {
@@ -50,55 +66,91 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
     }
     console.log(`Retrieved ${expenses?.length || 0} expenses`);
 
-    // Create simple arrays of objects with basic properties
-    console.log('Formatting booking data for Excel...');
-    const bookingsData = bookings.map(booking => ({
-      GuestName: String(booking.guest_name || ''),
-      CheckInDate: String(booking.start_date || ''),
-      CheckOutDate: String(booking.end_date || ''),
-      TotalAmount: Number(booking.total_amount || 0),
-      Prepayment: Number(booking.prepayment || 0),
-      Source: String(booking.source || ''),
-      Notes: String(booking.notes || '')
-    }));
-
-    console.log('Formatting expense data for Excel with translations...');
-    const expensesData = expenses.map(expense => {
-      // Get the original category name
-      const originalCategoryName = expense.expense_categories?.[0]?.name || null;
+    // Create a new workbook
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Villa Manager';
+    workbook.lastModifiedBy = 'Villa Manager';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+    
+    // Add bookings worksheet
+    console.log('Creating bookings worksheet...');
+    const bookingsSheet = workbook.addWorksheet('Bookings');
+    
+    // Add headers
+    bookingsSheet.columns = [
+      { header: 'Guest Name', key: 'guestName', width: 20 },
+      { header: 'Check-in Date', key: 'startDate', width: 15 },
+      { header: 'Check-out Date', key: 'endDate', width: 15 },
+      { header: 'Total Amount', key: 'totalAmount', width: 15 },
+      { header: 'Prepayment', key: 'prepayment', width: 15 },
+      { header: 'Source', key: 'source', width: 10 },
+      { header: 'Notes', key: 'notes', width: 30 }
+    ];
+    
+    // Add data
+    bookings.forEach(booking => {
+      bookingsSheet.addRow({
+        guestName: booking.guest_name || '',
+        startDate: booking.start_date || '',
+        endDate: booking.end_date || '',
+        totalAmount: booking.total_amount || 0,
+        prepayment: booking.prepayment || 0,
+        source: booking.source || '',
+        notes: booking.notes || ''
+      });
+    });
+    
+    // Format headers
+    bookingsSheet.getRow(1).font = { bold: true };
+    
+    // Add expenses worksheet
+    console.log('Creating expenses worksheet...');
+    const expensesSheet = workbook.addWorksheet('Expenses');
+    
+    // Add headers
+    expensesSheet.columns = [
+      { header: 'Date', key: 'date', width: 15 },
+      { header: 'Amount', key: 'amount', width: 15 },
+      { header: 'Description', key: 'description', width: 30 },
+      { header: 'Category', key: 'category', width: 20 }
+    ];
+    
+    // Add data with translated categories
+    expenses.forEach(expense => {
+      // Get the category name using the category_id and the lookup map
+      const categoryName = expense.category_id ? categoryMap.get(expense.category_id) : null;
+      
+      // Log for debugging
+      console.log(`Original category: ${categoryName}, Language: ${lang}`);
       
       // Translate the category name based on the current language
       const translatedCategory = translateExpenseCategory(
-        originalCategoryName, 
+        categoryName, 
         dictionary, 
         lang
       );
       
-      return {
-        Date: String(expense.date || ''),
-        Amount: Number(expense.amount || 0),
-        Description: String(expense.description || ''),
-        Category: translatedCategory
-      };
+      // Log the translation result
+      console.log(`Translated to: ${translatedCategory}`);
+      
+      expensesSheet.addRow({
+        date: expense.date || '',
+        amount: expense.amount || 0,
+        description: expense.description || '',
+        category: translatedCategory || 'Uncategorized'
+      });
     });
-
-    // Create workbook
-    console.log('Creating Excel workbook...');
-    const wb = XLSX.utils.book_new();
     
-    // Add bookings sheet
-    console.log('Adding bookings sheet...');
-    const bookingsSheet = XLSX.utils.json_to_sheet(bookingsData);
-    XLSX.utils.book_append_sheet(wb, bookingsSheet, 'Bookings');
+    // Format headers
+    expensesSheet.getRow(1).font = { bold: true };
     
-    // Add expenses sheet
-    console.log('Adding expenses sheet...');
-    const expensesSheet = XLSX.utils.json_to_sheet(expensesData);
-    XLSX.utils.book_append_sheet(wb, expensesSheet, 'Expenses');
+    // Generate buffer
+    console.log('Writing Excel file to buffer...');
+    const buffer = await workbook.xlsx.writeBuffer();
     
-    // Generate base64 string
-    console.log('Writing Excel file to base64 string...');
-    const base64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+    // Convert buffer to base64
+    const base64 = Buffer.from(buffer).toString('base64');
     
     console.log('Excel file generated successfully as base64 string');
     
@@ -109,6 +161,16 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
     throw error;
   }
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
