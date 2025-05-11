@@ -7,16 +7,19 @@
  */
 export function translateExpenseCategory(
   categoryName: string | null | undefined, 
-  dictionary: any, 
+  dictionary: {
+    expense_categories?: Record<string, string>;
+    common?: {
+      expense_categories?: Record<string, string>;
+    };
+    [key: string]: any;
+  }, 
   lang: string
 ): string {
   if (!categoryName) return 'Uncategorized';
   
   // If language is Albanian, return the original name
   if (lang === 'sq') return categoryName;
-  
-  // Debug the dictionary structure
-  console.log('Dictionary keys:', Object.keys(dictionary));
   
   // Try to find translations in different possible locations in the dictionary
   let translation = null;
@@ -38,8 +41,7 @@ export function translateExpenseCategory(
     }
   }
   
-  console.log(`Translation for "${categoryName}": ${translation || 'not found'}`);
-  
   return translation || categoryName;
 }
+
 

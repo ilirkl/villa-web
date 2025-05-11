@@ -262,10 +262,10 @@ export default async function MonthlyReportPage({ params }: PageProps) {
     const formattedMonthYear = format(targetMonthDate, 'MMMM yyyy', { locale: lang === 'sq' ? sq : undefined });
 
     return (
-        // Main container with padding (including bottom)
-        <div className="p-2 md:p-2 pb-20">
-            {/* Header Section */}
-            <div className="flex items-center justify-between mb-6 gap-2">
+        // Main container with responsive padding
+        <div className="p-2 md:p-4 lg:p-6 pb-20 max-w-7xl mx-auto">
+            {/* Header Section - more space on larger screens */}
+            <div className="flex items-center justify-between mb-4 md:mb-6 gap-2">
                 <div className="flex items-center gap-2">
                     {/* Back Button */}
                     <Button variant="ghost" size="icon" asChild>
@@ -273,13 +273,13 @@ export default async function MonthlyReportPage({ params }: PageProps) {
                             <ChevronLeft className="h-5 w-5" />
                         </Link>
                     </Button>
-                    {/* Page Title */}
-                    <h3 className="text-1xl font-semibold text-gray-800 dark:text-gray-100">
+                    {/* Page Title - larger on bigger screens */}
+                    <h3 className="text-xl md:text-2xl font-semibold text-gray-800 dark:text-gray-100">
                         {formattedMonthYear}
                     </h3>
                 </div>
                 
-                {/* Download Report Button moved to header */}
+                {/* Download Report Button */}
                 <div className="w-auto">
                     <DownloadReportButton 
                         month={formattedMonthYear} 
@@ -289,35 +289,38 @@ export default async function MonthlyReportPage({ params }: PageProps) {
                 </div>
             </div>
 
-            {/* Main Content Area */}
-            <div className="flex flex-col gap-3">
-                {/* Profit Breakdown Card */}
-                <ProfitBreakdownCard
-                    netProfit={netProfit}
-                    grossProfit={grossProfit}
-                    totalExpenses={totalExpenses}
-                />
+            {/* Main Content Area - grid layout on larger screens */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                {/* Profit Breakdown Card - full width on mobile, 2 cols on tablet, 1 col on large screens */}
+                <div className="md:col-span-2 lg:col-span-1">
+                    <ProfitBreakdownCard
+                        netProfit={netProfit}
+                        grossProfit={grossProfit}
+                        totalExpenses={totalExpenses}
+                    />
+                </div>
 
-                {/* Performance Statistics Card */}
-                <Card>
-                    <CardHeader className="pb-0"><CardTitle>{dictionary.performance_stats || "Performance Statistics"}</CardTitle></CardHeader>
-                    <CardContent>
-                        {/* Grid component displaying the stats */}
-                        <PerformanceStatsGrid
-                            nightsReserved={totalNightsReserved}
-                            occupancyRate={occupancyRate}
-                            averageStay={avgStay}
-                        />
-                    </CardContent>
-                </Card>
+                {/* Performance Statistics Card - full width on mobile, 1 col on tablet and desktop */}
+                <div className="lg:col-span-1">
+                    <Card>
+                        <CardHeader className="pb-0"><CardTitle>{dictionary.performance_stats || "Performance Statistics"}</CardTitle></CardHeader>
+                        <CardContent>
+                            <PerformanceStatsGrid
+                                nightsReserved={totalNightsReserved}
+                                occupancyRate={occupancyRate}
+                                averageStay={avgStay}
+                            />
+                        </CardContent>
+                    </Card>
+                </div>
 
-                {/* Expense Breakdown Card */}
-                <MonthlyExpenseBreakdownCard
-                    title={dictionary.expense_breakdown || "Expense Breakdown"}
-                    data={expenseBreakdown}
-                />
-
-                {/* Remove the Download Report Button from here since it's now in the header */}
+                {/* Expense Breakdown Card - full width on mobile, 1 col on tablet and desktop */}
+                <div className="lg:col-span-1">
+                    <MonthlyExpenseBreakdownCard
+                        title={dictionary.expense_breakdown || "Expense Breakdown"}
+                        data={expenseBreakdown}
+                    />
+                </div>
             </div>
         </div>
     );

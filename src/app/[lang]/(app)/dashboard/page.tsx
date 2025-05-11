@@ -129,15 +129,16 @@ export default async function DashboardPage({ params }: { params: { lang: string
 
   return (
     <div className="space-y-2 pb-20">
-      {/* Calendar */}
+      <div className="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {/* Calendar - full width on mobile and iPad, 1/3 width on large screens */}
+        <div className="md:col-span-2 lg:col-span-1">
+          <Suspense fallback={<div>{dictionary.loading_calendar}</div>}>
+            <CustomBookingCalendar 
+              initialEvents={events} 
+            />
+          </Suspense>
+        </div>
 
-      <Suspense fallback={<div>{dictionary.loading_calendar}</div>}>
-        <CustomBookingCalendar 
-          initialEvents={events} 
-        />
-      </Suspense>
-
-      <div className="grid gap-2 md:grid-cols-2">
         {/* Today's Activity Card */}
         <Card className="[&>*:last-child]:!pb-0">
           <CardHeader>
@@ -160,8 +161,7 @@ export default async function DashboardPage({ params }: { params: { lang: string
                   todayCheckIns?.map((booking) => (
                     <BookingCard
                       key={booking.id}
-                      booking={booking} // Pass original booking if other fields are needed
-                      // Pass pre-formatted dates
+                      booking={booking}
                       formattedStartDate={booking.formattedStartDate}
                       formattedEndDate={booking.formattedEndDate}
                       hideFooter={true}

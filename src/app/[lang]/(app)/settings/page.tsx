@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -67,6 +67,30 @@ export default function SettingsPage() {
   const imgRef = useRef<HTMLImageElement>(null);
   const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
 
+  // Add these state variables to track iCal URLs
+  const [airbnbIcalUrl, setAirbnbIcalUrl] = useState<string>('');
+  const [bookingComIcalUrl, setBookingComIcalUrl] = useState<string>('');
+
+  // --- Image URL Handling (Unchanged) ---
+  const getImageUrl = (url: string | null): string => {
+    if (!url) return '/default-avatar.png';
+    if (url.startsWith('blob:') || url.startsWith('http')) return url;
+    try {
+      const { data } = supabase.storage.from('avatars').getPublicUrl(url);
+      return data?.publicUrl || '/default-avatar.png';
+    } catch (error) { 
+      console.error('Error getting public URL:', error); 
+      return '/default-avatar.png'; 
+    }
+  };
+  // --- End Image URL Handling ---
+
+  // Handle iCal URL changes from the IcalSettings component
+  const handleIcalUrlChange = useCallback((airbnbUrl: string, bookingComUrl: string) => {
+    setAirbnbIcalUrl(airbnbUrl);
+    setBookingComIcalUrl(bookingComUrl);
+  }, []);
+
   // Load dictionary
   useEffect(() => {
     async function loadDictionary() {
@@ -117,16 +141,13 @@ export default function SettingsPage() {
     fetchProfile();
   }, [fetchProfile]);
 
-  // --- Image URL Handling (Unchanged) ---
-  const getImageUrl = (url: string | null): string => {
-    if (!url) return '/default-avatar.png';
-    if (url.startsWith('blob:') || url.startsWith('http')) return url;
-    try {
-      const { data } = supabase.storage.from('avatars').getPublicUrl(url);
-      return data?.publicUrl || '/default-avatar.png';
-    } catch (error) { console.error('Error getting public URL:', error); return '/default-avatar.png'; }
-  };
-  // --- End Image URL Handling ---
+  // Set initial iCal URLs when profile loads
+  useEffect(() => {
+    if (profile) {
+      setAirbnbIcalUrl(profile.airbnb_ical_url || '');
+      setBookingComIcalUrl(profile.booking_com_ical_url || '');
+    }
+  }, [profile]);
 
   // --- Image Cropping Utility (RESTORED FULL IMPLEMENTATION) ---
   const getCroppedImg = useCallback(async (
@@ -382,17 +403,13 @@ export default function SettingsPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!profile) return;  // Use profile instead of profileState
+    if (!profile) return;
     setIsSaving(true);
     try {
-      let finalAvatarPath: string | null | undefined = profile.avatar_url;  // Use profile
-      if (avatarFile) { // If a new file was processed
+      let finalAvatarPath: string | null | undefined = profile.avatar_url;
+      if (avatarFile) {
         const uploadedPath = await uploadAvatar(avatarFile);
         if (uploadedPath) {
-          // Optional: Delete old avatar
-          if (profile.avatar_url && profile.avatar_url !== uploadedPath) {  // Use profile
-            // await supabase.storage.from('avatars').remove([profile.avatar_url]);
-          }
           finalAvatarPath = uploadedPath;
         } else {
           throw new Error('Avatar upload failed. Changes not saved.');
@@ -400,14 +417,17 @@ export default function SettingsPage() {
       }
 
       const updates = {
-          full_name: profile.full_name,  // Use profile
-          company_name: profile.company_name,  // Use profile
-          email: profile.email,  // Use profile
-          phone_number: profile.phone_number,  // Use profile
-          website: profile.website,  // Use profile
-          vat_number: profile.vat_number,  // Use profile
-          address: profile.address,  // Use profile
+          full_name: profile.full_name,
+          company_name: profile.company_name,
+          email: profile.email,
+          phone_number: profile.phone_number,
+          website: profile.website,
+          vat_number: profile.vat_number,
+          address: profile.address,
           avatar_url: finalAvatarPath,
+          // Add iCal URLs to the updates
+          airbnb_ical_url: airbnbIcalUrl,
+          booking_com_ical_url: bookingComIcalUrl,
           updated_at: new Date().toISOString(),
       };
 
@@ -419,11 +439,11 @@ export default function SettingsPage() {
       }
 
       toast.success('Profile updated successfully!');
-      setProfile((prev: Profile | null) => prev ? { ...prev, ...updates } : null); // Update local state
-      setAvatarFile(null); // Clear staged file
-      if (avatarPreview?.startsWith('blob:')) { // Clean up blob preview if needed
+      setProfile((prev: Profile | null) => prev ? { ...prev, ...updates } : null);
+      setAvatarFile(null);
+      if (avatarPreview?.startsWith('blob:')) {
           URL.revokeObjectURL(avatarPreview);
-          setAvatarPreview(getImageUrl(finalAvatarPath || null)); // Add null fallback
+          setAvatarPreview(getImageUrl(finalAvatarPath || null));
       }
     } catch (error: any) {
       console.error('Error during handleSubmit:', error);
@@ -475,14 +495,16 @@ export default function SettingsPage() {
     return <div className="flex justify-center items-center h-screen">Loading profile...</div>;
   }
 
+  // Calculate avatar source URL
   const displayAvatarSrc = avatarPreview || getImageUrl(profile?.avatar_url || null);
+  console.log('Avatar URL:', displayAvatarSrc); // Add this line for debugging
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="max-w-2xl mt-0 p-0 space-y-6">
-        {/* Language Switcher and Download Backup Button - positioned inline */}
-        <div className="flex justify-between items-center mb-6">
-          <div>
+    <div className="container mx-auto py-4 px-4 md:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Language Switcher and Download Backup Button - positioned inline on all screens */}
+        <div className="flex flex-row justify-between items-center gap-2 mb-4">
+          <div className="flex items-center">
             <LanguageSwitcher />
           </div>
           <div>
@@ -490,47 +512,209 @@ export default function SettingsPage() {
           </div>
         </div>
         
-        {/* Header with avatar centered */}
-        <div className="flex justify-center items-center mb-6">
-          {/* Avatar Display & Upload Trigger */}
-          <div className="relative group">
-            <Label htmlFor="avatar-upload" className="cursor-pointer" aria-label={dictionary?.change_profile_picture || "Change profile picture"}>
-              <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
-                <Image
-                  src={displayAvatarSrc} 
-                  alt={profile?.full_name ? `${profile.full_name}'s avatar` : (dictionary?.avatar || 'Avatar')} 
-                  fill 
-                  sizes="96px" 
-                  className="object-cover" 
-                  priority 
-                  key={displayAvatarSrc}
-                  onError={(e) => { console.error('Image load error:', e); e.currentTarget.src = '/default-avatar.png'; }}
-                />
-                {(isProcessing || isUploading || isSaving) && (
-                  <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10">
-                    <div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
-                  </div>
-                )}
-                {!(isProcessing || isUploading || isSaving) && (
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <Upload className="h-6 w-6 text-white" />
-                  </div>
+        {/* Profile section with avatar and form */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Avatar section - takes full width on mobile, 1/3 on desktop */}
+          <div className="lg:col-span-1 flex flex-col items-center">
+            {/* Avatar Display & Upload Trigger */}
+            <div className="relative group mb-4">
+              <Label htmlFor="avatar-upload" className="cursor-pointer" aria-label={dictionary?.change_profile_picture || "Change profile picture"}>
+                <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+                  <Image
+                    src={displayAvatarSrc} 
+                    alt={profile?.full_name ? `${profile.full_name}'s avatar` : (dictionary?.avatar || 'Avatar')} 
+                    fill 
+                    sizes="96px" 
+                    className="object-cover" 
+                    priority 
+                    key={displayAvatarSrc}
+                    onError={(e) => { console.error('Image load error:', e); e.currentTarget.src = '/default-avatar.png'; }}
+                  />
+                  {(isProcessing || isUploading || isSaving) && (
+                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10">
+                      <div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                  {!(isProcessing || isUploading || isSaving) && (
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <Upload className="h-6 w-6 text-white" />
+                    </div>
+                  )}
+                </div>
+              </Label>
+              <input type="file" id="avatar-upload" accept="image/*" onChange={handleAvatarChange} className="hidden" disabled={isProcessing || isUploading || isSaving} />
+              {(avatarPreview || profile?.avatar_url) && !(isProcessing || isUploading || isSaving) && (
+                <button 
+                  type="button" 
+                  onClick={removeAvatar} 
+                  className="absolute -top-1 -right-1 z-20 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200" 
+                  aria-label={dictionary?.remove_avatar || "Remove avatar"}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            
+            {/* User name display */}
+            {profile?.full_name && (
+              <div className="text-center mb-4">
+                <h2 className="text-xl font-semibold">{profile.full_name}</h2>
+                {profile.company_name && (
+                  <p className="text-muted-foreground">{profile.company_name}</p>
                 )}
               </div>
-            </Label>
-            <input type="file" id="avatar-upload" accept="image/*" onChange={handleAvatarChange} className="hidden" disabled={isProcessing || isUploading || isSaving} />
-            {(avatarPreview || profile?.avatar_url) && !(isProcessing || isUploading || isSaving) && (
-              <button 
-                type="button" 
-                onClick={removeAvatar} 
-                className="absolute -top-1 -right-1 z-20 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200" 
-                aria-label={dictionary?.remove_avatar || "Remove avatar"}
-              >
-                <X className="h-3 w-3" />
-              </button>
             )}
+            
+            {/* Sign out button for mobile */}
+            <div className="lg:hidden w-full mt-2">
+              <Button 
+                variant="outline" 
+                type="button" 
+                onClick={handleSignOut} 
+                className="w-full flex items-center justify-center gap-2" 
+                disabled={isSaving || isUploading || isProcessing}
+              >
+                <LogOut className="h-4 w-4" />
+                <span>{dictionary?.sign_out || 'Sign Out'}</span>
+              </Button>
+            </div>
+          </div>
+          
+          {/* Form section - takes full width on mobile, 2/3 on desktop */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>{dictionary?.profile_information || 'Profile Information'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {profile ? (
+                  <form onSubmit={handleSubmit}>
+                    {/* Form fields with updated layout */}
+                    <div className="space-y-4">
+                      {/* Full Name and Company Name */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="full_name">{dictionary?.full_name || 'Full Name'}</Label>
+                          <Input 
+                            id="full_name" 
+                            value={profile?.full_name || ''} 
+                            onChange={(e) => setProfile(prev => prev ? { ...prev, full_name: e.target.value } : null)} 
+                            disabled={isSaving} 
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="company_name">{dictionary?.company_name || 'Company Name'}</Label>
+                          <Input 
+                            id="company_name" 
+                            value={profile?.company_name || ''} 
+                            onChange={(e) => setProfile(prev => prev ? { ...prev, company_name: e.target.value } : null)} 
+                            disabled={isSaving} 
+                          />
+                        </div>
+                      </div>
+                      {/* Email and Phone Number */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="email">{dictionary?.email || 'Email'}</Label>
+                          <Input 
+                            id="email" 
+                            type="email" 
+                            value={profile?.email || ''} 
+                            onChange={(e) => setProfile(prev => prev ? { ...prev, email: e.target.value } : null)} 
+                            disabled={isSaving} 
+                            aria-describedby="email-desc"
+                          />
+                          <p id="email-desc" className="text-xs text-muted-foreground">{dictionary?.email_desc || 'May affect login.'}</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="phone_number">{dictionary?.phone_number || 'Phone Number'}</Label>
+                          <Input 
+                            id="phone_number" 
+                            type="tel" 
+                            value={profile?.phone_number || ''} 
+                            onChange={(e) => setProfile(prev => prev ? { ...prev, phone_number: e.target.value } : null)} 
+                            disabled={isSaving}
+                          />
+                        </div>
+                      </div>
+                      {/* Website and VAT Number */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="website">{dictionary?.website || 'Website'}</Label>
+                          <Input 
+                            id="website" 
+                            type="url" 
+                            value={profile?.website || ''} 
+                            onChange={(e) => setProfile(prev => prev ? { ...prev, website: e.target.value } : null)} 
+                            disabled={isSaving} 
+                            placeholder="https://..."
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="vat_number">{dictionary?.vat_number || 'VAT Number'}</Label>
+                          <Input 
+                            id="vat_number" 
+                            value={profile?.vat_number || ''} 
+                            onChange={(e) => setProfile(prev => prev ? { ...prev, vat_number: e.target.value } : null)} 
+                            disabled={isSaving}
+                          />
+                        </div>
+                      </div>
+                      {/* Address */}
+                      <div className="space-y-1.5">
+                        <Label htmlFor="address">{dictionary?.address || 'Address'}</Label>
+                        <Input 
+                          id="address" 
+                          value={profile?.address || ''} 
+                          onChange={(e) => setProfile(prev => prev ? { ...prev, address: e.target.value } : null)} 
+                          disabled={isSaving}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Action Buttons with updated layout */}
+                    <div className="flex flex-row justify-between items-center gap-4 mt-6 pt-4 border-t dark:border-gray-700">
+                      {/* Sign out button - visible on all screens */}
+                      <div>
+                        <Button 
+                          variant="outline" 
+                          type="button" 
+                          onClick={handleSignOut} 
+                          className="flex items-center justify-center gap-2" 
+                          disabled={isSaving || isUploading || isProcessing}
+                        >
+                          <LogOut className="h-4 w-4" />
+                          <span>{dictionary?.sign_out || 'Sign Out'}</span>
+                        </Button>
+                      </div>
+                      <div>
+                        <Button 
+                          type="submit" 
+                          className="flex items-center justify-center" 
+                          style={{ backgroundColor: '#FF5A5F', color: 'white' }}
+                          disabled={isSaving || isUploading || isProcessing}
+                        >
+                          {(isSaving || isUploading) && (<div className="w-4 h-4 border-t-2 border-white rounded-full animate-spin mr-2"></div>)}
+                          {isSaving ? (dictionary?.saving || 'Saving...') : (isUploading ? (dictionary?.uploading || 'Uploading...') : (dictionary?.save_changes || 'Save Changes'))}
+                        </Button>
+                      </div>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="text-center text-gray-500 py-6">{dictionary?.profile_data_not_loaded || 'Profile data could not be loaded.'}</div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
+        
+        {/* iCal Settings Card - full width */}
+        <IcalSettings 
+          initialAirbnbUrl={profile?.airbnb_ical_url || ''} 
+          initialBookingComUrl={profile?.booking_com_ical_url || ''}
+          dictionary={dictionary}
+          onUrlChange={handleIcalUrlChange}
+        />
         
         {/* Crop Dialog */}
         <Dialog open={isCropDialogOpen} onOpenChange={(open) => { if (!open) { setImageToCrop(null); setCrop(undefined); } setIsCropDialogOpen(open); }}>
@@ -556,126 +740,34 @@ export default function SettingsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* Profile Form Card */}
-        <Card>
-          
-          <CardContent>
-            {profile ? (
-              <form onSubmit={handleSubmit}>
-                {/* Form fields with updated layout */}
-                <div className="space-y-4">
-                  {/* Full Name and Company Name */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="full_name">{dictionary?.full_name || 'Full Name'}</Label>
-                      <Input 
-                        id="full_name" 
-                        value={profile?.full_name || ''} 
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, full_name: e.target.value } : null)} 
-                        disabled={isSaving} 
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="company_name">{dictionary?.company_name || 'Company Name'}</Label>
-                      <Input 
-                        id="company_name" 
-                        value={profile?.company_name || ''} 
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, company_name: e.target.value } : null)} 
-                        disabled={isSaving} 
-                      />
-                    </div>
-                  </div>
-                  {/* Email and Phone Number */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="email">{dictionary?.email || 'Email'}</Label>
-                      <Input 
-                        id="email" 
-                        type="email" 
-                        value={profile?.email || ''} 
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, email: e.target.value } : null)} 
-                        disabled={isSaving} 
-                        aria-describedby="email-desc"
-                      />
-                      <p id="email-desc" className="text-xs text-muted-foreground">{dictionary?.email_desc || 'May affect login.'}</p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="phone_number">{dictionary?.phone_number || 'Phone Number'}</Label>
-                      <Input 
-                        id="phone_number" 
-                        type="tel" 
-                        value={profile?.phone_number || ''} 
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, phone_number: e.target.value } : null)} 
-                        disabled={isSaving}
-                      />
-                    </div>
-                  </div>
-                  {/* Website and VAT Number */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="website">{dictionary?.website || 'Website'}</Label>
-                      <Input 
-                        id="website" 
-                        type="url" 
-                        value={profile?.website || ''} 
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, website: e.target.value } : null)} 
-                        disabled={isSaving} 
-                        placeholder="https://..."
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="vat_number">{dictionary?.vat_number || 'VAT Number'}</Label>
-                      <Input 
-                        id="vat_number" 
-                        value={profile?.vat_number || ''} 
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, vat_number: e.target.value } : null)} 
-                        disabled={isSaving}
-                      />
-                    </div>
-                  </div>
-                  {/* Address */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="address">{dictionary?.address || 'Address'}</Label>
-                    <Input 
-                      id="address" 
-                      value={profile?.address || ''} 
-                      onChange={(e) => setProfile(prev => prev ? { ...prev, address: e.target.value } : null)} 
-                      disabled={isSaving}
-                    />
-                  </div>
-                </div>
-                
-
-                {/* Action Buttons with updated layout */}
-                <div className="flex flex-row justify-between items-center gap-4 mt-6 pt-4 border-t dark:border-gray-700">
-                  <Button variant="outline" type="button" onClick={handleSignOut} className="flex items-center justify-center gap-2" disabled={isSaving || isUploading || isProcessing}>
-                    <LogOut className="h-4 w-4" /><span>{dictionary?.sign_out || 'Sign Out'}</span>
-                  </Button>
-                  <Button type="submit" className="flex items-center justify-center" 
-                    style={{ backgroundColor: '#FF5A5F', color: 'white' }}
-                    disabled={isSaving || isUploading || isProcessing}>
-                    {(isSaving || isUploading) && (<div className="w-4 h-4 border-t-2 border-white rounded-full animate-spin mr-2"></div>)}
-                    {isSaving ? (dictionary?.saving || 'Saving...') : (isUploading ? (dictionary?.uploading || 'Uploading...') : (dictionary?.save_changes || 'Save Changes'))}
-                  </Button>
-                </div>
-              </form>
-            ) : ( /* No Profile Message */
-              <div className="text-center text-gray-500 py-6">{dictionary?.profile_data_not_loaded || 'Profile data could not be loaded.'}</div>
-            )}
-          </CardContent>
-        </Card>
-      
-      {/* Add the IcalSettings component here */}
-      <IcalSettings 
-        initialAirbnbUrl={profile?.airbnb_ical_url || ''} 
-        initialBookingComUrl={profile?.booking_com_ical_url || ''}
-        dictionary={dictionary} 
-      />
+      </div>
     </div>
-  </div>
   );
 } // End component
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

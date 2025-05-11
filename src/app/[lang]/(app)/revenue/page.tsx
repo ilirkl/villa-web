@@ -429,58 +429,74 @@ async function RevenueData({ params }: { params: { lang: string } }) {
     // Pass the calculated data to the respective presentation components
     return (
         <div className="flex flex-col gap-1 md:gap-2"> {/* Reduced gap on mobile */}
-            {/* Summary Card */}
-            <MonthlySummaryCard
-                currentMonthProfit={currentMonthNetProfit}
-                pendingGross={futureGrossRevenue}
-                currentMonthGross={currentMonthGrossRevenue}
-                currentMonthExpenses={currentMonthTotalExpenses}
-            />
-            {/* Revenue Chart Card */}
-            <Card>
-                <CardHeader className="p-3 md:p-6"><CardTitle className="text-base md:text-lg">{dictionary.monthly_net_profit}</CardTitle></CardHeader>
-                <CardContent className="p-2 md:p-6 h-[250px] md:h-[350px]">
-                    <Suspense fallback={<div className="flex items-center justify-center h-full">{dictionary.loading_chart}</div>}>
-                        {monthlyChartData && monthlyChartData.length > 0 ? (
-                            <RevenueLineChart data={monthlyChartData} />
-                        ) : (
-                            <div className="flex items-center justify-center h-full text-muted-foreground">
-                                {dictionary.no_chart_data || 'No chart data available.'}
-                            </div>
-                        )}
-                    </Suspense>
-                </CardContent>
-            </Card>
-            {/* Future Bookings List Card */}
-            <BookingListCard
-                title={dictionary.future_bookings}
-                bookings={futureBookings}
-                statusLabel={dictionary.future}
-                seeAllLink="/bookings?filter=future"
-                showSeeAllButton={true}
-                csrfToken={csrfToken}
-            />
-            {/* Past Bookings List Card */}
-            <BookingListCard
-                title={dictionary.past_bookings}
-                bookings={pastBookings}
-                statusLabel={dictionary.past}
-                showSeeAllButton={true}
-                seeAllLink="/bookings?filter=past"
-                csrfToken={csrfToken}
-            />
-            {/* Expense Breakdown Card */}
-            <ExpenseBreakdownCard
-                title={dictionary.expense_breakdown}
-                data={expenseBreakdownData}
-                csrfToken={csrfToken}
-            />
-            {/* Monthly Reports Carousel */}
-            <MonthlyReportsCarousel
-                title={dictionary.monthly_reports}
-                reports={monthlyReportData}
-                csrfToken={csrfToken}
-            />
+            {/* Two-column layout for larger screens */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {/* Left Column - Summary Card and Monthly Reports stacked */}
+                <div className="flex flex-col gap-2">
+                    {/* Summary Card */}
+                    <MonthlySummaryCard
+                        currentMonthProfit={currentMonthNetProfit}
+                        pendingGross={futureGrossRevenue}
+                        currentMonthGross={currentMonthGrossRevenue}
+                        currentMonthExpenses={currentMonthTotalExpenses}
+                    />
+                    
+                    {/* Monthly Reports Carousel */}
+                    <MonthlyReportsCarousel
+                        title={dictionary.monthly_reports}
+                        reports={monthlyReportData}
+                        csrfToken={csrfToken}
+                    />
+                </div>
+                
+                {/* Right Column - Revenue Chart Card with responsive height */}
+                <Card className="flex flex-col md:h-full">
+                    <CardHeader className="p-3 md:p-4"><CardTitle className="text-base md:text-lg">{dictionary.monthly_net_profit}</CardTitle></CardHeader>
+                    <CardContent className="p-2 md:p-4 flex-grow">
+                        <div className="h-[250px] md:h-full">
+                            <Suspense fallback={<div className="flex items-center justify-center h-full">{dictionary.loading_chart}</div>}>
+                                {monthlyChartData && monthlyChartData.length > 0 ? (
+                                    <RevenueLineChart data={monthlyChartData} />
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                                        {dictionary.no_chart_data || 'No chart data available.'}
+                                    </div>
+                                )}
+                            </Suspense>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+            
+            {/* Bottom Row - Three cards in a row on larger screens */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {/* Future Bookings List Card */}
+                <BookingListCard
+                    title={dictionary.future_bookings}
+                    bookings={futureBookings}
+                    statusLabel={dictionary.future}
+                    seeAllLink="/bookings?filter=future"
+                    showSeeAllButton={true}
+                    csrfToken={csrfToken}
+                />
+                
+                {/* Past Bookings List Card */}
+                <BookingListCard
+                    title={dictionary.past_bookings}
+                    bookings={pastBookings}
+                    statusLabel={dictionary.past}
+                    showSeeAllButton={true}
+                    seeAllLink="/bookings?filter=past"
+                    csrfToken={csrfToken}
+                />
+                
+                {/* Expense Breakdown Card */}
+                <ExpenseBreakdownCard
+                    title={dictionary.expense_breakdown}
+                    data={expenseBreakdownData}
+                    csrfToken={csrfToken}
+                />
+            </div>
         </div>
     );
 }

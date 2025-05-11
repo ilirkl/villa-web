@@ -12,37 +12,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 export function IcalSettings({ 
   initialAirbnbUrl = '', 
   initialBookingComUrl = '', 
-  dictionary 
+  dictionary,
+  onUrlChange
 }: { 
   initialAirbnbUrl?: string, 
   initialBookingComUrl?: string, 
-  dictionary: any 
+  dictionary: any,
+  onUrlChange?: (airbnbUrl: string, bookingComUrl: string) => void
 }) {
   const [airbnbIcalUrl, setAirbnbIcalUrl] = useState(initialAirbnbUrl);
   const [bookingComIcalUrl, setBookingComIcalUrl] = useState(initialBookingComUrl);
-  const [isSaving, setIsSaving] = useState(false);
   const [isSyncingAirbnb, setIsSyncingAirbnb] = useState(false);
   const [isSyncingBookingCom, setIsSyncingBookingCom] = useState(false);
 
-  const saveIcalUrls = async () => {
-    setIsSaving(true);
-    try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          airbnb_ical_url: airbnbIcalUrl,
-          booking_com_ical_url: bookingComIcalUrl
-        })
-        .eq('id', (await supabase.auth.getUser()).data.user?.id);
-      
-      if (error) throw error;
-      toast.success(dictionary.settings_saved || 'Settings saved successfully');
-    } catch (error: any) {
-      console.error('Error saving iCal URLs:', error);
-      toast.error(dictionary.error_saving_settings || 'Error saving settings');
-    } finally {
-      setIsSaving(false);
+  // Update parent component when URLs change
+  const handleAirbnbUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newUrl = e.target.value;
+    setAirbnbIcalUrl(newUrl);
+    if (onUrlChange) {
+      onUrlChange(newUrl, bookingComIcalUrl);
+    }
+  };
+
+  const handleBookingComUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newUrl = e.target.value;
+    setBookingComIcalUrl(newUrl);
+    if (onUrlChange) {
+      onUrlChange(airbnbIcalUrl, newUrl);
     }
   };
 
@@ -91,7 +87,7 @@ export function IcalSettings({
   };
 
   return (
-    <Card>
+    <Card className="mb-8"> {/* Added margin-bottom for spacing */}
       <CardHeader>
         <CardTitle>{dictionary.calendar_sync || 'Calendar Sync'}</CardTitle>
         <CardDescription>
@@ -115,22 +111,24 @@ export function IcalSettings({
                   id="airbnb-ical-url"
                   placeholder="https://www.airbnb.com/calendar/ical/..."
                   value={airbnbIcalUrl}
-                  onChange={(e) => setAirbnbIcalUrl(e.target.value)}
+                  onChange={handleAirbnbUrlChange}
                 />
                 <p className="text-xs text-muted-foreground">
                   {dictionary.find_airbnb_ical_url_instructions || 'Find this in your Airbnb hosting dashboard under Calendar > Export Calendar'}
                 </p>
               </div>
-              <Button 
-                variant="outline" 
-                onClick={syncAirbnb} 
-                disabled={isSyncingAirbnb}
-                className="w-full"
-              >
-                {isSyncingAirbnb 
-                  ? (dictionary.syncing || 'Syncing...') 
-                  : (dictionary.sync_airbnb_now || 'Sync Airbnb Now')}
-              </Button>
+              <div className="flex justify-end items-center pb-2">
+                <Button 
+                  variant="outline" 
+                  onClick={syncAirbnb} 
+                  disabled={isSyncingAirbnb}
+                  size="sm"
+                >
+                  {isSyncingAirbnb 
+                    ? (dictionary.syncing || 'Syncing...') 
+                    : (dictionary.sync_airbnb_now || 'Sync Airbnb Now')}
+                </Button>
+              </div>
             </div>
           </TabsContent>
           
@@ -144,34 +142,36 @@ export function IcalSettings({
                   id="bookingcom-ical-url"
                   placeholder="https://admin.booking.com/hotel/hoteladmin/ical/..."
                   value={bookingComIcalUrl}
-                  onChange={(e) => setBookingComIcalUrl(e.target.value)}
+                  onChange={handleBookingComUrlChange}
                 />
                 <p className="text-xs text-muted-foreground">
                   {dictionary.find_booking_com_ical_url_instructions || 'Find this in your Booking.com extranet under Calendar > Sync calendars > Export calendar'}
                 </p>
               </div>
-              <Button 
-                variant="outline" 
-                onClick={syncBookingCom} 
-                disabled={isSyncingBookingCom}
-                className="w-full"
-              >
-                {isSyncingBookingCom 
-                  ? (dictionary.syncing || 'Syncing...') 
-                  : (dictionary.sync_booking_com_now || 'Sync Booking.com Now')}
-              </Button>
+              <div className="flex justify-end items-center pb-2">
+                <Button 
+                  variant="outline" 
+                  onClick={syncBookingCom} 
+                  disabled={isSyncingBookingCom}
+                  size="sm"
+                >
+                  {isSyncingBookingCom 
+                    ? (dictionary.syncing || 'Syncing...') 
+                    : (dictionary.sync_booking_com_now || 'Sync Booking.com Now')}
+                </Button>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
       </CardContent>
-      <CardFooter>
-        <Button onClick={saveIcalUrls} disabled={isSaving} className="w-full">
-          {isSaving 
-            ? (dictionary.saving || 'Saving...') 
-            : (dictionary.save_settings || 'Save Settings')}
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
+
+
+
+
+
+
+
 

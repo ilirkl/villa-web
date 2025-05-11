@@ -47,3 +47,4 @@ module.exports = {
     hoverOnlyWhenSupported: true,
   },
 }
+

@@ -125,11 +125,27 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
       console.log(`Original category: ${categoryName}, Language: ${lang}`);
       
       // Translate the category name based on the current language
-      const translatedCategory = translateExpenseCategory(
-        categoryName, 
-        dictionary, 
-        lang
-      );
+      let translatedCategory;
+
+      // Use type assertion to access expense_categories safely
+      const expenseCategories = (dictionary as any)?.expense_categories;
+      
+      // Check if we have translations in the expense_categories dictionary structure
+      if (expenseCategories && 
+          typeof expenseCategories === 'object' && 
+          categoryName && 
+          expenseCategories[categoryName]) {
+        translatedCategory = expenseCategories[categoryName];
+        console.log(`Using dictionary.expense_categories: ${translatedCategory}`);
+      } else {
+        // Fall back to the old translation method
+        translatedCategory = translateExpenseCategory(
+          categoryName, 
+          dictionary, 
+          lang
+        );
+        console.log(`Using translateExpenseCategory: ${translatedCategory}`);
+      }
       
       // Log the translation result
       console.log(`Translated to: ${translatedCategory}`);
@@ -161,6 +177,9 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
     throw error;
   }
 }
+
+
+
 
 
 
