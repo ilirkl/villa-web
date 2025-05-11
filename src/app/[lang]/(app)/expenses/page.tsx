@@ -4,8 +4,8 @@ import { createClient } from '@/lib/supabase/client';
 import { ExpenseCard } from '@/components/expenses/ExpenseCard';
 import { ExpenseForm } from '@/components/expenses/ExpenseForm';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { PlusCircle, LayoutGrid, Table as TableIcon } from 'lucide-react';
+import { useState, useEffect, JSX } from 'react';
 import { Expense, ExpenseCategory, ExpenseFormData } from '@/lib/definitions';
 import { FilterSheet } from '@/components/FilterSheet';
 import { SearchBar } from '@/components/SearchBar';
@@ -13,6 +13,7 @@ import { getDictionary } from '@/lib/dictionary';
 import { useParams } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 
 type ExpenseWithCategory = Expense & {
     expense_categories: Pick<ExpenseCategory, 'name'> | null;
@@ -211,6 +212,73 @@ export default function ExpensesPage() {
     </button>
   );
 
+  // Add viewMode state and isMobile state
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Add useEffect for mobile detection and setting default view mode
+  useEffect(() => {
+    const checkIfMobile = () => {
+      const isMobileScreen = window.innerWidth < 768;
+      setIsMobile(isMobileScreen);
+      
+      // Set default view mode based on screen size
+      // Mobile: card view, Non-mobile: table view
+      setViewMode(isMobileScreen ? 'card' : 'table');
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
+  // Add function to render expense table
+  function renderExpenseTable(): JSX.Element {
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{dictionary.date || 'Date'}</TableHead>
+            <TableHead>{dictionary.description || 'Description'}</TableHead>
+            <TableHead>{dictionary.category || 'Category'}</TableHead>
+            <TableHead className="text-right">{dictionary.amount || 'Amount'}</TableHead>
+            <TableHead className="text-right">{dictionary.actions || 'Actions'}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredExpenses.map((expense) => {
+            // Format date for display
+            const date = expense.date ? new Date(expense.date) : null;
+            const formattedDate = date ? date.toLocaleDateString() : 'N/A';
+            
+            return (
+              <TableRow key={expense.id}>
+                <TableCell>{formattedDate}</TableCell>
+                <TableCell className="font-medium">{expense.description || 'N/A'}</TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted">
+                    {expense.expense_categories?.name || 'Uncategorized'}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">€{expense.amount?.toLocaleString()}</TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="sm" onClick={() => handleEditExpense(expense.id)}>
+                    {dictionary.edit || 'Edit'}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    );
+  }
+
   // Existing loading, error, and empty states...
 
   if (isLoading) return <div>{dictionary.loading_expenses || 'Loading expenses...'}</div>;
@@ -300,29 +368,59 @@ export default function ExpensesPage() {
             placeholder={dictionary.search_expenses || "Search description or category..."}
           />
         </div>
-        <FilterSheet 
-          title={dictionary.filter_expenses || "Filter Expenses"}
-          sortOptions={sortOptions}
-          filterOptions={filterOptions}
-          currentSortField={sortField}
-          currentSortOrder={sortOrder}
-          currentFilter={categoryFilter}
-          onSortFieldChange={(field) => setSortField(field as 'date' | 'amount')}
-          onSortOrderChange={setSortOrder}
-          onFilterChange={setCategoryFilter}
-        />
+        <div className="flex items-center gap-2">
+          {/* View Toggle Button - Only show on non-mobile */}
+          <div className="hidden md:flex border rounded-md">
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('card')}
+              className="rounded-r-none"
+            >
+              <LayoutGrid size={16} className="mr-1" />
+              {dictionary.cards || 'Cards'}
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+              className="rounded-l-none"
+            >
+              <TableIcon size={16} className="mr-1" />
+              {dictionary.table || 'Table'}
+            </Button>
+          </div>
+          <FilterSheet 
+            title={dictionary.filter_expenses || "Filter Expenses"}
+            sortOptions={sortOptions}
+            filterOptions={filterOptions}
+            currentSortField={sortField}
+            currentSortOrder={sortOrder}
+            currentFilter={categoryFilter}
+            onSortFieldChange={(field) => setSortField(field as 'date' | 'amount')}
+            onSortOrderChange={setSortOrder}
+            onFilterChange={setCategoryFilter}
+          />
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredExpenses.map((expense) => (
-          <ExpenseCard 
-            key={expense.id} 
-            expense={expense} 
-            onDelete={handleRefresh}
-            onEdit={() => handleEditExpense(expense.id)}
-          />
-        ))}
-      </div>
+      {/* Conditionally render card or table view based on viewMode */}
+      {viewMode === 'card' || isMobile ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredExpenses.map((expense) => (
+            <ExpenseCard 
+              key={expense.id} 
+              expense={expense} 
+              onDelete={handleRefresh}
+              onEdit={() => handleEditExpense(expense.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          {renderExpenseTable()}
+        </div>
+      )}
       
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-3xl">

@@ -8,7 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Profile } from '@/lib/definitions';
+import { Profile as BaseProfile } from '@/lib/definitions';
+
+// Extend the Profile type to include airbnb_ical_url and booking_com_ical_url
+type Profile = BaseProfile & {
+  airbnb_ical_url?: string | null;
+  booking_com_ical_url?: string | null;
+};
+
 import { LogOut, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
@@ -25,6 +32,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { DownloadBackupButton } from '@/components/settings/DownloadBackupButton';
+import { IcalSettings } from '@/components/settings/IcalSettings';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 
 // Helper function (Unchanged)
 function centerAspectCrop(
@@ -40,6 +49,12 @@ function centerAspectCrop(
 
 
 export default function SettingsPage() {
+  const params = useParams();
+  const lang = params.lang as string;
+  const router = useRouter();
+  const supabase = createClient();
+  
+  const [dictionary, setDictionary] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -51,12 +66,8 @@ export default function SettingsPage() {
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
-  const { lang } = useParams();
-  const [dictionary, setDictionary] = useState<any>(null);
-  // CSRF token state removed as we're using client-side actions
 
+  // Load dictionary
   useEffect(() => {
     async function loadDictionary() {
       try {
@@ -69,7 +80,7 @@ export default function SettingsPage() {
     loadDictionary();
   }, [lang]);
 
-  // --- Fetch Profile Logic (Unchanged) ---
+  // Fetch profile data
   const fetchProfile = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -99,13 +110,12 @@ export default function SettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase, router]); // Added dependencies
+  }, [supabase, router]);
 
+  // Load profile on component mount
   useEffect(() => {
     fetchProfile();
-    return () => { if (avatarPreview?.startsWith('blob:')) URL.revokeObjectURL(avatarPreview); };
-  }, [fetchProfile]); // Added fetchProfile dependency
-  // --- End Fetch Profile ---
+  }, [fetchProfile]);
 
   // --- Image URL Handling (Unchanged) ---
   const getImageUrl = (url: string | null): string => {
@@ -372,31 +382,31 @@ export default function SettingsPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!profile) return;
+    if (!profile) return;  // Use profile instead of profileState
     setIsSaving(true);
     try {
-      let finalAvatarPath: string | null | undefined = profile.avatar_url;
+      let finalAvatarPath: string | null | undefined = profile.avatar_url;  // Use profile
       if (avatarFile) { // If a new file was processed
         const uploadedPath = await uploadAvatar(avatarFile);
         if (uploadedPath) {
           // Optional: Delete old avatar
-          if (profile.avatar_url && profile.avatar_url !== uploadedPath) {
+          if (profile.avatar_url && profile.avatar_url !== uploadedPath) {  // Use profile
             // await supabase.storage.from('avatars').remove([profile.avatar_url]);
           }
           finalAvatarPath = uploadedPath;
         } else {
           throw new Error('Avatar upload failed. Changes not saved.');
         }
-      } // If no avatarFile, finalAvatarPath remains as profile.avatar_url (which might be null if removed)
+      }
 
       const updates = {
-          full_name: profile.full_name, 
-          company_name: profile.company_name,
-          email: profile.email, 
-          phone_number: profile.phone_number,
-          website: profile.website, 
-          vat_number: profile.vat_number,
-          address: profile.address, 
+          full_name: profile.full_name,  // Use profile
+          company_name: profile.company_name,  // Use profile
+          email: profile.email,  // Use profile
+          phone_number: profile.phone_number,  // Use profile
+          website: profile.website,  // Use profile
+          vat_number: profile.vat_number,  // Use profile
+          address: profile.address,  // Use profile
           avatar_url: finalAvatarPath,
           updated_at: new Date().toISOString(),
       };
@@ -409,11 +419,11 @@ export default function SettingsPage() {
       }
 
       toast.success('Profile updated successfully!');
-      setProfile(prev => prev ? { ...prev, ...updates } : null); // Update local state
+      setProfile((prev: Profile | null) => prev ? { ...prev, ...updates } : null); // Update local state
       setAvatarFile(null); // Clear staged file
       if (avatarPreview?.startsWith('blob:')) { // Clean up blob preview if needed
           URL.revokeObjectURL(avatarPreview);
-          setAvatarPreview(getImageUrl(finalAvatarPath)); // Update preview to saved URL
+          setAvatarPreview(getImageUrl(finalAvatarPath || null)); // Add null fallback
       }
     } catch (error: any) {
       console.error('Error during handleSubmit:', error);
@@ -469,7 +479,7 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="max-w-2xl mt-0 p-0 space-y-0">
+      <div className="max-w-2xl mt-0 p-0 space-y-6">
         {/* Language Switcher and Download Backup Button - positioned inline */}
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -557,21 +567,83 @@ export default function SettingsPage() {
                 <div className="space-y-4">
                   {/* Full Name and Company Name */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5"><Label htmlFor="full_name">{dictionary?.full_name || 'Full Name'}</Label><Input id="full_name" value={profile.full_name || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, full_name: e.target.value } : null)} disabled={isSaving} /></div>
-                    <div className="space-y-1.5"><Label htmlFor="company_name">{dictionary?.company_name || 'Company Name'}</Label><Input id="company_name" value={profile.company_name || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, company_name: e.target.value } : null)} disabled={isSaving} /></div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="full_name">{dictionary?.full_name || 'Full Name'}</Label>
+                      <Input 
+                        id="full_name" 
+                        value={profile?.full_name || ''} 
+                        onChange={(e) => setProfile(prev => prev ? { ...prev, full_name: e.target.value } : null)} 
+                        disabled={isSaving} 
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="company_name">{dictionary?.company_name || 'Company Name'}</Label>
+                      <Input 
+                        id="company_name" 
+                        value={profile?.company_name || ''} 
+                        onChange={(e) => setProfile(prev => prev ? { ...prev, company_name: e.target.value } : null)} 
+                        disabled={isSaving} 
+                      />
+                    </div>
                   </div>
                   {/* Email and Phone Number */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5"><Label htmlFor="email">{dictionary?.email || 'Email'}</Label><Input id="email" type="email" value={profile.email || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, email: e.target.value } : null)} disabled={isSaving} aria-describedby="email-desc"/><p id="email-desc" className="text-xs text-muted-foreground">{dictionary?.email_desc || 'May affect login.'}</p></div>
-                    <div className="space-y-1.5"><Label htmlFor="phone_number">{dictionary?.phone_number || 'Phone Number'}</Label><Input id="phone_number" type="tel" value={profile.phone_number || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, phone_number: e.target.value } : null)} disabled={isSaving}/></div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="email">{dictionary?.email || 'Email'}</Label>
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        value={profile?.email || ''} 
+                        onChange={(e) => setProfile(prev => prev ? { ...prev, email: e.target.value } : null)} 
+                        disabled={isSaving} 
+                        aria-describedby="email-desc"
+                      />
+                      <p id="email-desc" className="text-xs text-muted-foreground">{dictionary?.email_desc || 'May affect login.'}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="phone_number">{dictionary?.phone_number || 'Phone Number'}</Label>
+                      <Input 
+                        id="phone_number" 
+                        type="tel" 
+                        value={profile?.phone_number || ''} 
+                        onChange={(e) => setProfile(prev => prev ? { ...prev, phone_number: e.target.value } : null)} 
+                        disabled={isSaving}
+                      />
+                    </div>
                   </div>
                   {/* Website and VAT Number */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5"><Label htmlFor="website">{dictionary?.website || 'Website'}</Label><Input id="website" type="url" value={profile.website || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, website: e.target.value } : null)} disabled={isSaving} placeholder="https://..."/></div>
-                    <div className="space-y-1.5"><Label htmlFor="vat_number">{dictionary?.vat_number || 'VAT Number'}</Label><Input id="vat_number" value={profile.vat_number || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, vat_number: e.target.value } : null)} disabled={isSaving}/></div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="website">{dictionary?.website || 'Website'}</Label>
+                      <Input 
+                        id="website" 
+                        type="url" 
+                        value={profile?.website || ''} 
+                        onChange={(e) => setProfile(prev => prev ? { ...prev, website: e.target.value } : null)} 
+                        disabled={isSaving} 
+                        placeholder="https://..."
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="vat_number">{dictionary?.vat_number || 'VAT Number'}</Label>
+                      <Input 
+                        id="vat_number" 
+                        value={profile?.vat_number || ''} 
+                        onChange={(e) => setProfile(prev => prev ? { ...prev, vat_number: e.target.value } : null)} 
+                        disabled={isSaving}
+                      />
+                    </div>
                   </div>
                   {/* Address */}
-                  <div className="space-y-1.5"><Label htmlFor="address">{dictionary?.address || 'Address'}</Label><Input id="address" value={profile.address || ''} onChange={(e) => setProfile(prev => prev ? { ...prev, address: e.target.value } : null)} disabled={isSaving}/></div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="address">{dictionary?.address || 'Address'}</Label>
+                    <Input 
+                      id="address" 
+                      value={profile?.address || ''} 
+                      onChange={(e) => setProfile(prev => prev ? { ...prev, address: e.target.value } : null)} 
+                      disabled={isSaving}
+                    />
+                  </div>
                 </div>
                 
 
@@ -594,10 +666,26 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       
-      </div>
+      {/* Add the IcalSettings component here */}
+      <IcalSettings 
+        initialAirbnbUrl={profile?.airbnb_ical_url || ''} 
+        initialBookingComUrl={profile?.booking_com_ical_url || ''}
+        dictionary={dictionary} 
+      />
     </div>
+  </div>
   );
 } // End component
+
+
+
+
+
+
+
+
+
+
 
 
 

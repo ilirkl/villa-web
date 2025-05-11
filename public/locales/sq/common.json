@@ -145,9 +145,27 @@
     "generated_on": "Gjeneruar më"
   },
   "backup": "Shkarko të Dhënat",
+  "calendar_sync": "Sinkronizimi i Kalendarit",
+  "calendar_sync_description": "Sinkronizo rezervimet automatikisht duke përdorur iCal",
+  "airbnb_ical_url": "URL e iCal të Airbnb",
+  "find_airbnb_ical_url_instructions": "Gjeni këtë në panelin e pritësit të Airbnb nën Kalendar > Eksporto Kalendarin",
+  "syncing": "Duke sinkronizuar...",
+  "sync_airbnb_now": "Sinkronizo Airbnb Tani",
+  "booking_com_ical_url": "URL e iCal të Booking.com",
+  "find_booking_com_ical_url_instructions": "Gjeni këtë në ekstranetin e Booking.com nën Kalendar > Sinkronizo kalendarët > Eksporto kalendarin",
+  "sync_booking_com_now": "Sinkronizo Booking.com Tani",
+  "save_settings": "Ruaj Cilësimet",
+  "settings_saved": "Cilësimet u ruajtën me sukses",
+  "error_saving_settings": "Gabim në ruajtjen e cilësimeve",
+  "please_enter_ical_url": "Ju lutemi vendosni një URL të iCal të Airbnb fillimisht",
+  "please_enter_booking_com_ical_url": "Ju lutemi vendosni një URL të iCal të Booking.com fillimisht",
+  "error_syncing": "Gabim në sinkronizimin me Airbnb",
+  "error_syncing_booking_com": "Gabim në sinkronizimin me Booking.com",
+  "data_backup": "Rezervimi i të Dhënave",
   "backup_description": "Shkarko të gjitha të dhënat e rezervimeve dhe shpenzimeve si skedar Excel.",
   "download_backup": "Shkarko Rezervimin e të Dhënave",
   "generating_backup": "Po gjenerohet rezervimi...",
   "backup_downloaded": "Rezervimi u shkarkua me sukses",
-  "backup_error": "Gabim në krijimin e rezervimit"
+  "backup_error": "Gabim në krijimin e rezervimit",
+  "edit_booking": "Ndrysho Rezervimin"
 }

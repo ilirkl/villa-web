@@ -23,8 +23,15 @@ interface CalendarEvent {
   color?: string;
   originalStart: Date; 
   originalEnd: Date;   
-  source?: string;  // Add this new field
-  extendedProps?: any; // Add this to store additional booking data
+  source?: string;
+  extendedProps?: {
+    total_amount?: number;
+    prepayment?: number;
+    notes?: string;
+    airbnb_id?: string | null;
+    booking_com_id?: string | null;
+    [key: string]: any;
+  };
 }
 
 const bookingSourceOptions = [ 
@@ -103,6 +110,8 @@ const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEv
           total_amount: event.total_amount || 0,
           prepayment: event.prepayment || 0,
           notes: event.notes || '',
+          airbnb_id: event.airbnb_id || null,
+          booking_com_id: event.booking_com_id || null,
           ...event
         }, // Store the original event data with explicit extraction of important fields
       };
@@ -136,7 +145,7 @@ const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEv
   });
   
   const handleBookingClick = (event: CalendarEvent, e: React.MouseEvent) => {
-// Validate the source value
+    // Validate the source value
     const validSources = ['DIRECT', 'AIRBNB', 'BOOKING'] as const;
     const sourceValue = event.source && validSources.includes(event.source as any) 
       ? (event.source as "DIRECT" | "AIRBNB" | "BOOKING") 
@@ -154,9 +163,10 @@ const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEv
       notes: event.extendedProps?.notes || '',
       created_at: null,
       updated_at: null,
-      user_id: null
+      user_id: null,
+      airbnb_id: event.extendedProps?.airbnb_id || null,
+      booking_com_id: event.extendedProps?.booking_com_id || null
     };
-    
     
     setSelectedBooking(booking);
     setIsPopupVisible(true);

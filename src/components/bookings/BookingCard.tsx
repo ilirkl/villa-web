@@ -70,7 +70,7 @@ export function BookingCard({
         if (isMounted) {
           setCsrfToken(token);
           setIsTokenLoaded(true);
-          console.log("CSRF token fetched successfully for BookingCard");
+          console.log("CSRF token fetched successfully for BookingCard:", token.substring(0, 5) + "...");
         }
       } catch (error) {
         console.error("Failed to fetch CSRF token:", error);
@@ -104,13 +104,13 @@ export function BookingCard({
   // Function to handle booking deletion with CSRF token
   const handleDelete = async () => {
     try {
-      if (!csrfToken) {
-        console.error("CSRF token not available");
-        toast.error("Security token not available. Please try again.");
-        return;
-      }
+      // Always get a fresh token right before deletion
+      resetCsrfToken(); // Clear any cached token
+      const freshToken = await getCsrfToken(true); // Force refresh
       
-      await deleteBooking(booking.id, csrfToken);
+      console.log("Fresh CSRF token for deletion:", freshToken.substring(0, 5) + "...");
+      
+      await deleteBooking(booking.id, freshToken);
       toast.success('Booking deleted successfully');
       if (onDelete) onDelete();
     } catch (error) {

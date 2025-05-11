@@ -3,12 +3,17 @@ let csrfToken: string | null = null;
 let tokenFetchPromise: Promise<string> | null = null;
 
 // Get CSRF token (cached)
-export async function getCsrfToken(): Promise<string> {
-  // Return cached token if available
-  if (csrfToken) return csrfToken;
+export async function getCsrfToken(forceRefresh = false): Promise<string> {
+  // If force refresh is requested, reset the token
+  if (forceRefresh) {
+    resetCsrfToken();
+  }
   
-  // If a fetch is already in progress, return that promise
-  if (tokenFetchPromise) return tokenFetchPromise;
+  // Return cached token if available and not forcing refresh
+  if (csrfToken && !forceRefresh) return csrfToken;
+  
+  // If a fetch is already in progress and not forcing refresh, return that promise
+  if (tokenFetchPromise && !forceRefresh) return tokenFetchPromise;
   
   // Create a new fetch promise that always returns a string or throws
   const newPromise = (async (): Promise<string> => {
@@ -20,8 +25,12 @@ export async function getCsrfToken(): Promise<string> {
         // Add cache busting to prevent caching
         headers: {
           'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
+          'Pragma': 'no-cache',
+          // Add a random query parameter to bust cache
+          'X-Random': Math.random().toString()
+        },
+        // Add cache busting timestamp to URL
+        cache: 'no-store'
       });
       
       if (!response.ok) {
@@ -73,6 +82,8 @@ export async function fetchWithCsrf(url: string, options: RequestInit = {}): Pro
     headers
   });
 }
+
+
 
 
 

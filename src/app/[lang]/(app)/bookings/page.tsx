@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense, JSX } from 'react';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, LayoutGrid, Table as TableIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Booking, BookingFormData, BookingSource } from '@/lib/definitions';
 import { createClient } from '@/lib/supabase/client';
@@ -12,6 +12,8 @@ import { parse, format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Database } from '@/lib/database.types';
 import { toast } from 'sonner';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 
 // Dynamically import components
 const BookingCard = dynamic(() => import('@/components/bookings/BookingCard').then(mod => ({ default: mod.BookingCard })), {
@@ -57,7 +59,11 @@ export default function BookingsPage() {
   const [dictionary, setDictionary] = useState<any>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentBooking, setCurrentBooking] = useState<BookingFormData | null>(null);
-  
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
+  const [isMobile, setIsMobile] = useState(false);
+  // Add state to track expanded rows
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
   const { lang } = useParams();
 
   // Define modalTitle based on whether we're adding or editing
@@ -173,6 +179,27 @@ export default function BookingsPage() {
     setFilteredBookings(result);
   }, [bookings, sourceFilter, searchTerm]);
 
+  // Add this useEffect to detect mobile screens
+  useEffect(() => {
+    const checkIfMobile = () => {
+      const isMobileScreen = window.innerWidth < 768;
+      setIsMobile(isMobileScreen);
+      
+      // Set default view mode based on screen size
+      // Mobile: card view, Non-mobile: table view
+      setViewMode(isMobileScreen ? 'card' : 'table');
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
   // Replace the AddButton component with this floating version
   const AddButton = () => (
     <button 
@@ -195,6 +222,119 @@ export default function BookingsPage() {
       </div>
     </button>
   );
+
+  function renderBookingCard(booking: Booking): JSX.Element {
+    // Format dates for display
+    const formattedStartDate = formatBookingDate(booking.start_date, lang);
+    const formattedEndDate = formatBookingDate(booking.end_date, lang);
+    
+    return (
+      <BookingCard
+        key={booking.id}
+        booking={booking}
+        formattedStartDate={formattedStartDate}
+        formattedEndDate={formattedEndDate}
+        onDelete={handleRefresh}
+        onEdit={() => handleEditBooking(booking.id)}
+      />
+    );
+  }
+
+  // Add this function to render the table view
+  function renderBookingTable(): JSX.Element {
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{dictionary.guest_name || 'Guest Name'}</TableHead>
+            <TableHead>{dictionary.dates || 'Dates'}</TableHead>
+            <TableHead>{dictionary.source || 'Source'}</TableHead>
+            <TableHead className="text-right">{dictionary.amount || 'Amount'}</TableHead>
+            <TableHead className="text-right">{dictionary.actions || 'Actions'}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredBookings.map((booking) => {
+            const formattedStartDate = formatBookingDate(booking.start_date, lang);
+            const formattedEndDate = formatBookingDate(booking.end_date, lang);
+            const isExpanded = expandedRows.has(booking.id);
+            
+            return (
+              <>
+                <TableRow 
+                  key={booking.id} 
+                  className={`cursor-pointer ${isExpanded ? 'bg-muted/50' : ''}`}
+                  onClick={() => toggleRowExpansion(booking.id)}
+                >
+                  <TableCell className="font-medium">{booking.guest_name}</TableCell>
+                  <TableCell>{formattedStartDate} - {formattedEndDate}</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" 
+                          style={{ 
+                            backgroundColor: booking.source === 'AIRBNB' ? '#ffece6' : 
+                                            booking.source === 'BOOKING' ? '#e6f0ff' : '#e6fff0',
+                            color: booking.source === 'AIRBNB' ? '#ff5a5f' : 
+                                   booking.source === 'BOOKING' ? '#003580' : '#10b981'
+                          }}>
+                      {booking.source}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">€{booking.total_amount?.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent row expansion when clicking the edit button
+                        handleEditBooking(booking.id);
+                      }}
+                    >
+                      {dictionary.edit || 'Edit'}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+                {isExpanded && (
+                  <TableRow key={`${booking.id}-expanded`} className="bg-muted/30">
+                    <TableCell colSpan={5} className="px-4 py-3">
+                      <div className="text-sm">
+                        <span className="font-medium"></span> 
+                        {booking.notes ? (
+                          <span className="ml-2">{booking.notes}</span>
+                        ) : (
+                          <span className="ml-2 text-muted-foreground italic">
+                            {dictionary.no_notes || 'No notes available'}
+                          </span>
+                        )}
+                      </div>
+                      {booking.prepayment > 0 && (
+                        <div className="text-sm mt-1">
+                          <span className="font-medium">{dictionary.prepayment || 'Prepayment'}:</span> 
+                          <span className="ml-2">€{booking.prepayment.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </>
+            );
+          })}
+        </TableBody>
+      </Table>
+    );
+  }
+
+  // Function to toggle row expansion
+  const toggleRowExpansion = (bookingId: string) => {
+    setExpandedRows(prevExpandedRows => {
+      const newExpandedRows = new Set(prevExpandedRows);
+      if (newExpandedRows.has(bookingId)) {
+        newExpandedRows.delete(bookingId);
+      } else {
+        newExpandedRows.add(bookingId);
+      }
+      return newExpandedRows;
+    });
+  };
 
   // Render loading state
   if (isLoading) {
@@ -276,23 +416,6 @@ export default function BookingsPage() {
     );
   }
 
-  function renderBookingCard(booking: { created_at: string | null; end_date: string; guest_name: string; id: string; notes: string | null; prepayment: number; source: Database["public"]["Enums"]["booking_source"]; start_date: string; total_amount: number; updated_at: string | null; user_id: string | null; }): JSX.Element {
-    // Format dates for display
-    const formattedStartDate = formatBookingDate(booking.start_date, lang);
-    const formattedEndDate = formatBookingDate(booking.end_date, lang);
-    
-    return (
-      <BookingCard
-        key={booking.id}
-        booking={booking}
-        formattedStartDate={formattedStartDate}
-        formattedEndDate={formattedEndDate}
-        onDelete={handleRefresh}
-        onEdit={() => handleEditBooking(booking.id)}
-      />
-    );
-  }
-
   // Render normal state with bookings
   return (
     <div className="pb-18">
@@ -307,22 +430,52 @@ export default function BookingsPage() {
             placeholder={dictionary.search_guest_name || "Search guest name..."}
           />
         </div>
-        <FilterSheet 
-          title={dictionary.filter_bookings || "Filter Bookings"}
-          sortOptions={sortOptions}
-          filterOptions={bookingSourceOptions}
-          currentSortField="start_date"
-          currentSortOrder={sortOrder}
-          currentFilter={sourceFilter}
-          onSortFieldChange={() => {}}
-          onSortOrderChange={setSortOrder}
-          onFilterChange={(filter) => setSourceFilter(filter as BookingSource | 'all')}
-        />
+        <div className="flex items-center gap-2">
+          {/* View Toggle Button - Only show on non-mobile */}
+          <div className="hidden md:flex border rounded-md">
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('card')}
+              className="rounded-r-none"
+            >
+              <LayoutGrid size={16} className="mr-1" />
+              {dictionary.cards || 'Cards'}
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+              className="rounded-l-none"
+            >
+              <TableIcon size={16} className="mr-1" />
+              {dictionary.table || 'Table'}
+            </Button>
+          </div>
+          <FilterSheet 
+            title={dictionary.filter_bookings || "Filter Bookings"}
+            sortOptions={sortOptions}
+            filterOptions={bookingSourceOptions}
+            currentSortField="start_date"
+            currentSortOrder={sortOrder}
+            currentFilter={sourceFilter}
+            onSortFieldChange={() => {}}
+            onSortOrderChange={setSortOrder}
+            onFilterChange={(filter) => setSourceFilter(filter as BookingSource | 'all')}
+          />
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredBookings.map(booking => renderBookingCard(booking))}
-      </div>
+      {/* Conditionally render card or table view based on viewMode */}
+      {viewMode === 'card' || isMobile ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredBookings.map(booking => renderBookingCard(booking))}
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          {renderBookingTable()}
+        </div>
+      )}
       
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-3xl">

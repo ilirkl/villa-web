@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type Database = {
+export interface Database {
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -47,6 +47,7 @@ export type Database = {
           total_amount: number
           updated_at: string | null
           user_id: string | null
+          airbnb_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -60,6 +61,7 @@ export type Database = {
           total_amount?: number
           updated_at?: string | null
           user_id?: string | null
+          airbnb_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -73,6 +75,7 @@ export type Database = {
           total_amount?: number
           updated_at?: string | null
           user_id?: string | null
+          airbnb_id?: string | null
         }
         Relationships: []
       }
@@ -151,6 +154,7 @@ export type Database = {
           username: string | null
           vat_number: string | null
           website: string | null
+          airbnb_ical_url: string | null
         }
         Insert: {
           address?: string | null
@@ -164,6 +168,7 @@ export type Database = {
           username?: string | null
           vat_number?: string | null
           website?: string | null
+          airbnb_ical_url?: string | null
         }
         Update: {
           address?: string | null
@@ -177,6 +182,7 @@ export type Database = {
           username?: string | null
           vat_number?: string | null
           website?: string | null
+          airbnb_ical_url?: string | null
         }
         Relationships: []
       }

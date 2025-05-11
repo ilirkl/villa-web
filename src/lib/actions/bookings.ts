@@ -139,8 +139,16 @@ export async function deleteBooking(id: string, csrfToken: string) {
     const supabase = createActionClient();
     const serverCsrfToken = getServerCsrfToken();
     
+    // Add debugging logs
+    console.log("Client CSRF token:", csrfToken.substring(0, 5) + "...");
+    console.log("Server CSRF token:", serverCsrfToken.substring(0, 5) + "...");
+    
     // Verify CSRF token
     if (!csrfToken || !serverCsrfToken || csrfToken !== serverCsrfToken) {
+      console.error("CSRF token mismatch:", {
+        clientToken: csrfToken ? csrfToken.substring(0, 10) + "..." : "null",
+        serverToken: serverCsrfToken ? serverCsrfToken.substring(0, 10) + "..." : "null"
+      });
       throw new Error('Security verification failed');
     }
 
