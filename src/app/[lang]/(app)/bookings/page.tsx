@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense, JSX } from 'react';
-import { PlusCircle, LayoutGrid, Table as TableIcon } from 'lucide-react';
+import { PlusCircle, LayoutGrid, Table as TableIcon, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Booking, BookingFormData, BookingSource } from '@/lib/definitions';
 import { createClient } from '@/lib/supabase/client';
@@ -14,6 +14,19 @@ import { Database } from '@/lib/database.types';
 import { toast } from 'sonner';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { deleteBooking } from '@/lib/actions/bookings';
+import { getCsrfToken, resetCsrfToken } from '@/lib/csrf-client';
 
 // Dynamically import components
 const BookingCard = dynamic(() => import('@/components/bookings/BookingCard').then(mod => ({ default: mod.BookingCard })), {
@@ -281,16 +294,48 @@ export default function BookingsPage() {
                   </TableCell>
                   <TableCell className="text-right">€{booking.total_amount?.toLocaleString()}</TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent row expansion when clicking the edit button
-                        handleEditBooking(booking.id);
-                      }}
-                    >
-                      {dictionary.edit || 'Edit'}
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent row expansion
+                          handleEditBooking(booking.id);
+                        }}
+                        className="p-0 bg-transparent border-none"
+                      >
+                        <Pencil className="h-5 w-5 transition-all duration-300 ease-in-out transform
+                                text-[#ff5a5f] hover:scale-110
+                                active:scale-95 active:rotate-12 cursor-pointer" />
+                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button 
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-0 bg-transparent border-none"
+                          >
+                            <Trash2 className="h-5 w-5 text-[#ff5a5f] cursor-pointer" />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{dictionary.are_you_sure || 'Are you sure?'}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {(dictionary.delete_booking_confirmation || 'This action cannot be undone. This will permanently delete the booking for {guest}.')
+                                .replace('{guest}', booking.guest_name || '')}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{dictionary.cancel || 'Cancel'}</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDelete(booking.id)}
+                              style={{ backgroundColor: '#FF5A5F', color: 'white' }}
+                              className='hover:bg-[#FF5A5F]/90'
+                            >
+                              {dictionary.delete || 'Delete'}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
                 {isExpanded && (
@@ -334,6 +379,22 @@ export default function BookingsPage() {
       }
       return newExpandedRows;
     });
+  };
+
+  // Add this function to your component
+  const handleDelete = async (bookingId: string) => {
+    try {
+      // Always get a fresh token right before deletion
+      resetCsrfToken(); // Clear any cached token
+      const freshToken = await getCsrfToken(true); // Force refresh
+      
+      await deleteBooking(bookingId, freshToken);
+      toast.success('Booking deleted successfully');
+      handleRefresh();
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete booking');
+    }
   };
 
   // Render loading state

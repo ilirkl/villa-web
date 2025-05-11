@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { ExpenseCard } from '@/components/expenses/ExpenseCard';
 import { ExpenseForm } from '@/components/expenses/ExpenseForm';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, LayoutGrid, Table as TableIcon } from 'lucide-react';
+import { PlusCircle, LayoutGrid, Table as TableIcon, Pencil, Trash2 } from 'lucide-react';
 import { useState, useEffect, JSX } from 'react';
 import { Expense, ExpenseCategory, ExpenseFormData } from '@/lib/definitions';
 import { FilterSheet } from '@/components/FilterSheet';
@@ -14,6 +14,18 @@ import { useParams } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { deleteExpense } from '@/lib/actions/expenses';
 
 type ExpenseWithCategory = Expense & {
     expense_categories: Pick<ExpenseCategory, 'name'> | null;
@@ -69,12 +81,25 @@ export default function ExpensesPage() {
         
         setCategories(categoriesData || []);
         
-        // Also update filter options
-        const options = categoriesData?.map(cat => ({
-          id: cat.id,
-          name: cat.name,
-          color: '#' + Math.floor(Math.random()*16777215).toString(16) // Random color
-        })) || [];
+        // Also update filter options with consistent colors
+        const options = categoriesData?.map(cat => {
+          let color;
+          switch (cat.name.toLowerCase()) {
+            case 'furnizim': color = '#34d399'; break; // Green
+            case 'mirembajtje': color = '#f59e0b'; break; // Amber
+            case 'pastrim': color = '#3b82f6'; break; // Blue
+            case 'komunalite': color = '#8b5cf6'; break; // Purple
+            case 'taksa': color = '#ef4444'; break; // Red
+            case 'komision': color = '#ec4899'; break; // Pink
+            case 'tjera': color = '#6b7280'; break; // Gray
+            default: color = '#6b7280'; break; // Default gray
+          }
+          return {
+            id: cat.id,
+            name: cat.name,
+            color: color
+          };
+        }) || [];
         
         setFilterOptions(options);
       } catch (err: any) {
@@ -189,6 +214,26 @@ export default function ExpensesPage() {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  // Function to handle expense deletion
+  const handleDelete = async (expenseId: string) => {
+    try {
+      const result = await deleteExpense(expenseId);
+      if (result.error) {
+        toast.error("Error Deleting Expense", {
+          description: result.error,
+        });
+      } else {
+        toast.success("Expense Deleted", {
+          description: result.message,
+        });
+        handleRefresh();
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete expense');
+    }
+  };
+
   // Replace the Add button with a button that opens the modal
   const AddButton = () => (
     <button 
@@ -237,6 +282,30 @@ export default function ExpensesPage() {
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
 
+  // Add function to get category badge style
+  const getCategoryBadgeStyle = (categoryName: string | undefined) => {
+    if (!categoryName) return 'bg-[#6b7280]/10 text-[#6b7280] border border-[#6b7280]/20';
+    
+    switch (categoryName.toLowerCase()) {
+      case 'furnizim':
+        return 'bg-[#34d399]/10 text-[#34d399] border border-[#34d399]/20'; // Green
+      case 'mirembajtje':
+        return 'bg-[#f59e0b]/10 text-[#f59e0b] border border-[#f59e0b]/20'; // Amber
+      case 'pastrim':
+        return 'bg-[#3b82f6]/10 text-[#3b82f6] border border-[#3b82f6]/20'; // Blue
+      case 'komunalite':
+        return 'bg-[#8b5cf6]/10 text-[#8b5cf6] border border-[#8b5cf6]/20'; // Purple
+      case 'taksa':
+        return 'bg-[#ef4444]/10 text-[#ef4444] border border-[#ef4444]/20'; // Red
+      case 'komision':
+        return 'bg-[#ec4899]/10 text-[#ec4899] border border-[#ec4899]/20'; // Pink
+      case 'tjera':
+        return 'bg-[#6b7280]/10 text-[#6b7280] border border-[#6b7280]/20'; // Gray
+      default:
+        return 'bg-[#6b7280]/10 text-[#6b7280] border border-[#6b7280]/20'; // Default gray
+    }
+  };
+
   // Add function to render expense table
   function renderExpenseTable(): JSX.Element {
     return (
@@ -255,21 +324,58 @@ export default function ExpensesPage() {
             // Format date for display
             const date = expense.date ? new Date(expense.date) : null;
             const formattedDate = date ? date.toLocaleDateString() : 'N/A';
+            const categoryName = expense.expense_categories?.name || 'Uncategorized';
+            const badgeStyle = getCategoryBadgeStyle(categoryName);
             
             return (
               <TableRow key={expense.id}>
                 <TableCell>{formattedDate}</TableCell>
                 <TableCell className="font-medium">{expense.description || 'N/A'}</TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted">
-                    {expense.expense_categories?.name || 'Uncategorized'}
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badgeStyle}`}>
+                    {categoryName}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">€{expense.amount?.toLocaleString()}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" onClick={() => handleEditExpense(expense.id)}>
-                    {dictionary.edit || 'Edit'}
-                  </Button>
+                  <div className="flex justify-end gap-2">
+                    <button 
+                      onClick={() => handleEditExpense(expense.id)}
+                      className="p-0 bg-transparent border-none"
+                    >
+                      <Pencil className="h-5 w-5 transition-all duration-300 ease-in-out transform
+                              text-[#ff5a5f] hover:scale-110
+                              active:scale-95 active:rotate-12 cursor-pointer" />
+                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button 
+                          className="p-0 bg-transparent border-none"
+                        >
+                          <Trash2 className="h-5 w-5 text-[#ff5a5f] cursor-pointer" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{dictionary.are_you_sure || 'Are you sure?'}</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {(dictionary.delete_confirmation || 'This action cannot be undone. This will permanently delete this expense record of €{amount}.')
+                              .replace('{amount}', expense.amount?.toLocaleString() || '0')}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{dictionary.cancel || 'Cancel'}</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDelete(expense.id)}
+                            style={{ backgroundColor: '#FF5A5F', color: 'white' }}
+                            className='hover:bg-[#FF5A5F]/90'
+                          >
+                            {dictionary.delete || 'Delete'}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </TableCell>
               </TableRow>
             );

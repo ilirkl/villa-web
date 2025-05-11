@@ -77,14 +77,17 @@ export function FilterSheet({
       case 'komunalite':
         color = '#8b5cf6'; // Purple
         break;
-      case 'tjera':
+      case 'taksa':
         color = '#ef4444'; // Red
         break;
       case 'komision':
         color = '#ec4899'; // Pink
         break;
+      case 'tjera':
+        color = '#6b7280'; // Gray
+        break;
       default:
-        color = '#6366f1'; // Default indigo
+        color = '#6b7280'; // Default gray
     }
     
     return baseStyle + (isSelected 
@@ -207,4 +210,5 @@ export function FilterSheet({
     </Sheet>
   );
 }
+
 

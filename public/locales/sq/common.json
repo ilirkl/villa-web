@@ -167,5 +167,13 @@
   "generating_backup": "Po gjenerohet rezervimi...",
   "backup_downloaded": "Rezervimi u shkarkua me sukses",
   "backup_error": "Gabim në krijimin e rezervimit",
-  "edit_booking": "Ndrysho Rezervimin"
+  "edit_booking": "Ndrysho Rezervimin",
+  "actions": "Veprimet",
+  "dates": "Datat",
+  "are_you_sure": "A jeni i sigurt?",
+  "delete_confirmation": "Ky veprim nuk mund të kthehet. Kjo do të fshijë përgjithmonë këtë regjistrim të shpenzimit prej €{amount}.",
+  "delete_booking_confirmation": "Ky veprim nuk mund të kthehet. Kjo do të fshijë përgjithmonë rezervimin për {guest}.",
+  "delete": "Fshij",
+  "edit_expense": "Ndrysho Shpenzimin",
+  "no_notes": "Nuk ka shënime në dispozicion"
 }
