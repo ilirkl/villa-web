@@ -143,5 +143,11 @@
     "nights": "netë",
     "expense_breakdown": "Ndarja e Shpenzimeve",
     "generated_on": "Gjeneruar më"
-  }
+  },
+  "backup": "Shkarko të Dhënat",
+  "backup_description": "Shkarko të gjitha të dhënat e rezervimeve dhe shpenzimeve si skedar Excel.",
+  "download_backup": "Shkarko Rezervimin e të Dhënave",
+  "generating_backup": "Po gjenerohet rezervimi...",
+  "backup_downloaded": "Rezervimi u shkarkua me sukses",
+  "backup_error": "Gabim në krijimin e rezervimit"
 }

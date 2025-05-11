@@ -23,6 +23,7 @@ import { sq } from 'date-fns/locale'; // Albanian locale for date formatting
 import { ScrollArea } from '@/components/ui/scroll-area'; // Optional: for long lists
 // Removed toast import as errors are now rendered directly or logged server-side
 // import { toast } from 'sonner';
+import { getServerCsrfToken } from '@/lib/csrf';
 
 // --- Import Child Components ---
 // Ensure these paths match your project structure
@@ -109,6 +110,9 @@ async function RevenueData({ params }: { params: { lang: string } }) {
     const currentMonthStart = startOfMonth(now);
     const currentMonthEnd = endOfMonth(now);
     
+    // Generate CSRF token for any forms or actions on this page
+    const csrfToken = getServerCsrfToken();
+    
     // Adjust the date range to 3 months past and 3 months future
     const threeMonthsAgo = startOfMonth(subMonths(now, 3));
     const threeMonthsAhead = endOfMonth(addMonths(now, 3));
@@ -120,21 +124,41 @@ async function RevenueData({ params }: { params: { lang: string } }) {
     }
 
     interface BookingListItem {
-        id: string | number;
+        id: string; // Changed from 'string | number' to just 'string'
         start_date: string;
+        end_date?: string;
         total_amount: number | null;
     }
 
     interface ExpenseBreakdownItem {
+        id: string;
         name: string;
         value: number;
+        color: string;
         percentage: number;
     }
 
-    interface MonthlyReportItem {
+    interface MonthlyReportItemOrNull {
+        id: string;
         key: string;
         year: string;
         month: string;
+        yearMonth: string;
+        amount: number;
+        netProfit: number;
+        grossProfit: number;
+        expenses: number;
+    }
+
+    interface MonthlyReportItem {
+        id: string;
+        key: string;
+        month: string;
+        year: string;
+        yearMonth: string;
+        netProfit: number;
+        grossProfit: number;
+        expenses: number;
         amount: number;
     }
 
@@ -312,7 +336,12 @@ async function RevenueData({ params }: { params: { lang: string } }) {
                 } catch { return false; }
             })
             .slice(0, 5)
-            .map(b => ({ id: b.id, start_date: b.start_date, total_amount: b?.total_amount ?? null }));
+            .map(b => ({ 
+                id: String(b.id), // Convert id to string to match the interface
+                start_date: b.start_date, 
+                end_date: b.end_date,
+                total_amount: b?.total_amount ?? null 
+            }));
 
         if (!Array.isArray(allBookings)) throw new Error("allBookings corrupted before past list calculation."); // Check again
         pastBookings = allBookings
@@ -326,7 +355,12 @@ async function RevenueData({ params }: { params: { lang: string } }) {
             .filter(b => isValid(parseISO(b.start_date)))
             .sort((a, b) => parseISO(b.start_date).getTime() - parseISO(a.start_date).getTime())
             .slice(0, 5)
-            .map(b => ({ id: b.id, start_date: b.start_date, total_amount: b?.total_amount ?? null }));
+            .map(b => ({ 
+                id: String(b.id), // Convert id to string to match the interface
+                start_date: b.start_date,
+                end_date: b.end_date,
+                total_amount: b?.total_amount ?? null 
+            }));
 
         // 4. Expense Breakdown Data
          if (!Array.isArray(allExpenses)) throw new Error("allExpenses corrupted before breakdown calculation."); // Check again
@@ -344,8 +378,11 @@ async function RevenueData({ params }: { params: { lang: string } }) {
             .reduce((sum, e) => sum + (e?.amount || 0), 0);
 
         expenseBreakdownData = Object.entries(expensesByCategory)
-            .map(([name, value]) => ({
-                name, value,
+            .map(([name, value], index) => ({
+                id: `expense-${index}`,
+                name,
+                value,
+                color: '#FF5A5F',
                 percentage: totalExpensesForBreakdown > 0 ? (value / totalExpensesForBreakdown) * 100 : 0,
             }))
             .sort((a, b) => b.value - a.value);
@@ -353,19 +390,33 @@ async function RevenueData({ params }: { params: { lang: string } }) {
         // 5. Monthly Reports Grid Data (For Carousel)
         monthlyReportData = Object.entries(monthlyDataMap)
             .sort(([a], [b]) => b.localeCompare(a)) // Reverse sort for display
-            .map(([key, data]) => {
+            .map(([key, data], index): MonthlyReportItemOrNull | null => {
                 try {
                     const date = parseISO(key + '-01');
                     if (!isValid(date)) return null;
+                    
+                    // Calculate expenses and profits for this month
+                    const expenses = data.expenses || 0;
+                    const grossProfit = data.revenue || 0;
+                    const netProfit = grossProfit - expenses;
+                    
                     return {
+                        id: `report-${index}`,
                         key: key,
                         year: format(date, 'yyyy'),
                         month: format(date, 'MMMM', { locale: params.lang === 'sq' ? sq : undefined }),
+                        yearMonth: key,
                         amount: Math.round(data.revenue * 100) / 100,
+                        netProfit: netProfit,
+                        grossProfit: grossProfit,
+                        expenses: expenses
                     };
-                } catch { return null; }
+                } catch (error) {
+                    console.error(`Error processing monthly report for ${key}:`, error);
+                    return null;
+                }
             })
-            .filter((report): report is MonthlyReportItem => report !== null); // Filter out nulls and assert type
+            .filter((report): report is MonthlyReportItemOrNull => report !== null) as MonthlyReportItem[];
 
     } catch (calculationError: any) {
         console.error("Error during data calculations:", calculationError);
@@ -407,6 +458,7 @@ async function RevenueData({ params }: { params: { lang: string } }) {
                 statusLabel={dictionary.future}
                 seeAllLink="/bookings?filter=future"
                 showSeeAllButton={true}
+                csrfToken={csrfToken}
             />
             {/* Past Bookings List Card */}
             <BookingListCard
@@ -415,16 +467,19 @@ async function RevenueData({ params }: { params: { lang: string } }) {
                 statusLabel={dictionary.past}
                 showSeeAllButton={true}
                 seeAllLink="/bookings?filter=past"
+                csrfToken={csrfToken}
             />
             {/* Expense Breakdown Card */}
             <ExpenseBreakdownCard
                 title={dictionary.expense_breakdown}
                 data={expenseBreakdownData}
+                csrfToken={csrfToken}
             />
             {/* Monthly Reports Carousel */}
             <MonthlyReportsCarousel
                 title={dictionary.monthly_reports}
                 reports={monthlyReportData}
+                csrfToken={csrfToken}
             />
         </div>
     );

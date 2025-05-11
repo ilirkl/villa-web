@@ -2,25 +2,29 @@
 
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { useParams } from 'next/navigation';
+import { getDictionary } from '@/lib/dictionary';
 import { generateMonthlyReport } from '@/lib/actions/reports';
-import { useParams } from "next/navigation";
-import { useEffect } from "react";
-import { getDictionary } from "@/lib/dictionary";
-import { parse } from 'date-fns';
-import { sq } from 'date-fns/locale';
+import { getCsrfToken } from '@/lib/csrf-client';
 
 interface DownloadReportButtonProps {
     month: string; // Format: "Month Year" (e.g., "April 2024")
     yearMonth: string; // Format: "YYYY-MM" (e.g., "2024-04")
+    csrfToken?: string; // Add CSRF token prop
 }
 
-export default function DownloadReportButton({ month, yearMonth }: DownloadReportButtonProps) {
+export default function DownloadReportButton({ 
+    month, 
+    yearMonth,
+    csrfToken: serverCsrfToken, // Accept server-side CSRF token
+}: DownloadReportButtonProps) {
     const [isLoading, setIsLoading] = useState(false);
     const params = useParams();
     const lang = params?.lang as string || 'en';
     const [dictionary, setDictionary] = useState<any>({});
+    const [clientCsrfToken, setClientCsrfToken] = useState<string>('');
 
     useEffect(() => {
         async function loadDictionary() {
@@ -32,7 +36,20 @@ export default function DownloadReportButton({ month, yearMonth }: DownloadRepor
             }
         }
         loadDictionary();
-    }, [lang]);
+        
+        // If no server-side token is provided, fetch one client-side
+        if (!serverCsrfToken) {
+            const fetchCsrfToken = async () => {
+                try {
+                    const token = await getCsrfToken();
+                    setClientCsrfToken(token);
+                } catch (error) {
+                    console.error('Failed to fetch CSRF token:', error);
+                }
+            };
+            fetchCsrfToken();
+        }
+    }, [lang, serverCsrfToken]);
 
     const handleDownload = async () => {
         try {
@@ -55,8 +72,11 @@ export default function DownloadReportButton({ month, yearMonth }: DownloadRepor
             console.log('Requesting report generation:', { monthNumber, year, lang });
             toast.info(dictionary.generating_report || 'Generating report...');
 
-            // Generate PDF with language parameter
-            const response = await generateMonthlyReport(monthNumber, year, lang);
+            // Use the CSRF token if available
+            const token = serverCsrfToken || clientCsrfToken;
+            
+            // Generate PDF with language parameter and optional CSRF token
+            const response = await generateMonthlyReport(monthNumber, year, lang, token);
             
             if (!response) {
                 throw new Error('No response received from server');
@@ -106,7 +126,7 @@ export default function DownloadReportButton({ month, yearMonth }: DownloadRepor
             toast.success(dictionary.report_downloaded || 'Report downloaded successfully');
         } catch (error: any) {
             console.error('Download error:', error);
-            toast.error(`${dictionary.download_error || 'Error downloading report'}: ${error.message}`);
+            toast.error(error.message || 'Failed to generate report');
         } finally {
             setIsLoading(false);
         }
@@ -114,19 +134,13 @@ export default function DownloadReportButton({ month, yearMonth }: DownloadRepor
 
     return (
         <Button 
+            variant="outline" 
+            size="sm" 
             onClick={handleDownload} 
             disabled={isLoading}
-            className="w-full"
-            style={{ backgroundColor: '#FF5A5F', color: 'white' }}
         >
-            {isLoading ? (
-                <span>{dictionary.downloading || 'Downloading...'}</span>
-            ) : (
-                <>
-                    <Download className="mr-2 h-4 w-4" />
-                    {dictionary.download_report || 'Download Report'}
-                </>
-            )}
+            <Download className="h-4 w-4 mr-2" />
+            {dictionary.download_report || 'Download Report'}
         </Button>
     );
 }

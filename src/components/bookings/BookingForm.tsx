@@ -26,11 +26,11 @@ import { format } from 'date-fns';
 import { BookingFormData } from '@/lib/definitions';
 import { createOrUpdateBooking, BookingState } from '@/lib/actions/bookings';
 import { useFormState, useFormStatus } from 'react-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from "sonner";
 import { useRouter } from 'next/navigation';
 import DOMPurify from 'dompurify';
-import { useState } from 'react';
+import { getCsrfToken } from '@/lib/csrf-client';
 
 // Zod schema update
 const FormSchema = z.object({
@@ -80,6 +80,17 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
   const router = useRouter();
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
+  const [csrfToken, setCsrfToken] = useState<string>('');
+
+  // Fetch CSRF token on component mount
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      const token = await getCsrfToken();
+      setCsrfToken(token);
+    };
+    
+    fetchCsrfToken();
+  }, []);
 
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(FormSchema),
@@ -127,6 +138,10 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
   // onSubmit remains the same
   const onSubmit = (formData: FormSchemaType) => {
     const data = new FormData();
+    
+    // Add CSRF token to form data
+    data.append('csrf_token', csrfToken);
+    
     Object.entries(formData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         if (value instanceof Date) {
@@ -333,6 +348,9 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
         {state?.errors?.database && (
           <p className="text-sm font-medium text-destructive">{state.errors.database.join(', ')}</p>
         )}
+
+        {/* Hidden CSRF token input */}
+        <input type="hidden" name="csrf_token" value={csrfToken} />
 
         <div className="flex justify-end gap-2">
           <Button 

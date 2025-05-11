@@ -6,6 +6,7 @@ import { createActionClient } from '@/lib/supabase/server'; // Using action clie
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { ExpenseCategory } from '@/lib/definitions'; // Assuming you might need this type
+import { getServerCsrfToken } from '@/lib/csrf';
 
 // Zod schema for expense form validation
 // Based on: id, category_id, amount, date, description, months
@@ -44,6 +45,17 @@ export async function createOrUpdateExpense(
   prevState: ExpenseState | undefined,
   formData: FormData
 ): Promise<ExpenseState> {
+  // Verify CSRF token from form data
+  const formCsrfToken = formData.get('csrf_token') as string;
+  const serverCsrfToken = getServerCsrfToken();
+  
+  if (!formCsrfToken || !serverCsrfToken || formCsrfToken !== serverCsrfToken) {
+    return { 
+      errors: { database: ["Invalid security token"] },
+      message: "Security verification failed" 
+    };
+  }
+  
   const cookieStore = cookies();
   const supabase = createActionClient();
 

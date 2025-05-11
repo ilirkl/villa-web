@@ -14,6 +14,8 @@ import Image from 'next/image';
 import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getDictionary } from '@/lib/dictionary';
+import { resetCsrfToken } from '@/lib/csrf-client';
+import { updateProfileClient } from '@/lib/actions/profile-client';
 import 'react-image-crop/dist/ReactCrop.css';
 import {
   Dialog,
@@ -22,6 +24,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { DownloadBackupButton } from '@/components/settings/DownloadBackupButton';
 
 // Helper function (Unchanged)
 function centerAspectCrop(
@@ -52,6 +55,7 @@ export default function SettingsPage() {
   const supabase = createClient();
   const { lang } = useParams();
   const [dictionary, setDictionary] = useState<any>(null);
+  // CSRF token state removed as we're using client-side actions
 
   useEffect(() => {
     async function loadDictionary() {
@@ -385,15 +389,24 @@ export default function SettingsPage() {
         }
       } // If no avatarFile, finalAvatarPath remains as profile.avatar_url (which might be null if removed)
 
-      const updates = { /* profile fields */
-          full_name: profile.full_name, company_name: profile.company_name,
-          email: profile.email, phone_number: profile.phone_number,
-          website: profile.website, vat_number: profile.vat_number,
-          address: profile.address, avatar_url: finalAvatarPath,
+      const updates = {
+          full_name: profile.full_name, 
+          company_name: profile.company_name,
+          email: profile.email, 
+          phone_number: profile.phone_number,
+          website: profile.website, 
+          vat_number: profile.vat_number,
+          address: profile.address, 
+          avatar_url: finalAvatarPath,
           updated_at: new Date().toISOString(),
       };
-      const { error } = await supabase.from('profiles').update(updates).eq('id', profile.id);
-      if (error) throw new Error(`Failed to update profile: ${error.message}`);
+
+      // Use the client-side action
+      const { success, error } = await updateProfileClient(updates);
+      
+      if (!success) {
+        throw new Error(error?.message || 'Failed to update profile');
+      }
 
       toast.success('Profile updated successfully!');
       setProfile(prev => prev ? { ...prev, ...updates } : null); // Update local state
@@ -414,6 +427,10 @@ export default function SettingsPage() {
     setIsSaving(true);
     try {
       toast.loading("Signing out...");
+      
+      // Reset CSRF token before signing out
+      resetCsrfToken();
+      
       const { error } = await supabase.auth.signOut();
       toast.dismiss();
       if (error) throw error;
@@ -453,9 +470,14 @@ export default function SettingsPage() {
   return (
     <div className="container mx-auto py-6">
       <div className="max-w-2xl mt-0 p-0 space-y-0">
-        {/* Language Switcher - moved to top left */}
-        <div className="flex justify-start mb-0">
-          <LanguageSwitcher />
+        {/* Language Switcher and Download Backup Button - positioned inline */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <LanguageSwitcher />
+          </div>
+          <div>
+            <DownloadBackupButton dictionary={dictionary} />
+          </div>
         </div>
         
         {/* Header with avatar centered */}
@@ -571,10 +593,21 @@ export default function SettingsPage() {
             )}
           </CardContent>
         </Card>
+      
       </div>
     </div>
   );
 } // End component
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,11 +1,9 @@
-import { createActionClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/lib/definitions';
-import { getServerCsrfToken } from '@/lib/csrf';
 
-export async function getProfile(): Promise<{ data: Profile | null; error: any }> {
-  const cookieStore = cookies();
-  const supabase = createActionClient();
+// Client-side version of getProfile
+export async function getProfileClient(): Promise<{ data: Profile | null; error: any }> {
+  const supabase = createClient();
 
   try {
     // Get the authenticated user
@@ -32,21 +30,11 @@ export async function getProfile(): Promise<{ data: Profile | null; error: any }
   }
 }
 
-export async function updateProfile(
-  profile: Partial<Profile>, 
-  csrfToken: string
+// Client-side version of updateProfile
+export async function updateProfileClient(
+  profile: Partial<Profile>
 ): Promise<{ success: boolean; error: any }> {
-  const cookieStore = cookies();
-  const supabase = createActionClient();
-  const serverCsrfToken = getServerCsrfToken();
-
-  // Verify CSRF token
-  if (!csrfToken || !serverCsrfToken || csrfToken !== serverCsrfToken) {
-    return { 
-      success: false, 
-      error: new Error('Security verification failed') 
-    };
-  }
+  const supabase = createClient();
 
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();

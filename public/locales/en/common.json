@@ -151,5 +151,11 @@
     "Komision": "Commission",
     "Marketing": "Marketing",
     "Komunalite": "Utilities"
-  }
+  },
+  "data_backup": "Data Backup",
+  "backup_description": "Download all your bookings and expenses data as an Excel file.",
+  "download_backup": "Download Data Backup",
+  "generating_backup": "Generating backup...",
+  "backup_downloaded": "Backup downloaded successfully",
+  "backup_error": "Error creating backup"
 }

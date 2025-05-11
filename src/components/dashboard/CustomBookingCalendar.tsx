@@ -9,7 +9,7 @@ import './custom-calendar.css';
 import { BookingCard } from '@/components/bookings/BookingCard';
 import { format } from 'date-fns';
 import { Booking } from '@/lib/definitions';
-
+import { getCsrfToken } from '@/lib/csrf-client';
 
 interface CustomBookingCalendarProps {
   initialEvents: EventInput[];
@@ -50,7 +50,18 @@ const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEv
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+  const [csrfToken, setCsrfToken] = useState<string>('');
   
+  // Fetch CSRF token on component mount
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      const token = await getCsrfToken();
+      setCsrfToken(token);
+    };
+    
+    fetchCsrfToken();
+  }, []);
+
   useEffect(() => {
     const processedEvents = initialEvents.map(event => {
       let startDate: Date;

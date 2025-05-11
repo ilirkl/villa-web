@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
+import { setCsrfToken } from '../csrf';
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
@@ -7,6 +8,9 @@ export async function updateSession(request: NextRequest) {
       headers: request.headers,
     },
   });
+
+  // Set CSRF token
+  setCsrfToken(request, response);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

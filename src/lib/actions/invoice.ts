@@ -4,19 +4,19 @@ import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { InvoicePDF } from '../pdf/InvoicePDF';
 import { createActionClient } from '@/lib/supabase/server';
+import { getServerCsrfToken } from '@/lib/csrf';
 
-export async function generateInvoice(bookingId: string): Promise<Uint8Array> {
+export async function generateInvoice(bookingId: string, csrfToken: string): Promise<Uint8Array> {
   try {
+    // Get the authenticated user first
     const supabase = createActionClient();
-    
-    // First get the authenticated user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
       throw new Error('Authentication required');
     }
 
-    // Fetch booking with explicit user_id check
+    // Fetch booking with explicit user_id check for security
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select('*')
@@ -70,9 +70,15 @@ export async function generateInvoice(bookingId: string): Promise<Uint8Array> {
     // Generate and return buffer
     const buffer = await renderToBuffer(document as any);
     return buffer;
-
   } catch (error) {
     console.error('Error in generateInvoice:', error);
     throw error;
   }
 }
+
+
+
+
+
+
+

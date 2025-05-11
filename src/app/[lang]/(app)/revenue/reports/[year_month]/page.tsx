@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronLeft } from 'lucide-react'; // Icon
 import { getDictionary } from '@/lib/dictionary';
 import { translateExpenseCategory } from '@/lib/translations';
+import { getServerCsrfToken } from '@/lib/csrf';
 
 // --- Import helper and sub-components ---
 // Ensure these paths are correct for your project structure
@@ -83,6 +84,9 @@ export default async function MonthlyReportPage({ params }: PageProps) {
     const { year_month, lang } = params;
     const dictionary = await getDictionary(lang as 'en' | 'sq');
     const supabase = createClient(); // Initialize Supabase server client
+    
+    // Generate CSRF token for any forms or actions on this page
+    const csrfToken = getServerCsrfToken();
 
     // --- 1. Parse and Validate Date Parameter ---
     let targetMonthDate: Date;
@@ -279,7 +283,8 @@ export default async function MonthlyReportPage({ params }: PageProps) {
                 <div className="w-auto">
                     <DownloadReportButton 
                         month={formattedMonthYear} 
-                        yearMonth={year_month} 
+                        yearMonth={year_month}
+                        csrfToken={csrfToken}
                     />
                 </div>
             </div>

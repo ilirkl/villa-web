@@ -3,21 +3,41 @@
 import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { MonthlyReportPDF } from '../pdf/MonthlyReportPDF';
-import { createClient } from '../supabase/server';
+import { createActionClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
+import { getServerCsrfToken } from '@/lib/csrf';
 import { format, startOfMonth, endOfMonth, parseISO, differenceInDays } from 'date-fns';
 import { sq } from 'date-fns/locale';
 import { getDictionary } from '@/lib/dictionary';
 
 export type ReportBuffer = Uint8Array;
 
-export async function generateMonthlyReport(month: string, year: string, lang: string = 'en'): Promise<ReportBuffer> {
-  try {
-    console.log('Starting report generation for:', { month, year, lang });
-    const supabase = createClient();
-
-    // Get the authenticated user
-    const { data: { user } } = await supabase.auth.getUser();
+export async function generateMonthlyReport(
+  month: string, 
+  year: string, 
+  lang: string = 'en',
+  csrfToken?: string
+): Promise<any> {
+  // If CSRF token is provided, verify it
+  if (csrfToken) {
+    const serverCsrfToken = getServerCsrfToken();
     
+    if (!serverCsrfToken || csrfToken !== serverCsrfToken) {
+      throw new Error('Security verification failed');
+    }
+  }
+
+  const cookieStore = cookies();
+  const supabase = createActionClient();
+
+  try {
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      throw new Error('Authentication required');
+    }
+
     // Fetch profile image if user is authenticated
     let profileImageUrl = undefined;
     if (user) {
@@ -176,9 +196,11 @@ export async function generateMonthlyReport(month: string, year: string, lang: s
     console.log('PDF generated successfully, buffer size:', buffer.length);
     return buffer;
   } catch (error) {
-    console.error('Error in generateMonthlyReport:', error);
+    console.error('Error generating report:', error);
     throw error;
   }
 }
+
+
 
 

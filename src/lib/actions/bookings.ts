@@ -1,11 +1,12 @@
 'use server';
 
 import { z } from 'zod';
-import { createActionClient } from '@/lib/supabase/server'; // Use action client if needed
+import { createActionClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
-import { Constants } from '@/lib/database.types'; // Import the generated Constants
-import { BookingSource } from '@/lib/definitions'; // Import your enum/type
+import { Constants } from '@/lib/database.types';
+import { BookingSource } from '@/lib/definitions';
+import { getServerCsrfToken } from '@/lib/csrf';
 
 // Zod schema for validation (reuse or adapt from form schema)
 const BookingSchema = z.object({
@@ -47,8 +48,19 @@ export type BookingState = {
 };
 
 export async function createOrUpdateBooking(prevState: BookingState | undefined, formData: FormData): Promise<BookingState> {
+  // Verify CSRF token from form data
+  const formCsrfToken = formData.get('csrf_token') as string;
+  const serverCsrfToken = getServerCsrfToken();
+  
+  if (!formCsrfToken || !serverCsrfToken || formCsrfToken !== serverCsrfToken) {
+    return { 
+      errors: { database: ["Invalid security token"] },
+      message: "Security verification failed" 
+    };
+  }
+
   const cookieStore = cookies();
-  const supabase = createActionClient(); // Use action client
+  const supabase = createActionClient();
 
   // 1. Validate User
   const { data: { user } } = await supabase.auth.getUser();
@@ -122,9 +134,15 @@ export async function createOrUpdateBooking(prevState: BookingState | undefined,
   return { message: id ? 'Booking updated successfully.' : 'Booking created successfully.' };
 }
 
-export async function deleteBooking(id: string) {
+export async function deleteBooking(id: string, csrfToken: string) {
     const cookieStore = cookies();
     const supabase = createActionClient();
+    const serverCsrfToken = getServerCsrfToken();
+    
+    // Verify CSRF token
+    if (!csrfToken || !serverCsrfToken || csrfToken !== serverCsrfToken) {
+      throw new Error('Security verification failed');
+    }
 
     // 1. Validate User
     const { data: { user } } = await supabase.auth.getUser();

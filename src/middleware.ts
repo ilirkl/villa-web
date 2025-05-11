@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { match } from '@formatjs/intl-localematcher';
 import Negotiator from 'negotiator';
 import { checkAuth } from './lib/supabase/middleware';
+import { setCsrfToken, verifyCsrfToken } from './lib/csrf';
 
 const locales = ['en', 'sq'];
 const defaultLocale = 'en';
@@ -24,14 +25,24 @@ function getLocale(request: NextRequest) {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
-  // Skip public files and API routes
+  // Skip CSRF check for public files and API routes
   if (
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
     pathname.includes('/images/') ||
-    pathname.includes('.') // Skip files with extensions
+    pathname.includes('.')
   ) {
     return;
+  }
+
+  // For API routes, verify CSRF token for non-GET methods
+  if (pathname.startsWith('/api') && request.method !== 'GET') {
+    if (!verifyCsrfToken(request)) {
+      return NextResponse.json(
+        { error: 'Invalid CSRF token' },
+        { status: 403 }
+      );
+    }
+    return NextResponse.next();
   }
 
   // Check if there is any supported locale in the pathname
@@ -78,20 +89,23 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Create response
+  let response = NextResponse.next();
+  
+  // Set CSRF token for all responses
+  setCsrfToken(request, response);
+
   // Handle locale redirects (only if not already handled)
   if (!pathnameHasLocale) {
     request.nextUrl.pathname = `/${locale}${pathname}`;
-    
-    // Create response
-    const response = NextResponse.redirect(request.nextUrl);
-    
-    // Set cookie for future requests
+    response = NextResponse.redirect(request.nextUrl);
     response.cookies.set('NEXT_LOCALE', locale);
     
-    return response;
+    // Set CSRF token on redirects too
+    setCsrfToken(request, response);
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

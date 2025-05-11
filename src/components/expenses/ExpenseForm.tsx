@@ -29,6 +29,7 @@ import React, { useEffect, useTransition, useState } from 'react';
 import { toast } from "sonner"; // Import sonner toast
 import { useParams, useRouter } from 'next/navigation';
 import { translateExpenseCategory } from '@/lib/translations';
+import { createClient } from '@/lib/supabase/client';
 
 // Define the form schema
 const FormSchema = z.object({
@@ -72,6 +73,24 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
   const router = useRouter();
   const { lang } = useParams();
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [csrfToken, setCsrfToken] = useState<string>('');
+  
+  // Fetch CSRF token on component mount
+  useEffect(() => {
+    // Get CSRF token from cookie (client-side)
+    const getCsrfToken = async () => {
+      try {
+        const response = await fetch('/api/csrf');
+        const data = await response.json();
+        setCsrfToken(data.csrfToken);
+      } catch (error) {
+        console.error("Failed to fetch CSRF token:", error);
+        toast.error(dictionary.error_security || "Security error");
+      }
+    };
+    
+    getCsrfToken();
+  }, [dictionary]);
   
   // Find the "Furnizim" category if it exists
   const furnizimCategory = categories.find(cat => cat.name === "Furnizim");
@@ -153,6 +172,9 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
       data.append('description', formData.description);
     }
     
+    // Add CSRF token
+    data.append('csrf_token', csrfToken);
+    
     // Log the entire FormData for debugging
     console.log('Form data entries:');
     for (const pair of data.entries()) {
@@ -203,6 +225,7 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {isEditing && <input type="hidden" {...form.register('id')} />}
+        <input type="hidden" name="csrf_token" value={csrfToken} />
 
         {/* Amount */}
         <FormField

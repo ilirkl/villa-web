@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { getCsrfToken, resetCsrfToken } from '@/lib/csrf-client';
 
 interface BookingCardProps {
   booking: Booking;
@@ -52,6 +54,38 @@ export function BookingCard({
   onDelete,
   onEdit
 }: BookingCardProps) {
+  const [csrfToken, setCsrfToken] = useState<string>('');
+  const [isTokenLoaded, setIsTokenLoaded] = useState(false);
+  
+  // Fetch CSRF token on component mount
+  useEffect(() => {
+    let isMounted = true;
+    
+    const fetchCsrfToken = async () => {
+      try {
+        // Reset the token first to ensure we get a fresh one
+        resetCsrfToken();
+        const token = await getCsrfToken();
+        
+        if (isMounted) {
+          setCsrfToken(token);
+          setIsTokenLoaded(true);
+          console.log("CSRF token fetched successfully for BookingCard");
+        }
+      } catch (error) {
+        console.error("Failed to fetch CSRF token:", error);
+        if (isMounted) {
+          setIsTokenLoaded(false);
+        }
+      }
+    };
+    
+    fetchCsrfToken();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Function to determine badge styling based on source (Keep as is)
   const getSourceBadgeStyle = (source: string) => {
@@ -67,27 +101,31 @@ export function BookingCard({
     }
   };
 
-  // Keep handleDelete as is
+  // Function to handle booking deletion with CSRF token
   const handleDelete = async () => {
     try {
-      await deleteBooking(booking.id);
-      toast.success("Booking Deleted", {
-        description: `Booking for ${booking.guest_name} was deleted successfully.`
-      });
-      onDelete?.();
-    } catch (error: any) {
-      toast.error("Deletion Failed", {
-        description: error.message || "Failed to delete booking.",
-      });
+      if (!csrfToken) {
+        console.error("CSRF token not available");
+        toast.error("Security token not available. Please try again.");
+        return;
+      }
+      
+      await deleteBooking(booking.id, csrfToken);
+      toast.success('Booking deleted successfully');
+      if (onDelete) onDelete();
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete booking');
     }
   };
 
-  // Keep handleDownloadInvoice as is - formatting here happens on user interaction, not during initial render/hydration
+  // Handle invoice download
   const handleDownloadInvoice = async () => {
     try {
       toast.info('Generating invoice...');
-
-      const response = await generateInvoice(booking.id);
+      
+      // We'll rely on authentication instead of CSRF token
+      const response = await generateInvoice(booking.id, 'not-used');
 
       if (!response) {
         throw new Error('No response received from server');
@@ -113,7 +151,6 @@ export function BookingCard({
       if (!newWindow) {
         const link = document.createElement('a');
         link.href = url;
-        // This date formatting for the filename is generally safe as it's post-hydration
         link.download = `Invoice-${booking.guest_name}-${format(new Date(booking.start_date), 'yyyy-MM-dd')}.pdf`;
         document.body.appendChild(link);
         link.click();
