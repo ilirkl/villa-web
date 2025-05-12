@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { sq } from 'date-fns/locale';
 // Assuming translateExpenseCategory is still needed for 'sq' if not in dictionary
 // import { translateExpenseCategory } from '@/lib/translations';
@@ -161,6 +161,77 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#A0AEC0', // Softer footer text
   },
+
+  // --- TRANSACTION TABLES STYLING ---
+  tablesContainer: {
+    marginTop: 20,
+    flexDirection: 'row',
+    gap: 15,
+  },
+  tableColumn: {
+    flex: 1,
+  },
+  tableTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2D3748',
+    marginBottom: 8,
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingVertical: 6,
+    backgroundColor: '#F7FAFC',
+  },
+  tableHeaderCell: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#4A5568',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EDF2F7',
+    paddingVertical: 6,
+  },
+  tableCell: {
+    fontSize: 8,
+    color: '#4A5568',
+  },
+  tableCellBold: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#2D3748',
+  },
+  tableCellRight: {
+    fontSize: 8,
+    color: '#4A5568',
+    textAlign: 'right',
+  },
+  tableSourceBadge: {
+    fontSize: 7,
+    padding: 2,
+    borderRadius: 4,
+    textAlign: 'center',
+  },
+  tableCategoryBadge: {
+    fontSize: 7,
+    padding: 2,
+    borderRadius: 4,
+    backgroundColor: '#EDF2F7',
+    color: '#4A5568',
+    textAlign: 'center',
+  },
+  noDataMessage: {
+    fontSize: 9,
+    color: '#A0AEC0',
+    textAlign: 'center',
+    padding: 10,
+  },
 });
 
 interface MonthlyReportPDFProps {
@@ -179,6 +250,21 @@ interface MonthlyReportPDFProps {
       percentage: number;
     }>;
   };
+  bookings?: Array<{
+    id: string;
+    guest_name: string;
+    start_date: string;
+    end_date: string;
+    source: string;
+    total_amount: number;
+  }>;
+  expenses?: Array<{
+    id: string;
+    date: string;
+    description: string;
+    category: string;
+    amount: number;
+  }>;
   lang?: 'en' | 'sq';
   dictionary?: any; // Your dictionary structure
   logoUrl?: string; // Optional URL for the logo
@@ -194,6 +280,8 @@ export const MonthlyReportPDF = ({
   month,
   year,
   data,
+  bookings = [],
+  expenses = [],
   lang = 'en',
   dictionary = {},
   logoUrl,
@@ -325,6 +413,90 @@ export const MonthlyReportPDF = ({
           )}
         </View>
 
+        {/* --- TRANSACTION TABLES --- */}
+        <View style={styles.tablesContainer}>
+          {/* Bookings Table */}
+          <View style={styles.tableColumn}>
+            <Text style={styles.tableTitle}>{t('bookings', 'monthly_report', 'Bookings')}</Text>
+            
+            {bookings.length === 0 ? (
+              <Text style={styles.noDataMessage}>{t('no_bookings_for_period', 'monthly_report', 'No bookings for this period')}</Text>
+            ) : (
+              <View>
+                {/* Table Header */}
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderCell, { flex: 2 }]}>{t('guest_name', 'monthly_report', 'Guest')}</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 2 }]}>{t('dates', 'monthly_report', 'Dates')}</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: 'right' }]}>{t('amount', 'monthly_report', 'Amount')}</Text>
+                </View>
+                
+                {/* Table Rows */}
+                {bookings.slice(0, 10).map((booking, index) => {
+                  const startDate = parseISO(booking.start_date);
+                  const endDate = parseISO(booking.end_date);
+                  const formattedStartDate = isValid(startDate) ? 
+                    format(startDate, 'MMM d', { locale: lang === 'sq' ? sq : undefined }) : 'N/A';
+                  const formattedEndDate = isValid(endDate) ? 
+                    format(endDate, 'MMM d', { locale: lang === 'sq' ? sq : undefined }) : 'N/A';
+                  
+                  return (
+                    <View key={booking.id || index} style={styles.tableRow}>
+                      <Text style={[styles.tableCellBold, { flex: 2 }]}>{booking.guest_name || 'Unnamed Guest'}</Text>
+                      <Text style={[styles.tableCell, { flex: 2 }]}>{formattedStartDate} - {formattedEndDate}</Text>
+                      <Text style={[styles.tableCellRight, { flex: 1 }]}>{formatCurrencyValue(booking.total_amount || 0)}</Text>
+                    </View>
+                  );
+                })}
+                
+                {bookings.length > 10 && (
+                  <Text style={styles.noDataMessage}>
+                    {t('and_more_bookings', 'monthly_report', `And ${bookings.length - 10} more bookings...`).replace('{{count}}', (bookings.length - 10).toString())}
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+          
+          {/* Expenses Table */}
+          <View style={styles.tableColumn}>
+            <Text style={styles.tableTitle}>{t('expenses', 'monthly_report', 'Expenses')}</Text>
+            
+            {expenses.length === 0 ? (
+              <Text style={styles.noDataMessage}>{t('no_expenses_for_period', 'monthly_report', 'No expenses for this period')}</Text>
+            ) : (
+              <View>
+                {/* Table Header */}
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderCell, { flex: 1 }]}>{t('date', 'monthly_report', 'Date')}</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 2 }]}>{t('description', 'monthly_report', 'Description')}</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: 'right' }]}>{t('amount', 'monthly_report', 'Amount')}</Text>
+                </View>
+                
+                {/* Table Rows */}
+                {expenses.slice(0, 10).map((expense, index) => {
+                  const date = expense.date ? parseISO(expense.date) : null;
+                  const formattedDate = date && isValid(date) ? 
+                    format(date, 'MMM d', { locale: lang === 'sq' ? sq : undefined }) : 'N/A';
+                  
+                  return (
+                    <View key={expense.id || index} style={styles.tableRow}>
+                      <Text style={[styles.tableCell, { flex: 1 }]}>{formattedDate}</Text>
+                      <Text style={[styles.tableCellBold, { flex: 2 }]}>{expense.description || 'No description'}</Text>
+                      <Text style={[styles.tableCellRight, { flex: 1 }]}>{formatCurrencyValue(expense.amount || 0)}</Text>
+                    </View>
+                  );
+                })}
+                
+                {expenses.length > 10 && (
+                  <Text style={styles.noDataMessage}>
+                    {t('and_more_expenses', 'monthly_report', `And ${expenses.length - 10} more expenses...`).replace('{{count}}', (expenses.length - 10).toString())}
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        </View>
+
         {/* --- FOOTER --- */}
         <Text style={styles.footer}>
           {t('generated_on', 'monthly_report', 'Report generated on')}{' '}
@@ -334,5 +506,15 @@ export const MonthlyReportPDF = ({
     </Document>
   );
 };
+
+
+
+
+
+
+
+
+
+
 
 

@@ -175,5 +175,14 @@
   "delete_booking_confirmation": "Ky veprim nuk mund të kthehet. Kjo do të fshijë përgjithmonë rezervimin për {guest}.",
   "delete": "Fshij",
   "edit_expense": "Ndrysho Shpenzimin",
-  "no_notes": "Nuk ka shënime në dispozicion"
+  "no_notes": "Nuk ka shënime në dispozicion",
+  "transactions": "Transaksionet",
+  "monthly_transactions": "Transaksionet Mujore",
+  "date_range": "Datat",
+  "no_bookings_for_month": "Nuk ka rezervime për këtë muaj",
+  "no_expenses_for_month": "Nuk ka shpenzime për këtë muaj",
+  "and_more_bookings": "Dhe {{count}} rezervime të tjera...",
+  "and_more_expenses": "Dhe {{count}} shpenzime të tjera...",
+  "no_bookings_for_period": "Nuk ka rezervime për këtë periudhë",
+  "no_expenses_for_period": "Nuk ka shpenzime për këtë periudhë"
 }

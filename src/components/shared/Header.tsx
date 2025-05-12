@@ -50,31 +50,58 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
-        {/* Left side - empty space for balance */}
-        <div className="flex-1"></div>
-        
-        {/* Center - page title */}
-        <div className="flex-1 text-center">
-          <h1 className="text-xl font-semibold">{pageTitle}</h1>
+        {/* Mobile layout (centered) */}
+        <div className="md:hidden flex w-full items-center justify-between">
+          {/* Left side - empty space for balance */}
+          <div className="flex-1"></div>
+          
+          {/* Center - page title */}
+          <div className="flex-1 text-center">
+            <h1 className="text-xl font-semibold">{pageTitle}</h1>
+          </div>
+          
+          {/* Right side - logo */}
+          <div className="flex-1 flex justify-end">
+            <Link href={`/${lang}/dashboard`} className="flex items-center">
+              <Image 
+                src="/images/favicon/android-chrome-192x192.png"
+                alt="Villa Ime Logo"
+                width={63}
+                height={63}
+                className="transition-all hover:opacity-80"
+                priority
+              />
+            </Link>
+          </div>
         </div>
-        
-        {/* Right side - logo */}
-        <div className="flex-1 flex justify-end">
-          <Link href={`/${lang}/dashboard`} className="flex items-center">
-            <Image 
-              src="/images/favicon/android-chrome-192x192.png"
-              alt="Villa Ime Logo"
-              width={63}
-              height={63}
-              className="transition-all hover:opacity-80"
-              priority
-            />
-          </Link>
+
+        {/* Tablet and Desktop layout (left-aligned) */}
+        <div className="hidden md:flex w-full items-center">
+          {/* Left side - logo and title */}
+          <div className="flex items-center gap-4">
+            <Link href={`/${lang}/dashboard`} className="flex items-center">
+              <Image 
+                src="/images/favicon/android-chrome-192x192.png"
+                alt="Villa Ime Logo"
+                width={63}
+                height={63}
+                className="transition-all hover:opacity-80"
+                priority
+              />
+            </Link>
+            <h1 className="text-xl font-semibold">{pageTitle}</h1>
+          </div>
+          
+          {/* Right side - empty for now, could add actions later */}
+          <div className="flex-1 flex justify-end">
+            {/* Space for future elements like notifications, user menu, etc. */}
+          </div>
         </div>
       </div>
     </header>
   );
 }
+
 
 
 

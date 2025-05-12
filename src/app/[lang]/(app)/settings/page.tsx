@@ -565,7 +565,8 @@ export default function SettingsPage() {
               </div>
             )}
             
-            {/* Sign out button for mobile */}
+            {/* Remove the sign out button that appears under the avatar */}
+            {/* Delete this entire block:
             <div className="lg:hidden w-full mt-2">
               <Button 
                 variant="outline" 
@@ -578,6 +579,7 @@ export default function SettingsPage() {
                 <span>{dictionary?.sign_out || 'Sign Out'}</span>
               </Button>
             </div>
+            */}
           </div>
           
           {/* Form section - takes full width on mobile, 2/3 on desktop */}
@@ -744,6 +746,8 @@ export default function SettingsPage() {
     </div>
   );
 } // End component
+
+
 
 
 

@@ -157,5 +157,14 @@
   "download_backup": "Download Data Backup",
   "generating_backup": "Generating backup...",
   "backup_downloaded": "Backup downloaded successfully",
-  "backup_error": "Error creating backup"
+  "backup_error": "Error creating backup",
+  "transactions": "Transactions",
+  "monthly_transactions": "Monthly Transactions",
+  "date_range": "Dates",
+  "no_bookings_for_month": "No bookings for this month",
+  "no_expenses_for_month": "No expenses for this month",
+  "and_more_bookings": "And {{count}} more bookings...",
+  "and_more_expenses": "And {{count}} more expenses...",
+  "no_bookings_for_period": "No bookings for this period",
+  "no_expenses_for_period": "No expenses for this period"
 }

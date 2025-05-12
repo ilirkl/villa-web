@@ -2,12 +2,14 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatCurrency } from '@/lib/utils';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getDictionary } from '@/lib/dictionary';
-import { Progress } from '@/components/ui/progress'; // Import the Progress component
+import { Progress } from '@/components/ui/progress';
 
 interface ExpenseBreakdownItem {
   id: string;
@@ -21,12 +23,16 @@ interface ExpenseBreakdownCardProps {
   title: string;
   data: ExpenseBreakdownItem[];
   csrfToken?: string; // Add CSRF token prop
+  showSeeAllButton?: boolean;
+  seeAllLink?: string;
 }
 
 export default function ExpenseBreakdownCard({
   title,
   data,
-  csrfToken, // Accept CSRF token
+  csrfToken,
+  showSeeAllButton = false,
+  seeAllLink = '/expenses',
 }: ExpenseBreakdownCardProps) {
   const params = useParams();
   const lang = params?.lang as string || 'en';
@@ -96,7 +102,16 @@ export default function ExpenseBreakdownCard({
   return (
     <Card>
       <CardHeader className="pb-0 pt-0">
-        <CardTitle>{title}</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle>{title}</CardTitle>
+          {showSeeAllButton && (
+            <Button variant="ghost" size="sm" asChild>
+              <Link href={seeAllLink}>
+                {dictionary.see_all || 'See all'}
+              </Link>
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (

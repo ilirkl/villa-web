@@ -495,6 +495,8 @@ async function RevenueData({ params }: { params: { lang: string } }) {
                     title={dictionary.expense_breakdown}
                     data={expenseBreakdownData}
                     csrfToken={csrfToken}
+                    showSeeAllButton={true}
+                    seeAllLink="/expenses"
                 />
             </div>
         </div>

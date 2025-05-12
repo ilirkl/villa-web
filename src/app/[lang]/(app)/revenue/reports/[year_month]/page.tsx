@@ -22,6 +22,16 @@ import { ChevronLeft } from 'lucide-react'; // Icon
 import { getDictionary } from '@/lib/dictionary';
 import { translateExpenseCategory } from '@/lib/translations';
 import { getServerCsrfToken } from '@/lib/csrf';
+import { 
+    Table, 
+    TableBody, 
+    TableCell, 
+    TableHead, 
+    TableHeader, 
+    TableRow 
+} from '@/components/ui/table';
+import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // --- Import helper and sub-components ---
 // Ensure these paths are correct for your project structure
@@ -33,8 +43,8 @@ import DownloadReportButton from '@/components/revenue/report/DownloadReportButt
 
 // --- Import Types ---
 import type { Database, Tables } from '@/lib/database.types';
-type Booking = Pick<Tables<'bookings'>, 'id' | 'start_date' | 'end_date' | 'total_amount'>;
-type Expense = Pick<Tables<'expenses'>, 'id' | 'date' | 'amount' | 'category_id'>;
+type Booking = Pick<Tables<'bookings'>, 'id' | 'start_date' | 'end_date' | 'total_amount' | 'guest_name' | 'source'>;
+type Expense = Pick<Tables<'expenses'>, 'id' | 'date' | 'amount' | 'category_id' | 'description'>;
 type ExpenseCategory = Tables<'expense_categories'>;
 // Define type for expense breakdown items used locally and passed down
 interface ExpenseBreakdownItem { name: string; value: number; percentage: number; }
@@ -122,13 +132,12 @@ export default async function MonthlyReportPage({ params }: PageProps) {
         const [bookingsRes, expensesRes, categoriesRes] = await Promise.all([
             supabase
                 .from('bookings')
-                .select('id, start_date, end_date, total_amount')
+                .select('id, start_date, end_date, total_amount, guest_name, source')
                 .or(`and(start_date.lte.${monthEndString},end_date.gte.${monthStartString})`)
-                
                 .order('start_date', { ascending: true }),
             supabase
                 .from('expenses')
-                .select('id, date, amount, category_id')
+                .select('id, date, amount, category_id, description')
                 .gte('date', monthStartString)
                 .lte('date', monthEndString)
                 .order('date', { ascending: true }),
@@ -321,6 +330,120 @@ export default async function MonthlyReportPage({ params }: PageProps) {
                         data={expenseBreakdown}
                     />
                 </div>
+            </div>
+
+            {/* Bookings and Expenses Tables Section */}
+            <div className="mt-6">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                            <CardTitle>{dictionary.monthly_transactions || dictionary.transactions || "Monthly Transactions"}</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <Tabs defaultValue="bookings" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2 mb-4">
+                                <TabsTrigger value="bookings">{dictionary.bookings || "Bookings"}</TabsTrigger>
+                                <TabsTrigger value="expenses">{dictionary.expenses || "Expenses"}</TabsTrigger>
+                            </TabsList>
+                            
+                            <TabsContent value="bookings" className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>{dictionary.guest_name || 'Guest Name'}</TableHead>
+                                            <TableHead>{dictionary.date_range || dictionary.date || 'Dates'}</TableHead>
+                                            <TableHead className="hidden md:table-cell">{dictionary.source || 'Source'}</TableHead>
+                                            <TableHead className="text-right">{dictionary.amount || 'Amount'}</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {bookings.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                                                    {dictionary.no_bookings_for_month || dictionary.no_bookings_found || "No bookings for this month"}
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            bookings.map((booking) => {
+                                                const startDate = parseISO(booking.start_date);
+                                                const endDate = parseISO(booking.end_date);
+                                                const formattedStartDate = isValid(startDate) ? 
+                                                    format(startDate, 'MMM d', { locale: lang === 'sq' ? sq : undefined }) : 'N/A';
+                                                const formattedEndDate = isValid(endDate) ? 
+                                                    format(endDate, 'MMM d', { locale: lang === 'sq' ? sq : undefined }) : 'N/A';
+                                                
+                                                return (
+                                                    <TableRow key={booking.id}>
+                                                        <TableCell className="font-medium">{booking.guest_name || 'N/A'}</TableCell>
+                                                        <TableCell>{formattedStartDate} - {formattedEndDate}</TableCell>
+                                                        <TableCell className="hidden md:table-cell">
+                                                            {booking.source && (
+                                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" 
+                                                                    style={{ 
+                                                                        backgroundColor: booking.source === 'AIRBNB' ? '#ffece6' : 
+                                                                                        booking.source === 'BOOKING' ? '#e6f0ff' : '#e6fff0',
+                                                                        color: booking.source === 'AIRBNB' ? '#ff5a5f' : 
+                                                                                booking.source === 'BOOKING' ? '#003580' : '#10b981'
+                                                                    }}>
+                                                                    {booking.source}
+                                                                </span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">€{booking.total_amount?.toLocaleString() || '0'}</TableCell>
+                                                    </TableRow>
+                                                );
+                                            })
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </TabsContent>
+                            
+                            <TabsContent value="expenses" className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>{dictionary.date || 'Date'}</TableHead>
+                                            <TableHead>{dictionary.description || 'Description'}</TableHead>
+                                            <TableHead className="hidden md:table-cell">{dictionary.category || 'Category'}</TableHead>
+                                            <TableHead className="text-right">{dictionary.amount || 'Amount'}</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {expenses.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                                                    {dictionary.no_expenses_for_month || dictionary.no_expenses || "No expenses for this month"}
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            expenses.map((expense) => {
+                                                const date = expense.date ? parseISO(expense.date) : null;
+                                                const formattedDate = date && isValid(date) ? 
+                                                    format(date, 'MMM d', { locale: lang === 'sq' ? sq : undefined }) : 'N/A';
+                                                const categoryName = expense.category_id ? 
+                                                    categoryMap.get(expense.category_id) || 'Uncategorized' : 'Uncategorized';
+                                                
+                                                return (
+                                                    <TableRow key={expense.id}>
+                                                        <TableCell>{formattedDate}</TableCell>
+                                                        <TableCell className="font-medium">{expense.description || 'N/A'}</TableCell>
+                                                        <TableCell className="hidden md:table-cell">
+                                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                                                                {categoryName}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell className="text-right">€{expense.amount?.toLocaleString() || '0'}</TableCell>
+                                                    </TableRow>
+                                                );
+                                            })
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </TabsContent>
+                        </Tabs>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );

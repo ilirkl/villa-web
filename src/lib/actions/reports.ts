@@ -75,18 +75,18 @@ export async function generateMonthlyReport(
     const [bookingsRes, expensesRes, categoriesRes] = await Promise.all([
       supabase
         .from('bookings')
-        .select('id, start_date, end_date, total_amount')
+        .select('id, start_date, end_date, total_amount, guest_name, source')
         .or(`and(start_date.lte.${monthEndString},end_date.gte.${monthStartString})`)
         .order('start_date', { ascending: true }),
       supabase
         .from('expenses')
-        .select('id, date, amount, category_id')
+        .select('id, date, amount, category_id, description')
         .gte('date', monthStartString)
         .lte('date', monthEndString)
         .order('date', { ascending: true }),
       supabase
         .from('expense_categories')
-        .select('id, name')
+        .select('id, name'),
     ]);
 
     // Error handling
@@ -167,6 +167,25 @@ export async function generateMonthlyReport(
     // Get the dictionary for the specified language
     const dictionary = await getDictionary(lang as 'en' | 'sq');
 
+    // Format the bookings data for the PDF
+    const formattedBookings = bookings.map(booking => ({
+      id: booking.id,
+      guest_name: booking.guest_name || 'Unnamed Guest',
+      start_date: booking.start_date,
+      end_date: booking.end_date,
+      source: booking.source || 'DIRECT',
+      total_amount: booking.total_amount || 0
+    }));
+
+    // Format the expenses data for the PDF
+    const formattedExpenses = expenses.map(expense => ({
+      id: expense.id,
+      date: expense.date,
+      description: expense.description || 'No description',
+      category: categoryMap.get(expense.category_id) || 'Uncategorized',
+      amount: expense.amount || 0
+    }));
+
     // Generate PDF
     console.log('Creating PDF document...');
     const document = React.createElement(MonthlyReportPDF, {
@@ -175,6 +194,8 @@ export async function generateMonthlyReport(
       lang: lang as 'en' | 'sq',
       dictionary,
       profileImageUrl,
+      bookings: formattedBookings,
+      expenses: formattedExpenses,
       data: {
         grossProfit,
         totalExpenses,
@@ -200,6 +221,9 @@ export async function generateMonthlyReport(
     throw error;
   }
 }
+
+
+
 
 
 
