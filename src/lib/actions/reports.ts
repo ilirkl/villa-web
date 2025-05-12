@@ -186,6 +186,36 @@ export async function generateMonthlyReport(
       amount: expense.amount || 0
     }));
 
+    // Calculate bookings by source data for the PDF
+    const bookingCountBySource = formattedBookings.reduce((acc, booking) => {
+      if (!booking || !booking.source) return acc;
+      acc[booking.source] = (acc[booking.source] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const revenueBySource = formattedBookings.reduce((acc, booking) => {
+      if (!booking || !booking.source || !booking.total_amount) return acc;
+      acc[booking.source] = (acc[booking.source] || 0) + booking.total_amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const totalBookings = formattedBookings.length;
+    const totalRevenue = formattedBookings.reduce((sum, booking) => sum + (booking?.total_amount || 0), 0);
+
+    // Combine both metrics into a single dataset
+    const allSources = new Set([
+      ...Object.keys(bookingCountBySource),
+      ...Object.keys(revenueBySource)
+    ]);
+
+    const bookingsBySource = Array.from(allSources).map(source => ({
+      name: source,
+      bookings: bookingCountBySource[source] || 0,
+      bookingsPercentage: totalBookings > 0 ? ((bookingCountBySource[source] || 0) / totalBookings) * 100 : 0,
+      revenue: revenueBySource[source] || 0,
+      revenuePercentage: totalRevenue > 0 ? ((revenueBySource[source] || 0) / totalRevenue) * 100 : 0,
+    })).sort((a, b) => b.revenue - a.revenue);
+
     // Generate PDF
     console.log('Creating PDF document...');
     const document = React.createElement(MonthlyReportPDF, {
@@ -204,6 +234,7 @@ export async function generateMonthlyReport(
         totalNightsReserved,
         averageStay,
         expenseBreakdown,
+        bookingsBySource, // Add the bookings by source data
       }
     });
 
@@ -221,6 +252,7 @@ export async function generateMonthlyReport(
     throw error;
   }
 }
+
 
 
 

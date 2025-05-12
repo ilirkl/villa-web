@@ -74,7 +74,7 @@
   "profit_breakdown": "Profit Breakdown",
   "net_profit": "Net Profit",
   "gross_profit": "Gross Profit",
-  "nights_reserved": "Nights Reserved",
+  "nights_reserved": "Booked nights",
   "occupancy_rate": "Occupancy Rate",
   "average_stay": "Average Stay",
   "no_expenses": "No expenses recorded for this period.",
@@ -166,5 +166,10 @@
   "and_more_bookings": "And {{count}} more bookings...",
   "and_more_expenses": "And {{count}} more expenses...",
   "no_bookings_for_period": "No bookings for this period",
-  "no_expenses_for_period": "No expenses for this period"
+  "no_expenses_for_period": "No expenses for this period",
+
+  "bookings_revenue_by_source": "Bookings & Revenue by Source",
+  "inner_circle": "Inner circle",
+  "outer_circle": "Outer circle",
+  "no_data_available": "No data available"
 }

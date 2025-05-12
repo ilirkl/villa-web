@@ -232,6 +232,59 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     padding: 10,
   },
+
+  // Pie chart styles
+  pieChartContainer: {
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  pieChartColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  pieChartTitle: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  pieChartLegend: {
+    marginTop: 10,
+    width: '100%',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  legendColorBox: {
+    width: 10,
+    height: 10,
+    marginRight: 5,
+    borderRadius: 2,
+  },
+  legendText: {
+    fontSize: 8,
+    flex: 1,
+  },
+  legendPercentage: {
+    fontSize: 8,
+    width: 30,
+    textAlign: 'right',
+  },
+  pieChartCircle: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  pieChartSegment: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
 });
 
 interface MonthlyReportPDFProps {
@@ -248,6 +301,13 @@ interface MonthlyReportPDFProps {
       name: string; // This should be the key for translation
       value: number;
       percentage: number;
+    }>;
+    bookingsBySource?: Array<{
+      name: string;
+      bookings: number;
+      bookingsPercentage: number;
+      revenue: number;
+      revenuePercentage: number;
     }>;
   };
   bookings?: Array<{
@@ -382,35 +442,84 @@ export const MonthlyReportPDF = ({
           </View>
         </View>
 
-        {/* --- EXPENSE BREAKDOWN --- */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>{t('expense_breakdown', 'monthly_report', 'Expense Breakdown')}</Text>
-          {translatedExpenseBreakdown.map((expense, index) => (
-            <View key={index} style={styles.expenseItemContainer}>
-              <View style={styles.expenseItemHeader}>
-                <Text style={styles.expenseItemName}>{expense.name}</Text>
-                <Text style={styles.expenseItemAmount}>
-                  {formatCurrencyValue(expense.value)}
-                </Text>
-              </View>
-              <View style={styles.expenseItemDetails}>
-                <View style={styles.progressBarContainer}>
-                  <View
-                    style={[
-                      styles.progressBarFill,
-                      { width: `${Math.min(expense.percentage, 100)}%` }
-                    ]}
-                  />
+        {/* --- EXPENSE BREAKDOWN & BOOKINGS BY SOURCE (SIDE BY SIDE) --- */}
+        <View style={styles.twoColumnContainer}>
+          {/* --- EXPENSE BREAKDOWN --- */}
+          <View style={[styles.column, styles.sectionContainer]}>
+            <Text style={styles.sectionTitle}>{t('expense_breakdown', 'monthly_report', 'Expense Breakdown')}</Text>
+            {translatedExpenseBreakdown.length === 0 ? (
+              <Text style={styles.dataLabel}>{t('no_expenses_recorded', 'monthly_report', 'No expenses recorded for this period.')}</Text>
+            ) : (
+              translatedExpenseBreakdown.map((expense, index) => (
+                <View key={index} style={styles.expenseItemContainer}>
+                  <View style={styles.expenseItemHeader}>
+                    <Text style={styles.expenseItemName}>{expense.name}</Text>
+                    <Text style={styles.expenseItemAmount}>
+                      {formatCurrencyValue(expense.value)}
+                    </Text>
+                  </View>
+                  <View style={styles.expenseItemDetails}>
+                    <View style={styles.progressBarContainer}>
+                      <View
+                        style={[
+                          styles.progressBarFill,
+                          { width: `${Math.min(expense.percentage, 100)}%` }
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.percentageText}>
+                      {expense.percentage.toFixed(1)}%
+                    </Text>
+                  </View>
                 </View>
-                <Text style={styles.percentageText}>
-                  {expense.percentage.toFixed(1)}%
-                </Text>
-              </View>
-            </View>
-          ))}
-          {translatedExpenseBreakdown.length === 0 && (
-            <Text style={styles.dataLabel}>{t('no_expenses_recorded', 'monthly_report', 'No expenses recorded for this period.')}</Text>
-          )}
+              ))
+            )}
+          </View>
+
+          {/* --- BOOKINGS & REVENUE BY SOURCE --- */}
+          <View style={[styles.column, styles.sectionContainer]}>
+            <Text style={styles.sectionTitle}>{t('bookings_revenue_by_source', 'monthly_report', 'Bookings & Revenue by Source')}</Text>
+            
+            {!data.bookingsBySource || data.bookingsBySource.length === 0 ? (
+              <Text style={styles.dataLabel}>{t('no_bookings_recorded', 'monthly_report', 'No bookings recorded for this period.')}</Text>
+            ) : (
+              <>
+                {/* Legend for sources */}
+                <View style={styles.pieChartLegend}>
+                  {data.bookingsBySource.map((source, index) => {
+                    // Define colors for each source
+                    const sourceColors = {
+                      'DIRECT': '#10b981', // Green
+                      'AIRBNB': '#ff5a5f', // Red
+                      'BOOKING': '#003580', // Blue
+                      'default': '#6b7280', // Gray for any other sources
+                    };
+                    
+                    const color = sourceColors[source.name as keyof typeof sourceColors] || sourceColors.default;
+                    
+                    return (
+                      <View key={index} style={styles.legendItem}>
+                        <View style={[styles.legendColorBox, { backgroundColor: color }]} />
+                        <Text style={styles.legendText}>{source.name}</Text>
+                        <Text style={styles.legendPercentage}>{source.bookingsPercentage.toFixed(1)}%</Text>
+                        <Text style={styles.legendPercentage}>{source.revenuePercentage.toFixed(1)}%</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+                
+                {/* Chart explanation */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 5, marginBottom: 5 }}>
+                  <Text style={{ fontSize: 7, color: '#4A5568' }}>
+                    {t('left_percentage', 'monthly_report', 'Left %: Bookings')}
+                  </Text>
+                  <Text style={{ fontSize: 7, color: '#4A5568' }}>
+                    {t('right_percentage', 'monthly_report', 'Right %: Revenue')}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
         </View>
 
         {/* --- TRANSACTION TABLES --- */}
@@ -506,6 +615,10 @@ export const MonthlyReportPDF = ({
     </Document>
   );
 };
+
+
+
+
 
 
 

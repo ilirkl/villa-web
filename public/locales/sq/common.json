@@ -184,5 +184,9 @@
   "and_more_bookings": "Dhe {{count}} rezervime të tjera...",
   "and_more_expenses": "Dhe {{count}} shpenzime të tjera...",
   "no_bookings_for_period": "Nuk ka rezervime për këtë periudhë",
-  "no_expenses_for_period": "Nuk ka shpenzime për këtë periudhë"
+  "no_expenses_for_period": "Nuk ka shpenzime për këtë periudhë",
+
+  "bookings_revenue_by_source": "Të Ardhurat sipas Burimit",
+  "inner_circle": "Rrethi i brendshëm",
+  "outer_circle": "Rrethi i jashtëm"
 }
