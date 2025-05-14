@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import { getDictionary } from '@/lib/dictionary';
 import Cookies from 'js-cookie';
+import '@hcaptcha/types';
+
 
 function LoginContent() {
   const router = useRouter();
@@ -99,10 +101,7 @@ function LoginContent() {
           showLinks={true}
           view="sign_in"
           theme="default"
-          captchaConfig={{
-            siteKey: process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || '',
-            provider: 'hcaptcha'
-          }}
+          
           localization={{
             variables: {
               sign_in: {
