@@ -99,6 +99,10 @@ function LoginContent() {
           showLinks={true}
           view="sign_in"
           theme="default"
+          captchaConfig={{
+            siteKey: process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || '',
+            provider: 'hcaptcha'
+          }}
           localization={{
             variables: {
               sign_in: {
