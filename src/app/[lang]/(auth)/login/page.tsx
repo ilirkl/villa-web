@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import { getDictionary } from '@/lib/dictionary';
 import Cookies from 'js-cookie';
-import '@hcaptcha/types';
 
 
 function LoginContent() {
