@@ -188,5 +188,19 @@
 
   "bookings_revenue_by_source": "Të Ardhurat sipas Burimit",
   "inner_circle": "Rrethi i brendshëm",
-  "outer_circle": "Rrethi i jashtëm"
+  "outer_circle": "Rrethi i jashtëm",
+
+  "change_password": "Ndrysho Fjalëkalimin",
+  "new_password": "Fjalëkalimi i Ri",
+  "confirm_new_password": "Konfirmo Fjalëkalimin e Ri",
+  "enter_new_password": "Vendosni fjalëkalimin e ri",
+  "confirm_new_password_placeholder": "Konfirmoni fjalëkalimin e ri",
+  "password_fields_required": "Ju lutemi plotësoni të dy fushat e fjalëkalimit.",
+  "passwords_do_not_match": "Fjalëkalimet e reja nuk përputhen.",
+  "password_too_short": "Fjalëkalimi duhet të jetë të paktën 6 karaktere.",
+  "password_updated_successfully": "Fjalëkalimi u përditësua me sukses!",
+  "password_update_failed": "Dështoi përditësimi i fjalëkalimit.",
+  "changing_password": "Duke ndryshuar fjalëkalimin...",
+  "update_password": "Përditëso Fjalëkalimin",
+  "signing_out": "Duke dalë..."
 }

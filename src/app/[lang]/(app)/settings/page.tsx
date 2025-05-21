@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/dialog";
 import { DownloadBackupButton } from '@/components/settings/DownloadBackupButton';
 import { IcalSettings } from '@/components/settings/IcalSettings';
-import { createClient as createServerClient } from '@/lib/supabase/server';
 
 // Helper function (Unchanged)
 function centerAspectCrop(
@@ -57,11 +56,11 @@ export default function SettingsPage() {
   const [dictionary, setDictionary] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false); // Renamed for clarity
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // For image processing
   const [crop, setCrop] = useState<Crop>();
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -70,6 +69,19 @@ export default function SettingsPage() {
   // Add these state variables to track iCal URLs
   const [airbnbIcalUrl, setAirbnbIcalUrl] = useState<string>('');
   const [bookingComIcalUrl, setBookingComIcalUrl] = useState<string>('');
+
+  // State for password change
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isPasswordChanging, setIsPasswordChanging] = useState(false); // For password updates
+
+  // Combined loading state for the main save button
+  const [isSavingAll, setIsSavingAll] = useState(false);
+
+  // Refs for the forms
+  const profileFormRef = useRef<HTMLFormElement>(null);
+  const passwordFormRef = useRef<HTMLFormElement>(null);
+
 
   // --- Image URL Handling (Unchanged) ---
   const getImageUrl = (url: string | null): string => {
@@ -401,10 +413,13 @@ export default function SettingsPage() {
     } finally { setIsUploading(false); }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!profile) return;
-    setIsSaving(true);
+  // Profile update handler (now internal, called by handleSaveAllChanges)
+  const saveProfileChanges = useCallback(async () => {
+    if (!profile) {
+      toast.error('Profile data is not loaded.');
+      return false;
+    }
+    setIsSavingProfile(true);
     try {
       let finalAvatarPath: string | null | undefined = profile.avatar_url;
       if (avatarFile) {
@@ -412,7 +427,7 @@ export default function SettingsPage() {
         if (uploadedPath) {
           finalAvatarPath = uploadedPath;
         } else {
-          throw new Error('Avatar upload failed. Changes not saved.');
+          throw new Error('Avatar upload failed. Profile changes not saved.');
         }
       }
 
@@ -431,32 +446,113 @@ export default function SettingsPage() {
           updated_at: new Date().toISOString(),
       };
 
-      // Use the client-side action
       const { success, error } = await updateProfileClient(updates);
       
       if (!success) {
         throw new Error(error?.message || 'Failed to update profile');
       }
 
-      toast.success('Profile updated successfully!');
       setProfile((prev: Profile | null) => prev ? { ...prev, ...updates } : null);
       setAvatarFile(null);
       if (avatarPreview?.startsWith('blob:')) {
           URL.revokeObjectURL(avatarPreview);
           setAvatarPreview(getImageUrl(finalAvatarPath || null));
       }
+      return true; // Success
     } catch (error: any) {
-      console.error('Error during handleSubmit:', error);
+      console.error('Error during profile save:', error);
       toast.error(error.message || 'Error updating profile');
+      return false; // Failure
     } finally {
-      setIsSaving(false);
+      setIsSavingProfile(false);
     }
-  };
+  }, [profile, avatarFile, airbnbIcalUrl, bookingComIcalUrl, uploadAvatar, updateProfileClient, avatarPreview, getImageUrl]);
+
+  // Password change handler (now internal, called by handleSaveAllChanges)
+  const savePasswordChanges = useCallback(async () => {
+    if (!newPassword && !confirmNewPassword) {
+      // No password entered, skip password update
+      return true; // Consider it successful as nothing was changed
+    }
+
+    setIsPasswordChanging(true);
+    try {
+      if (!newPassword || !confirmNewPassword) {
+        toast.error(dictionary?.password_fields_required || 'Please fill in both password fields.');
+        return false;
+      }
+      if (newPassword !== confirmNewPassword) {
+        toast.error(dictionary?.passwords_do_not_match || 'New passwords do not match.');
+        return false;
+      }
+      if (newPassword.length < 6) { 
+        toast.error(dictionary?.password_too_short || 'Password must be at least 6 characters.');
+        return false;
+      }
+
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setNewPassword('');
+      setConfirmNewPassword('');
+      return true; // Success
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      toast.error(error.message || dictionary?.password_update_failed || 'Failed to update password.');
+      return false; // Failure
+    } finally {
+      setIsPasswordChanging(false);
+    }
+  }, [supabase, newPassword, confirmNewPassword, dictionary]);
+
+  // NEW: Combined save handler
+  const handleSaveAllChanges = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent default button form submission
+    setIsSavingAll(true);
+    let profileSuccess = true;
+    let passwordSuccess = true;
+
+    // Trigger profile form submission first
+    // Note: Calling requestSubmit() will trigger the onSubmit of the form itself.
+    // If you have `onSubmit` handlers on the forms, they will fire.
+    // In this refactor, `saveProfileChanges` and `savePasswordChanges` are now direct functions
+    // that we call, which is simpler than relying on `requestSubmit` triggering form handlers.
+    // So we directly call the logic functions.
+
+    toast.loading(dictionary?.saving_changes || 'Saving changes...');
+
+    // Save profile changes
+    profileSuccess = await saveProfileChanges();
+
+    // Only attempt password change if new password fields are filled
+    if (newPassword || confirmNewPassword) {
+      passwordSuccess = await savePasswordChanges();
+    }
+
+    toast.dismiss(); // Dismiss the loading toast
+
+    if (profileSuccess && passwordSuccess) {
+      toast.success(dictionary?.all_changes_saved_successfully || 'All changes saved successfully!');
+    } else {
+      // More specific error handling could be implemented here
+      // For now, if either failed, a general error is shown by the individual functions
+      // and we show a final, less specific failure.
+      toast.error(dictionary?.some_changes_failed || 'Some changes could not be saved. Please check details.');
+    }
+
+    setIsSavingAll(false);
+  }, [saveProfileChanges, savePasswordChanges, newPassword, confirmNewPassword, dictionary]);
+
 
   const handleSignOut = async () => {
-    setIsSaving(true);
+    setIsSavingAll(true); // Use the general saving state
     try {
-      toast.loading("Signing out...");
+      toast.loading(dictionary?.signing_out || "Signing out...");
       
       // Reset CSRF token before signing out
       resetCsrfToken();
@@ -467,7 +563,7 @@ export default function SettingsPage() {
       router.push('/login');
     } catch (error: any) {
       toast.error(`Error signing out: ${error.message}`);
-      setIsSaving(false);
+      setIsSavingAll(false);
     }
   };
 
@@ -486,11 +582,13 @@ export default function SettingsPage() {
       toast.error("Could not read image dimensions.");
       setIsCropDialogOpen(false); // Close dialog if image invalid
     }
-  }, [imgRef]); // imgRef dependency
+  }, [imgRef]);
   // --- End Event Handlers ---
 
 
   // --- Render Logic ---
+  const isAnyOperationInProgress = isSavingProfile || isPasswordChanging || isUploading || isProcessing || isSavingAll;
+
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading profile...</div>;
   }
@@ -512,7 +610,7 @@ export default function SettingsPage() {
           </div>
         </div>
         
-        {/* Profile section with avatar and form */}
+        {/* Profile section with avatar and forms */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Avatar section - takes full width on mobile, 1/3 on desktop */}
           <div className="lg:col-span-1 flex flex-col items-center">
@@ -530,20 +628,20 @@ export default function SettingsPage() {
                     key={displayAvatarSrc}
                     onError={(e) => { console.error('Image load error:', e); e.currentTarget.src = '/default-avatar.png'; }}
                   />
-                  {(isProcessing || isUploading || isSaving) && (
+                  {isAnyOperationInProgress && (
                     <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center z-10">
                       <div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
                     </div>
                   )}
-                  {!(isProcessing || isUploading || isSaving) && (
+                  {!isAnyOperationInProgress && (
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <Upload className="h-6 w-6 text-white" />
                     </div>
                   )}
                 </div>
               </Label>
-              <input type="file" id="avatar-upload" accept="image/*" onChange={handleAvatarChange} className="hidden" disabled={isProcessing || isUploading || isSaving} />
-              {(avatarPreview || profile?.avatar_url) && !(isProcessing || isUploading || isSaving) && (
+              <input type="file" id="avatar-upload" accept="image/*" onChange={handleAvatarChange} className="hidden" disabled={isAnyOperationInProgress} />
+              {(avatarPreview || profile?.avatar_url) && !isAnyOperationInProgress && (
                 <button 
                   type="button" 
                   onClick={removeAvatar} 
@@ -564,22 +662,6 @@ export default function SettingsPage() {
                 )}
               </div>
             )}
-            
-            {/* Remove the sign out button that appears under the avatar */}
-            {/* Delete this entire block:
-            <div className="lg:hidden w-full mt-2">
-              <Button 
-                variant="outline" 
-                type="button" 
-                onClick={handleSignOut} 
-                className="w-full flex items-center justify-center gap-2" 
-                disabled={isSaving || isUploading || isProcessing}
-              >
-                <LogOut className="h-4 w-4" />
-                <span>{dictionary?.sign_out || 'Sign Out'}</span>
-              </Button>
-            </div>
-            */}
           </div>
           
           {/* Form section - takes full width on mobile, 2/3 on desktop */}
@@ -590,100 +672,127 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 {profile ? (
-                  <form onSubmit={handleSubmit}>
-                    {/* Form fields with updated layout */}
-                    <div className="space-y-4">
-                      {/* Full Name and Company Name */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <Label htmlFor="full_name">{dictionary?.full_name || 'Full Name'}</Label>
-                          <Input 
-                            id="full_name" 
-                            value={profile?.full_name || ''} 
-                            onChange={(e) => setProfile(prev => prev ? { ...prev, full_name: e.target.value } : null)} 
-                            disabled={isSaving} 
-                          />
+                  <>
+                    {/* Profile Information Form */}
+                    <form ref={profileFormRef} onSubmit={(e) => e.preventDefault()}> {/* Prevent default submission here, handle it manually */}
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="full_name">{dictionary?.full_name || 'Full Name'}</Label>
+                            <Input 
+                              id="full_name" 
+                              value={profile?.full_name || ''} 
+                              onChange={(e) => setProfile(prev => prev ? { ...prev, full_name: e.target.value } : null)} 
+                              disabled={isAnyOperationInProgress} 
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="company_name">{dictionary?.company_name || 'Company Name'}</Label>
+                            <Input 
+                              id="company_name" 
+                              value={profile?.company_name || ''} 
+                              onChange={(e) => setProfile(prev => prev ? { ...prev, company_name: e.target.value } : null)} 
+                              disabled={isAnyOperationInProgress} 
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="email">{dictionary?.email || 'Email'}</Label>
+                            <Input 
+                              id="email" 
+                              type="email" 
+                              value={profile?.email || ''} 
+                              onChange={(e) => setProfile(prev => prev ? { ...prev, email: e.target.value } : null)} 
+                              disabled={isAnyOperationInProgress} 
+                              aria-describedby="email-desc"
+                            />
+                            <p id="email-desc" className="text-xs text-muted-foreground">{dictionary?.email_desc || 'May affect login.'}</p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="phone_number">{dictionary?.phone_number || 'Phone Number'}</Label>
+                            <Input 
+                              id="phone_number" 
+                              type="tel" 
+                              value={profile?.phone_number || ''} 
+                              onChange={(e) => setProfile(prev => prev ? { ...prev, phone_number: e.target.value } : null)} 
+                              disabled={isAnyOperationInProgress}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="website">{dictionary?.website || 'Website'}</Label>
+                            <Input 
+                              id="website" 
+                              type="url" 
+                              value={profile?.website || ''} 
+                              onChange={(e) => setProfile(prev => prev ? { ...prev, website: e.target.value } : null)} 
+                              disabled={isAnyOperationInProgress} 
+                              placeholder="https://..."
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="vat_number">{dictionary?.vat_number || 'VAT Number'}</Label>
+                            <Input 
+                              id="vat_number" 
+                              value={profile?.vat_number || ''} 
+                              onChange={(e) => setProfile(prev => prev ? { ...prev, vat_number: e.target.value } : null)} 
+                              disabled={isAnyOperationInProgress}
+                            />
+                          </div>
                         </div>
                         <div className="space-y-1.5">
-                          <Label htmlFor="company_name">{dictionary?.company_name || 'Company Name'}</Label>
+                          <Label htmlFor="address">{dictionary?.address || 'Address'}</Label>
                           <Input 
-                            id="company_name" 
-                            value={profile?.company_name || ''} 
-                            onChange={(e) => setProfile(prev => prev ? { ...prev, company_name: e.target.value } : null)} 
-                            disabled={isSaving} 
+                            id="address" 
+                            value={profile?.address || ''} 
+                            onChange={(e) => setProfile(prev => prev ? { ...prev, address: e.target.value } : null)} 
+                            disabled={isAnyOperationInProgress}
                           />
                         </div>
                       </div>
-                      {/* Email and Phone Number */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    </form>
+                    <form ref={passwordFormRef} onSubmit={(e) => e.preventDefault()} className="space-y-4 mt-4"> 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <Label htmlFor="email">{dictionary?.email || 'Email'}</Label>
+                          <Label htmlFor="new_password">{dictionary?.new_password || 'New Password'}</Label>
                           <Input 
-                            id="email" 
-                            type="email" 
-                            value={profile?.email || ''} 
-                            onChange={(e) => setProfile(prev => prev ? { ...prev, email: e.target.value } : null)} 
-                            disabled={isSaving} 
-                            aria-describedby="email-desc"
-                          />
-                          <p id="email-desc" className="text-xs text-muted-foreground">{dictionary?.email_desc || 'May affect login.'}</p>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="phone_number">{dictionary?.phone_number || 'Phone Number'}</Label>
-                          <Input 
-                            id="phone_number" 
-                            type="tel" 
-                            value={profile?.phone_number || ''} 
-                            onChange={(e) => setProfile(prev => prev ? { ...prev, phone_number: e.target.value } : null)} 
-                            disabled={isSaving}
-                          />
-                        </div>
-                      </div>
-                      {/* Website and VAT Number */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <Label htmlFor="website">{dictionary?.website || 'Website'}</Label>
-                          <Input 
-                            id="website" 
-                            type="url" 
-                            value={profile?.website || ''} 
-                            onChange={(e) => setProfile(prev => prev ? { ...prev, website: e.target.value } : null)} 
-                            disabled={isSaving} 
-                            placeholder="https://..."
+                            id="new_password" 
+                            type="password" 
+                            value={newPassword} 
+                            onChange={(e) => setNewPassword(e.target.value)} 
+                            disabled={isAnyOperationInProgress}
+                            placeholder={dictionary?.enter_new_password || "Enter new password"}
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <Label htmlFor="vat_number">{dictionary?.vat_number || 'VAT Number'}</Label>
+                          <Label htmlFor="confirm_new_password">{dictionary?.confirm_new_password || 'Confirm New Password'}</Label>
                           <Input 
-                            id="vat_number" 
-                            value={profile?.vat_number || ''} 
-                            onChange={(e) => setProfile(prev => prev ? { ...prev, vat_number: e.target.value } : null)} 
-                            disabled={isSaving}
+                            id="confirm_new_password" 
+                            type="password" 
+                            value={confirmNewPassword} 
+                            onChange={(e) => setConfirmNewPassword(e.target.value)} 
+                            disabled={isAnyOperationInProgress}
+                            placeholder={dictionary?.confirm_new_password_placeholder || "Confirm new password"}
                           />
+                          </div>
                         </div>
-                      </div>
-                      {/* Address */}
-                      <div className="space-y-1.5">
-                        <Label htmlFor="address">{dictionary?.address || 'Address'}</Label>
-                        <Input 
-                          id="address" 
-                          value={profile?.address || ''} 
-                          onChange={(e) => setProfile(prev => prev ? { ...prev, address: e.target.value } : null)} 
-                          disabled={isSaving}
-                        />
-                      </div>
-                    </div>
+                        {/* Removed individual Update Password button */}
+                      </form>
+
+                    {/* Password Change Section (within the same CardContent) */}
                     
-                    {/* Action Buttons with updated layout */}
+
+                    {/* Unified Action Buttons (Sign Out and Save All Changes) */}
                     <div className="flex flex-row justify-between items-center gap-4 mt-6 pt-4 border-t dark:border-gray-700">
-                      {/* Sign out button - visible on all screens */}
                       <div>
                         <Button 
                           variant="outline" 
                           type="button" 
                           onClick={handleSignOut} 
                           className="flex items-center justify-center gap-2" 
-                          disabled={isSaving || isUploading || isProcessing}
+                          disabled={isAnyOperationInProgress}
                         >
                           <LogOut className="h-4 w-4" />
                           <span>{dictionary?.sign_out || 'Sign Out'}</span>
@@ -691,17 +800,18 @@ export default function SettingsPage() {
                       </div>
                       <div>
                         <Button 
-                          type="submit" 
+                          type="button" // Change to type="button" since it's outside the form
+                          onClick={handleSaveAllChanges} 
                           className="flex items-center justify-center" 
                           style={{ backgroundColor: '#FF5A5F', color: 'white' }}
-                          disabled={isSaving || isUploading || isProcessing}
+                          disabled={isAnyOperationInProgress}
                         >
-                          {(isSaving || isUploading) && (<div className="w-4 h-4 border-t-2 border-white rounded-full animate-spin mr-2"></div>)}
-                          {isSaving ? (dictionary?.saving || 'Saving...') : (isUploading ? (dictionary?.uploading || 'Uploading...') : (dictionary?.save_changes || 'Save Changes'))}
+                          {isAnyOperationInProgress && (<div className="w-4 h-4 border-t-2 border-white rounded-full animate-spin mr-2"></div>)}
+                          {isSavingAll ? (dictionary?.saving_changes || 'Saving Changes...') : (dictionary?.save_changes || 'Save Changes')}
                         </Button>
                       </div>
                     </div>
-                  </form>
+                  </>
                 ) : (
                   <div className="text-center text-gray-500 py-6">{dictionary?.profile_data_not_loaded || 'Profile data could not be loaded.'}</div>
                 )}
@@ -746,56 +856,3 @@ export default function SettingsPage() {
     </div>
   );
 } // End component
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

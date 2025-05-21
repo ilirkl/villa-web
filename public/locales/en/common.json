@@ -171,5 +171,19 @@
   "bookings_revenue_by_source": "Bookings & Revenue by Source",
   "inner_circle": "Inner circle",
   "outer_circle": "Outer circle",
-  "no_data_available": "No data available"
+  "no_data_available": "No data available",
+
+  "change_password": "Change Password",
+  "new_password": "New Password",
+  "confirm_new_password": "Confirm New Password",
+  "enter_new_password": "Enter new password",
+  "confirm_new_password_placeholder": "Confirm new password",
+  "password_fields_required": "Please fill in both password fields.",
+  "passwords_do_not_match": "New passwords do not match.",
+  "password_too_short": "Password must be at least 6 characters.",
+  "password_updated_successfully": "Password updated successfully!",
+  "password_update_failed": "Failed to update password.",
+  "changing_password": "Changing Password...",
+  "update_password": "Update Password",
+  "signing_out": "Signing out..."
 }
