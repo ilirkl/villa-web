@@ -8,7 +8,7 @@ import { Constants } from '@/lib/database.types';
 import { Button } from '@/components/ui/button';
 import {
   Form,
-  FormControl,
+  FormControl, // <-- Make sure this is imported
   FormDescription,
   FormField,
   FormItem,
@@ -32,10 +32,12 @@ import { useRouter } from 'next/navigation';
 import DOMPurify from 'dompurify';
 import { getCsrfToken } from '@/lib/csrf-client';
 
+// ... (rest of your imports and schema)
+
 // Zod schema update
 const FormSchema = z.object({
   id: z.string().uuid().optional(),
-  guest_name: z.string().min(1, 'Guest name is required').transform(val => 
+  guest_name: z.string().min(1, 'Guest name is required').transform(val =>
     DOMPurify.sanitize(val)),
   start_date: z.date({ required_error: 'Start date is required.' }),
   end_date: z.date({ required_error: 'End date is required.' }),
@@ -44,7 +46,7 @@ const FormSchema = z.object({
   source: z.enum(Constants.public.Enums.booking_source, {
     errorMap: (issue, ctx) => ({ message: 'Please select a valid booking source.' })
   }),
-  notes: z.string().nullable().optional().transform(val => 
+  notes: z.string().nullable().optional().transform(val =>
     val ? DOMPurify.sanitize(val) : val),
 }).refine((data) => data.end_date > data.start_date, {
   message: 'End date must be after start date',
@@ -56,20 +58,20 @@ type FormSchemaType = z.infer<typeof FormSchema>;
 interface BookingFormProps {
   initialData?: BookingFormData | null;
   dictionary?: any;
-  onSuccess?: () => void; // New prop for modal integration
+  onSuccess?: () => void;
 }
 
 function SubmitButton({ isEditing, dictionary }: { isEditing: boolean, dictionary?: any }) {
     const { pending } = useFormStatus();
     return (
-        <Button 
-            type="submit" 
-            disabled={pending} 
+        <Button
+            type="submit"
+            disabled={pending}
             aria-disabled={pending}
             style={{ backgroundColor: '#FF5A5F', color: 'white' }}
             className="hover:bg-[#FF5A5F]/90"
         >
-        {pending ? (isEditing ? dictionary?.updating || 'Updating...' : dictionary?.saving || 'Creating...') : 
+        {pending ? (isEditing ? dictionary?.updating || 'Updating...' : dictionary?.saving || 'Creating...') :
                   (isEditing ? dictionary?.update_booking || 'Update Booking' : dictionary?.create_booking || 'Create Booking')}
         </Button>
     );
@@ -88,7 +90,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
       const token = await getCsrfToken();
       setCsrfToken(token);
     };
-    
+
     fetchCsrfToken();
   }, []);
 
@@ -101,7 +103,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
       end_date: initialData?.end_date ?? undefined,
       total_amount: initialData?.total_amount ?? 0,
       prepayment: initialData?.prepayment ?? 0,
-      source: initialData?.source ?? 'DIRECT', 
+      source: initialData?.source ?? 'DIRECT',
       notes: initialData?.notes ?? '',
     },
   });
@@ -119,11 +121,11 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
              });
         } else if (!state.errors) {
              // Success Toast
-             toast.success(isEditing ? (dictionary.booking_updated || "Booking Updated") : 
+             toast.success(isEditing ? (dictionary.booking_updated || "Booking Updated") :
                                       (dictionary.booking_created || "Booking Created"), {
                  description: state.message,
              });
-             
+
              // Call onSuccess if provided (for modal use)
              if (onSuccess) {
                onSuccess();
@@ -138,10 +140,10 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
   // onSubmit remains the same
   const onSubmit = (formData: FormSchemaType) => {
     const data = new FormData();
-    
+
     // Add CSRF token to form data
     data.append('csrf_token', csrfToken);
-    
+
     Object.entries(formData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         if (value instanceof Date) {
@@ -182,7 +184,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="source"
@@ -219,32 +221,32 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                 <FormLabel>{dictionary.start_date || "Start Date"}</FormLabel>
                 <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                   <PopoverTrigger asChild>
-                    {/* MODIFICATION: FormControl removed from here. */}
-                    <Button
-                      variant={'outline'}
-                      className={cn(
-                        'pl-3 text-left font-normal w-full',
-                        !field.value && 'text-muted-foreground'
-                      )}
-                    >
-                      {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
+                    {/* RESTORED: FormControl wraps the Button */}
+                    <FormControl>
+                      <Button
+                        variant={'outline'}
+                        className={cn(
+                          'pl-3 text-left font-normal w-full',
+                          !field.value && 'text-muted-foreground'
+                        )}
+                      >
+                        {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    {/* MODIFICATION: FormControl wraps the Calendar. */}
-                    <FormControl>
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={(date) => {
-                          field.onChange(date);
-                          setStartDateOpen(false);
-                        }}
-                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                        initialFocus
-                      />
-                    </FormControl>
+                    {/* REMOVED: FormControl from around Calendar */}
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={(date) => {
+                        field.onChange(date); // field.onChange is key here
+                        setStartDateOpen(false);
+                      }}
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      initialFocus
+                    />
                   </PopoverContent>
                 </Popover>
                 <FormMessage />
@@ -259,34 +261,34 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                 <FormLabel>{dictionary.end_date || "End Date"}</FormLabel>
                 <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
                   <PopoverTrigger asChild>
-                    {/* MODIFICATION: FormControl removed from here. */}
-                    <Button
-                      variant={'outline'}
-                      className={cn(
-                        'pl-3 text-left font-normal w-full',
-                        !field.value && 'text-muted-foreground'
-                      )}
-                    >
-                      {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
+                    {/* RESTORED: FormControl wraps the Button */}
+                    <FormControl>
+                      <Button
+                        variant={'outline'}
+                        className={cn(
+                          'pl-3 text-left font-normal w-full',
+                          !field.value && 'text-muted-foreground'
+                        )}
+                      >
+                        {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    {/* MODIFICATION: FormControl wraps the Calendar. */}
-                    <FormControl>
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={(date) => {
-                          field.onChange(date);
-                          setEndDateOpen(false);
-                        }}
-                        disabled={(date) =>
+                    {/* REMOVED: FormControl from around Calendar */}
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={(date) => {
+                        field.onChange(date); // field.onChange is key here
+                        setEndDateOpen(false);
+                      }}
+                      disabled={(date) =>
                           date < (form.getValues("start_date") || new Date(new Date().setHours(0, 0, 0, 0)))
                         }
-                        initialFocus
-                      />
-                    </FormControl>
+                      initialFocus
+                    />
                   </PopoverContent>
                 </Popover>
                 <FormMessage />
@@ -356,9 +358,9 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
         <input type="hidden" name="csrf_token" value={csrfToken} />
 
         <div className="flex justify-end gap-2">
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => onSuccess ? onSuccess() : router.back()}
           >
             {dictionary.cancel || "Cancel"}
