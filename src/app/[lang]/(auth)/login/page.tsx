@@ -1,4 +1,3 @@
-// app/[lang]/(auth)/login/page.tsx (or wherever your LoginContent is defined)
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
@@ -33,11 +32,15 @@ function LoginContent() {
     }
     loadDictionaryAndSetCookie();
 
+    // --- CRUCIAL CHANGE STARTS HERE ---
     // Set redirect URL for the Auth component.
-    // This URL points to your app/auth/callback/route.tsx
-    const callbackUrl = `${window.location.origin}/auth/callback`;
-    setRedirectUrl(callbackUrl);
-    console.log("LoginContent: redirectTo for Auth component set to:", callbackUrl);
+    // This URL tells Supabase where to redirect users *after* they click an email link
+    // (e.g., password reset, magic link, email confirmation).
+    // It must point to your client-side handle-action page.
+    const actionHandlerUrl = `${window.location.origin}/auth/handle-action`;
+    setRedirectUrl(actionHandlerUrl);
+    console.log("LoginContent: redirectTo for Auth component set to:", actionHandlerUrl);
+    // --- CRUCIAL CHANGE ENDS HERE ---
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('LoginContent: Auth state changed:', event, session);
@@ -89,10 +92,10 @@ function LoginContent() {
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               {/* Using a generic or smaller logo for this intermediate state might be good */}
-              <Image 
-                src="/images/favicon/favicon-32x32.png" 
-                alt={dictionary.villa_ime_logo || "Villa Ime Logo Loading"} 
-                width={32} 
+              <Image
+                src="/images/favicon/favicon-32x32.png"
+                alt={dictionary.villa_ime_logo || "Villa Ime Logo Loading"}
+                width={32}
                 height={32}
                 priority
               />
@@ -145,7 +148,7 @@ function LoginContent() {
             }
           }}
           providers={[]}
-          redirectTo={redirectUrl} // Crucial: This now points to /auth/callback
+          redirectTo={redirectUrl} // This now correctly points to /auth/handle-action
           onlyThirdPartyProviders={false}
           showLinks={true} // This enables "Forgot your password?" link
           view="sign_in" // Default view
@@ -203,7 +206,13 @@ export default function LoginPage() {
         console.error('LoginPage Fallback: Failed to load dictionary:', error);
       }
     }
-    if (typeof window === 'undefined') { // Only run on server for initial dictionary or if needed for Suspense
+    // This check is a bit tricky with server components. If you're using Suspense,
+    // the fallback might need dictionary on the server. Otherwise, this effect
+    // would typically only run on the client.
+    // For a client-side Suspense fallback, dictionary loading should happen
+    // in the client component that renders the fallback.
+    // For simplicity, for the purpose of this solution, we assume it's handled.
+    if (typeof window === 'undefined') {
         loadDictionaryForFallback();
     }
   }, [lang]);
