@@ -29,7 +29,7 @@ import React, { useEffect, useTransition, useState } from 'react';
 import { toast } from "sonner"; // Import sonner toast
 import { useParams, useRouter } from 'next/navigation';
 import { translateExpenseCategory } from '@/lib/translations';
-import { createClient } from '@/lib/supabase/client';
+// import { createClient } from '@/lib/supabase/client'; // Not used directly in this component's logic
 
 // Define the form schema
 const FormSchema = z.object({
@@ -55,14 +55,14 @@ interface ExpenseFormProps {
 function SubmitButton({ isEditing, dictionary }: { isEditing: boolean, dictionary: any }) {
     const { pending } = useFormStatus();
     return (
-        <Button 
-            type="submit" 
-            disabled={pending} 
+        <Button
+            type="submit"
+            disabled={pending}
             aria-disabled={pending}
             style={{ backgroundColor: '#FF5A5F', color: 'white' }}
             className="hover:bg-[#FF5A5F]/90"
         >
-        {pending ? (isEditing ? dictionary.updating || 'Updating...' : dictionary.saving || 'Saving...') : 
+        {pending ? (isEditing ? dictionary.updating || 'Updating...' : dictionary.saving || 'Saving...') :
                   (isEditing ? dictionary.update_expense || 'Update Expense' : dictionary.save_expense || 'Save Expense')}
         </Button>
     );
@@ -74,13 +74,13 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
   const { lang } = useParams();
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string>('');
-  
+
   // Fetch CSRF token on component mount
   useEffect(() => {
     // Get CSRF token from cookie (client-side)
-    const getCsrfToken = async () => {
+    const fetchCsrfToken = async () => { // Renamed getCsrfToken to fetchCsrfToken to avoid confusion with imported getCsrfToken
       try {
-        const response = await fetch('/api/csrf');
+        const response = await fetch('/api/csrf'); // Assuming this is where your CSRF token is exposed
         const data = await response.json();
         setCsrfToken(data.csrfToken);
       } catch (error) {
@@ -88,34 +88,34 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
         toast.error(dictionary.error_security || "Security error");
       }
     };
-    
-    getCsrfToken();
+
+    fetchCsrfToken();
   }, [dictionary]);
-  
+
   // Find the "Furnizim" category if it exists
   const furnizimCategory = categories.find(cat => cat.name === "Furnizim");
-  
+
   // Ensure initialData.date is a proper Date object
-  const initialDate = initialData?.date 
+  const initialDate = initialData?.date
     ? (typeof initialData.date === 'object' && initialData.date !== null
-        ? initialData.date 
-        : new Date(initialData.date))
+        ? initialData.date
+        : new Date(initialData.date)) // Convert string to Date object
     : new Date();
-  
+
   // Get translated categories for display
   const translatedCategories = categories.map(category => ({
     ...category,
     translatedName: translateExpenseCategory(category.name, dictionary, lang as string)
   }));
-  
+
   console.log("Initial date:", initialDate);
-  
+
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       id: initialData?.id ?? undefined,
       amount: initialData?.amount ?? undefined,
-      date: initialDate,
+      date: initialDate, // Ensure this is a Date object
       category_id: initialData?.category_id ?? furnizimCategory?.id ?? undefined,
       description: initialData?.description ?? '',
     },
@@ -123,100 +123,95 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
 
   // Log the form's default values for debugging
   console.log("Form default values:", form.getValues());
-  
+
   // Create a server action
   const [isPending, startTransition] = useTransition();
-  
+
   // Handle form submission
   const onSubmit = (formData: FormSchemaType) => {
     console.log("Form data before submission:", formData); // Debug log
-    
+
     const data = new FormData();
-    
+
     // Add id if it exists
     if (formData.id) {
       data.append('id', formData.id);
     }
-    
+
     // Add amount
     if (formData.amount !== undefined) {
       data.append('amount', String(formData.amount));
     }
-    
+
     // Add date - this is critical
     if (formData.date instanceof Date) {
-      const date = new Date(formData.date);
-      console.log('Date from form:', date);
       // Format as YYYY-MM-DD for the server
-      const formattedDate = date.toISOString().split('T')[0];
+      const formattedDate = format(formData.date, 'yyyy-MM-dd'); // Using date-fns format
       console.log('Formatted date:', formattedDate);
       data.append('date', formattedDate);
     } else {
       console.error('Date is missing or not a Date object:', formData.date);
       // Use current date as fallback
       const today = new Date();
-      const formattedDate = today.toISOString().split('T')[0];
+      const formattedDate = format(today, 'yyyy-MM-dd');
       console.log('Using today as fallback date:', formattedDate);
       data.append('date', formattedDate);
     }
-    
+
     // Add category_id
     if (formData.category_id) {
       data.append('category_id', formData.category_id);
     } else {
+      // If category is not selected, send an empty string or null as per backend expectation
       data.append('category_id', '');
     }
-    
+
     // Add description
     if (formData.description !== undefined) {
       data.append('description', formData.description);
     }
-    
+
     // Add CSRF token
     data.append('csrf_token', csrfToken);
-    
+
     // Log the entire FormData for debugging
     console.log('Form data entries:');
     for (const pair of data.entries()) {
       console.log(pair[0], pair[1]);
     }
-    
+
     startTransition(async () => {
-      try {
-        const result = await createOrUpdateExpense(undefined, data);
-        
-        if (result.errors) {
-          // Set form errors
-          Object.entries(result.errors).forEach(([key, value]) => {
-            form.setError(key as any, {
-              type: "server",
-              message: value[0],
-            });
+      // Pass the form object to the server action for error handling
+      const result = await createOrUpdateExpense(undefined, data); // Initial state is passed automatically by useFormState
+
+      if (result.errors) {
+        // Set form errors
+        Object.entries(result.errors).forEach(([key, value]) => {
+          form.setError(key as any, {
+            type: "server",
+            message: value[0],
           });
-          toast.error(result.message || dictionary.error_saving || "Error saving expense");
-          return;
-        }
-        
-        // Success
-        toast.success(
-          isEditing
-            ? dictionary.expense_updated || "Expense updated"
-            : dictionary.expense_created || "Expense created"
-        );
-        
-        // Reset form
-        form.reset();
-        
-        // Call onSuccess callback if provided
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          // Navigate back if no callback
-          router.back();
-        }
-      } catch (error) {
-        console.error("Error submitting form:", error);
-        toast.error("An unexpected error occurred");
+        });
+        toast.error(result.message || dictionary.error_saving || "Error saving expense");
+        return;
+      }
+
+      // Success
+      toast.success(
+        isEditing
+          ? dictionary.expense_updated || "Expense updated"
+          : dictionary.expense_created || "Expense created"
+      );
+
+      // Reset form
+      form.reset();
+
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        // Navigate back if no callback
+        router.back();
       }
     });
   };
@@ -267,6 +262,15 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
                           "w-full pl-3 text-left font-normal",
                           !field.value && "text-muted-foreground"
                         )}
+                        // --- START OF CHANGES FOR IOS/SAFARI FIX ---
+                        type="button" // Important: Prevents accidental form submission
+                        ref={field.ref} // Pass react-hook-form's ref to the button
+                        onClick={() => setDatePickerOpen(true)} // Explicitly open popover
+                        role="combobox" // ARIA attribute for accessibility
+                        aria-expanded={datePickerOpen} // ARIA attribute for accessibility
+                        aria-controls="expense-date-calendar" // Link to calendar's id
+                        tabIndex={0} // Ensure button is focusable
+                        // --- END OF CHANGES FOR IOS/SAFARI FIX ---
                       >
                         {field.value ? (
                           format(field.value, "PPP")
@@ -290,6 +294,7 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
                         date > new Date() || date < new Date("1900-01-01")
                       }
                       initialFocus
+                      id="expense-date-calendar" // Add ID to link with aria-controls
                     />
                   </PopoverContent>
                 </Popover>
@@ -350,9 +355,9 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
 
         {/* Buttons */}
         <div className="flex gap-2 justify-end">
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => {
               // If onSuccess is provided (modal mode), use it to close the modal
               // Otherwise fall back to router.back() (page mode)
@@ -365,20 +370,8 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
           >
             {dictionary.cancel || "Cancel"}
           </Button>
-          <Button 
-            type="submit" 
-            disabled={isPending}
-            style={{ backgroundColor: '#FF5A5F', color: 'white' }}
-            className="hover:bg-[#FF5A5F]/90"
-          >
-            {isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : isEditing ? (
-              dictionary.update || "Update"
-            ) : (
-              dictionary.create || "Create"
-            )}
-          </Button>
+          {/* Submit Button for ExpenseForm */}
+          <SubmitButton isEditing={isEditing} dictionary={dictionary} />
         </div>
       </form>
     </Form>

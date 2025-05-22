@@ -8,7 +8,7 @@ import { Constants } from '@/lib/database.types';
 import { Button } from '@/components/ui/button';
 import {
   Form,
-  FormControl, // <-- Make sure this is imported
+  FormControl, // Make sure this is imported
   FormDescription,
   FormField,
   FormItem,
@@ -32,9 +32,7 @@ import { useRouter } from 'next/navigation';
 import DOMPurify from 'dompurify';
 import { getCsrfToken } from '@/lib/csrf-client';
 
-// ... (rest of your imports and schema)
-
-// Zod schema update
+// Zod schema update (unchanged)
 const FormSchema = z.object({
   id: z.string().uuid().optional(),
   guest_name: z.string().min(1, 'Guest name is required').transform(val =>
@@ -84,13 +82,11 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
   const [endDateOpen, setEndDateOpen] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string>('');
 
-  // Fetch CSRF token on component mount
   useEffect(() => {
     const fetchCsrfToken = async () => {
       const token = await getCsrfToken();
       setCsrfToken(token);
     };
-
     fetchCsrfToken();
   }, []);
 
@@ -99,8 +95,9 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
     defaultValues: {
       id: initialData?.id ?? undefined,
       guest_name: initialData?.guest_name ?? '',
-      start_date: initialData?.start_date ?? undefined,
-      end_date: initialData?.end_date ?? undefined,
+      // Ensure default date values are properly initialized as Date objects
+      start_date: initialData?.start_date ? new Date(initialData.start_date) : undefined,
+      end_date: initialData?.end_date ? new Date(initialData.end_date) : undefined,
       total_amount: initialData?.total_amount ?? 0,
       prepayment: initialData?.prepayment ?? 0,
       source: initialData?.source ?? 'DIRECT',
@@ -111,50 +108,36 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
   const initialState: BookingState = { message: null, errors: {} };
   const [state, dispatch] = useFormState(createOrUpdateBooking, initialState);
 
-   // Show toast on success/error messages from server action using sonner
    useEffect(() => {
      if (state?.message) {
         if (state.errors && Object.keys(state.errors).length > 0) {
-             // Error Toast
              toast.error(dictionary.action_failed || "Action Failed", {
                  description: state.message,
              });
         } else if (!state.errors) {
-             // Success Toast
              toast.success(isEditing ? (dictionary.booking_updated || "Booking Updated") :
                                       (dictionary.booking_created || "Booking Created"), {
                  description: state.message,
              });
-
-             // Call onSuccess if provided (for modal use)
              if (onSuccess) {
                onSuccess();
              } else {
-               // Original redirect behavior for page-based form
                setTimeout(() => router.push('/bookings'), 500);
              }
         }
      }
  }, [state, isEditing, router, dictionary, onSuccess]);
 
-  // onSubmit remains the same
   const onSubmit = (formData: FormSchemaType) => {
     const data = new FormData();
-
-    // Add CSRF token to form data
     data.append('csrf_token', csrfToken);
 
     Object.entries(formData).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         if (value instanceof Date) {
-          // Ensure we're using the correct date by handling timezone offset
-          const date = new Date(value);
-          // Format date as YYYY-MM-DD, ensuring we use UTC to avoid timezone issues
-          const dateString = new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
-            .toISOString()
-            .split('T')[0];
+          const dateString = format(value, 'yyyy-MM-dd');
           data.append(key, dateString);
-          console.log(`Submitting ${key}:`, dateString); // Debug log
+          console.log(`Submitting ${key}:`, dateString);
         } else {
           data.append(key, String(value));
         }
@@ -163,13 +146,12 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
     dispatch(data);
   };
 
-  // Form rendering remains the same
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-2xl">
         {isEditing && <input type="hidden" {...form.register('id')} />}
 
-        {/* Guest Name and Source in one line */}
+        {/* Guest Name and Source */}
         <div className="flex gap-4">
           <FormField
             control={form.control}
@@ -211,7 +193,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
           />
         </div>
 
-         {/* Dates in one line */}
+         {/* Start Date Field */}
          <div className="flex gap-4">
           <FormField
             control={form.control}
@@ -221,7 +203,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                 <FormLabel>{dictionary.start_date || "Start Date"}</FormLabel>
                 <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                   <PopoverTrigger asChild>
-                    {/* RESTORED: FormControl wraps the Button */}
+                    {/* Reverted FormControl back around the Button */}
                     <FormControl>
                       <Button
                         variant={'outline'}
@@ -229,6 +211,18 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                           'pl-3 text-left font-normal w-full',
                           !field.value && 'text-muted-foreground'
                         )}
+                        // Explicitly set type to button to prevent form submission issues
+                        type="button"
+                        // Pass react-hook-form's ref to the button element
+                        ref={field.ref}
+                        // Explicitly manage the popover open state
+                        onClick={() => setStartDateOpen(true)}
+                        // Add accessibility attributes commonly used for date pickers
+                        role="combobox"
+                        aria-expanded={startDateOpen}
+                        aria-controls="start-date-calendar" // Link to calendar's id
+                        // Ensure button is focusable for touch/keyboard
+                        tabIndex={0}
                       >
                         {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -236,23 +230,26 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    {/* REMOVED: FormControl from around Calendar */}
                     <Calendar
                       mode="single"
                       selected={field.value}
                       onSelect={(date) => {
-                        field.onChange(date); // field.onChange is key here
-                        setStartDateOpen(false);
+                        field.onChange(date); // Update react-hook-form value
+                        setStartDateOpen(false); // Close popover after selection
                       }}
                       disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                       initialFocus
+                      id="start-date-calendar" // Add ID to link with aria-controls
                     />
                   </PopoverContent>
                 </Popover>
+                {/* FormMessage should be directly under FormItem */}
                 <FormMessage />
               </FormItem>
             )}
           />
+
+          {/* End Date Field */}
           <FormField
             control={form.control}
             name="end_date"
@@ -261,7 +258,6 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                 <FormLabel>{dictionary.end_date || "End Date"}</FormLabel>
                 <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
                   <PopoverTrigger asChild>
-                    {/* RESTORED: FormControl wraps the Button */}
                     <FormControl>
                       <Button
                         variant={'outline'}
@@ -269,6 +265,13 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                           'pl-3 text-left font-normal w-full',
                           !field.value && 'text-muted-foreground'
                         )}
+                        type="button"
+                        ref={field.ref}
+                        onClick={() => setEndDateOpen(true)}
+                        role="combobox"
+                        aria-expanded={endDateOpen}
+                        aria-controls="end-date-calendar" // Link to calendar's id
+                        tabIndex={0}
                       >
                         {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -276,18 +279,18 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    {/* REMOVED: FormControl from around Calendar */}
                     <Calendar
                       mode="single"
                       selected={field.value}
                       onSelect={(date) => {
-                        field.onChange(date); // field.onChange is key here
+                        field.onChange(date);
                         setEndDateOpen(false);
                       }}
                       disabled={(date) =>
                           date < (form.getValues("start_date") || new Date(new Date().setHours(0, 0, 0, 0)))
                         }
                       initialFocus
+                      id="end-date-calendar" // Add ID to link with aria-controls
                     />
                   </PopoverContent>
                 </Popover>
@@ -299,7 +302,8 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
             )}
           />
         </div>
-        {/* Amounts in one line */}
+
+        {/* Amounts */}
         <div className="flex gap-4">
           <FormField
             control={form.control}
