@@ -14,12 +14,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { useState } from 'react'
+import { useParams } from 'next/navigation'
 
 export function ForgotPasswordForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const { lang } = useParams() as { lang: string }
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,7 +32,7 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
     try {
       // The url which will be included in the email. This URL needs to be configured in your redirect URLs in the Supabase dashboard at https://supabase.com/dashboard/project/_/auth/url-configuration
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/verify`,
+        redirectTo: `${window.location.origin}/${lang}/auth/handle-action`,
       })
       if (error) throw error
       setSuccess(true)
