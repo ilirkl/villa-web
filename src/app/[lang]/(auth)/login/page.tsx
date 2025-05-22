@@ -6,7 +6,6 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
-// import { toast } from 'sonner'; // Keep if you use it elsewhere, not used in this snippet
 import Image from 'next/image';
 import { getDictionary } from '@/lib/dictionary';
 import Cookies from 'js-cookie';
@@ -14,10 +13,10 @@ import Cookies from 'js-cookie';
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { lang } = useParams() as { lang: 'en' | 'sq' }; // Type lang more strictly if possible
+  const { lang } = useParams() as { lang: 'en' | 'sq' };
   const supabase = createClient();
   const [redirectUrl, setRedirectUrl] = useState<string>('');
-  const [dictionary, setDictionary] = useState<any>({}); // Consider typing your dictionary
+  const [dictionary, setDictionary] = useState<any>({});
 
   useEffect(() => {
     async function loadDictionaryAndSetCookie() {
@@ -32,49 +31,53 @@ function LoginContent() {
     }
     loadDictionaryAndSetCookie();
 
-    // --- CRUCIAL CHANGE STARTS HERE ---
-    // Set redirect URL for the Auth component.
-    // This URL tells Supabase where to redirect users *after* they click an email link
-    // (e.g., password reset, magic link, email confirmation).
-    // It must point to your client-side handle-action page.
     const actionHandlerUrl = `${window.location.origin}/auth/handle-action`;
     setRedirectUrl(actionHandlerUrl);
     console.log("LoginContent: redirectTo for Auth component set to:", actionHandlerUrl);
-    // --- CRUCIAL CHANGE ENDS HERE ---
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('LoginContent: Auth state changed:', event, session);
 
       if (event === 'SIGNED_IN' && session) {
-        console.log('LoginContent: User SIGNED_IN.');
-        const nextQueryParam = searchParams.get('next');
-        let redirectToPath;
-
-        if (nextQueryParam) {
-          // Ensure 'next' starts with a slash
-          const safeNextQueryParam = nextQueryParam.startsWith('/') ? nextQueryParam : `/${nextQueryParam}`;
-          // Check if 'next' is already lang-prefixed
-          if (safeNextQueryParam.startsWith(`/${lang}/`)) {
-              redirectToPath = safeNextQueryParam;
-          } else {
-              // Prepend lang if not already prefixed
-              redirectToPath = `/${lang}${safeNextQueryParam}`;
-          }
+        const currentHash = window.location.hash;
+        if (currentHash.includes('type=recovery')) {
+          // If the hash explicitly says 'type=recovery', then we're expecting the user
+          // to update their password via the Auth UI. Do NOT redirect immediately here.
+          console.log('LoginContent: User SIGNED_IN, but URL hash indicates PASSWORD_RECOVERY. Awaiting password update via Auth UI.');
+          // Allow the Auth UI component to render the password update form.
+          // The redirect will happen later when 'USER_UPDATED' event fires after password change.
         } else {
-          redirectToPath = `/${lang}/dashboard`;
+          // This is a normal sign-in (email/password, OAuth, or magiclink where user is already authenticated).
+          console.log('LoginContent: User SIGNED_IN (normal flow or completed magiclink). Redirecting...');
+          const nextQueryParam = searchParams.get('next');
+          let redirectToPath;
+
+          if (nextQueryParam) {
+            const safeNextQueryParam = nextQueryParam.startsWith('/') ? nextQueryParam : `/${nextQueryParam}`;
+            if (safeNextQueryParam.startsWith(`/${lang}/`)) {
+                redirectToPath = safeNextQueryParam;
+            } else {
+                redirectToPath = `/${lang}${safeNextQueryParam}`;
+            }
+          } else {
+            redirectToPath = `/${lang}/dashboard`;
+          }
+          console.log('LoginContent: Redirecting to:', redirectToPath);
+          router.push(redirectToPath);
         }
-        console.log('LoginContent: Redirecting to:', redirectToPath);
-        router.push(redirectToPath); // Use push for navigation after login
       } else if (event === 'PASSWORD_RECOVERY') {
-        // This event means the user has landed on this page with a #recovery_token in the URL.
-        // The Supabase Auth UI component should automatically detect this and switch
-        // to the "update_password" view. No explicit navigation needed here.
+        // This event fires when Supabase detects a recovery token in the URL.
+        // The Auth UI component automatically switches to the "update_password" view.
+        // No explicit navigation needed here.
         console.log('LoginContent: PASSWORD_RECOVERY event detected. Auth UI should handle view change.');
       } else if (event === 'USER_UPDATED' && session) {
-        console.log('LoginContent: USER_UPDATED event detected. Session:', session);
-        // This often fires after a password update. The 'SIGNED_IN' event might also fire.
-        // If not already redirecting, you might consider a redirect here if needed.
-        // For password recovery, 'SIGNED_IN' typically handles the post-update redirect.
+        // This event typically fires AFTER a password update (or profile update)
+        // through the Auth UI component. This is the definitive signal to redirect.
+        console.log('LoginContent: USER_UPDATED event detected. Redirecting to dashboard.');
+        router.push(`/${lang}/dashboard`); // Redirect after successful password update
+      } else if (event === 'SIGNED_OUT') {
+        console.log('LoginContent: User SIGNED_OUT.');
+        // Optionally redirect to login if signed out
       }
     });
 
@@ -83,15 +86,11 @@ function LoginContent() {
     };
   }, [router, searchParams, supabase.auth, lang]);
 
-  // Don't render Auth component until essential async operations are complete
   if (!redirectUrl || Object.keys(dictionary).length === 0) {
-    // Return a loading state similar to your Suspense fallback for consistency
-    // or a simpler one if preferred.
     return (
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              {/* Using a generic or smaller logo for this intermediate state might be good */}
               <Image
                 src="/images/favicon/favicon-32x32.png"
                 alt={dictionary.villa_ime_logo || "Villa Ime Logo Loading"}
@@ -151,7 +150,8 @@ function LoginContent() {
           redirectTo={redirectUrl} // This now correctly points to /auth/handle-action
           onlyThirdPartyProviders={false}
           showLinks={true} // This enables "Forgot your password?" link
-          view="sign_in" // Default view
+          // REMOVE or comment out the 'view' prop like this:
+          // view="sign_in" // <--- REMOVE THIS LINE
           theme="default"
           localization={{
             variables: {
@@ -191,10 +191,9 @@ function LoginContent() {
   );
 }
 
-// Your LoginPage component (default export) remains the same:
 export default function LoginPage() {
   const { lang } = useParams() as { lang: 'en' | 'sq' };
-  const [dictionary, setDictionary] = useState<any>({}); // For the Suspense fallback
+  const [dictionary, setDictionary] = useState<any>({});
 
   useEffect(() => {
     async function loadDictionaryForFallback() {
@@ -206,15 +205,7 @@ export default function LoginPage() {
         console.error('LoginPage Fallback: Failed to load dictionary:', error);
       }
     }
-    // This check is a bit tricky with server components. If you're using Suspense,
-    // the fallback might need dictionary on the server. Otherwise, this effect
-    // would typically only run on the client.
-    // For a client-side Suspense fallback, dictionary loading should happen
-    // in the client component that renders the fallback.
-    // For simplicity, for the purpose of this solution, we assume it's handled.
-    if (typeof window === 'undefined') {
-        loadDictionaryForFallback();
-    }
+    loadDictionaryForFallback();
   }, [lang]);
 
   return (
