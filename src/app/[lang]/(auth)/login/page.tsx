@@ -15,7 +15,6 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const { lang } = useParams() as { lang: 'en' | 'sq' };
   const supabase = createClient();
-  const [redirectUrl, setRedirectUrl] = useState<string>('');
   const [dictionary, setDictionary] = useState<any>({});
 
   // --- CRUCIAL ADDITION: Determine initial view based on URL hash ---
@@ -51,10 +50,6 @@ function LoginContent() {
       }
     }
     loadDictionaryAndSetCookie();
-
-    const actionHandlerUrl = `${window.location.origin}/auth/handle-action`;
-    setRedirectUrl(actionHandlerUrl);
-    console.log("LoginContent: redirectTo for Auth component set to:", actionHandlerUrl);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('LoginContent: Auth state changed:', event, session);
@@ -102,9 +97,9 @@ function LoginContent() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, searchParams, supabase.auth, lang, initialAuthView]); // Added initialAuthView to dependencies
+  }, [router, searchParams, supabase.auth, lang, initialAuthView]);
 
-  if (!redirectUrl || Object.keys(dictionary).length === 0) {
+  if (Object.keys(dictionary).length === 0) {
     return (
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
@@ -165,7 +160,7 @@ function LoginContent() {
             }
           }}
           providers={[]}
-          redirectTo={redirectUrl} // This now correctly points to /auth/handle-action
+          redirectTo={`/${lang}/dashboard`}
           onlyThirdPartyProviders={false}
           showLinks={true} // This enables "Forgot your password?" link
           view={initialAuthView} // <--- THIS IS THE CRUCIAL CHANGE: Dynamic view prop
