@@ -209,8 +209,8 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
           />
         </div>
 
-        {/* Dates in one line */}
-        <div className="flex gap-4">
+         {/* Dates in one line */}
+         <div className="flex gap-4">
           <FormField
             control={form.control}
             name="start_date"
@@ -219,30 +219,32 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                 <FormLabel>{dictionary.start_date || "Start Date"}</FormLabel>
                 <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                   <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={'outline'}
-                        className={cn(
-                          'pl-3 text-left font-normal w-full',
-                          !field.value && 'text-muted-foreground'
-                        )}
-                      >
-                        {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
+                    {/* MODIFICATION: FormControl removed from here. */}
+                    <Button
+                      variant={'outline'}
+                      className={cn(
+                        'pl-3 text-left font-normal w-full',
+                        !field.value && 'text-muted-foreground'
+                      )}
+                    >
+                      {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={(date) => {
-                        field.onChange(date);
-                        setStartDateOpen(false);
-                      }}
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                      initialFocus
-                    />
+                    {/* MODIFICATION: FormControl wraps the Calendar. */}
+                    <FormControl>
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          setStartDateOpen(false);
+                        }}
+                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                        initialFocus
+                      />
+                    </FormControl>
                   </PopoverContent>
                 </Popover>
                 <FormMessage />
@@ -257,32 +259,34 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                 <FormLabel>{dictionary.end_date || "End Date"}</FormLabel>
                 <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
                   <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={'outline'}
-                        className={cn(
-                          'pl-3 text-left font-normal w-full',
-                          !field.value && 'text-muted-foreground'
-                        )}
-                      >
-                        {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
+                    {/* MODIFICATION: FormControl removed from here. */}
+                    <Button
+                      variant={'outline'}
+                      className={cn(
+                        'pl-3 text-left font-normal w-full',
+                        !field.value && 'text-muted-foreground'
+                      )}
+                    >
+                      {field.value ? format(field.value, 'PPP') : <span>{dictionary.pick_date || "Pick a date"}</span>}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={(date) => {
-                        field.onChange(date);
-                        setEndDateOpen(false);
-                      }}
-                      disabled={(date) =>
-                        date < (form.getValues("start_date") || new Date(new Date().setHours(0, 0, 0, 0)))
-                      }
-                      initialFocus
-                    />
+                    {/* MODIFICATION: FormControl wraps the Calendar. */}
+                    <FormControl>
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          setEndDateOpen(false);
+                        }}
+                        disabled={(date) =>
+                          date < (form.getValues("start_date") || new Date(new Date().setHours(0, 0, 0, 0)))
+                        }
+                        initialFocus
+                      />
+                    </FormControl>
                   </PopoverContent>
                 </Popover>
                 <FormMessage />
@@ -293,7 +297,6 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
             )}
           />
         </div>
-
         {/* Amounts in one line */}
         <div className="flex gap-4">
           <FormField
