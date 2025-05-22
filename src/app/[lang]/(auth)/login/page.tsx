@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useMemo } from 'react'; // Added useMemo
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { getDictionary } from '@/lib/dictionary';
@@ -17,6 +17,27 @@ function LoginContent() {
   const supabase = createClient();
   const [redirectUrl, setRedirectUrl] = useState<string>('');
   const [dictionary, setDictionary] = useState<any>({});
+
+  // --- CRUCIAL ADDITION: Determine initial view based on URL hash ---
+  const initialAuthView = useMemo(() => {
+    // This check is important as useMemo might run on server during SSR
+    if (typeof window === 'undefined') {
+      return 'sign_in'; // Default server-side
+    }
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery') || hash.includes('recovery_token=')) {
+      return 'update_password';
+    }
+    // You can add other hash-based views here if needed (e.g., 'magic_link', 'sign_up' for invites)
+    // else if (hash.includes('type=invite') || hash.includes('invite_token=')) {
+    //   return 'sign_up';
+    // }
+    // Add logic for 'email_signin' if you use magic links and want to go straight to email confirmation
+    // else if (hash.includes('type=magiclink')) {
+    //   return 'magic_link';
+    // }
+    return 'sign_in'; // Default view if no specific hash is found
+  }, []); // Empty dependency array means this runs only once on mount
 
   useEffect(() => {
     async function loadDictionaryAndSetCookie() {
@@ -39,13 +60,12 @@ function LoginContent() {
       console.log('LoginContent: Auth state changed:', event, session);
 
       if (event === 'SIGNED_IN' && session) {
-        const currentHash = window.location.hash;
-        if (currentHash.includes('type=recovery')) {
-          // If the hash explicitly says 'type=recovery', then we're expecting the user
-          // to update their password via the Auth UI. Do NOT redirect immediately here.
-          console.log('LoginContent: User SIGNED_IN, but URL hash indicates PASSWORD_RECOVERY. Awaiting password update via Auth UI.');
-          // Allow the Auth UI component to render the password update form.
-          // The redirect will happen later when 'USER_UPDATED' event fires after password change.
+        // Check the *current* Auth UI view. If it's update_password, we don't redirect yet.
+        // This handles cases where the session might already be active from the token in the hash.
+        if (initialAuthView === 'update_password') { // Use initialAuthView to check if we're in a recovery flow
+          console.log('LoginContent: User SIGNED_IN, but in PASSWORD_RECOVERY flow (as per initialAuthView). Awaiting password update via Auth UI.');
+          // Do nothing here. The Auth UI component should be showing the update_password form.
+          // The redirect to dashboard will happen when 'USER_UPDATED' event fires.
         } else {
           // This is a normal sign-in (email/password, OAuth, or magiclink where user is already authenticated).
           console.log('LoginContent: User SIGNED_IN (normal flow or completed magiclink). Redirecting...');
@@ -66,25 +86,23 @@ function LoginContent() {
           router.push(redirectToPath);
         }
       } else if (event === 'PASSWORD_RECOVERY') {
-        // This event fires when Supabase detects a recovery token in the URL.
-        // The Auth UI component automatically switches to the "update_password" view.
-        // No explicit navigation needed here.
+        // This event means Supabase detected a recovery token and the Auth UI
+        // component should switch its view (which initialAuthView already handled).
         console.log('LoginContent: PASSWORD_RECOVERY event detected. Auth UI should handle view change.');
       } else if (event === 'USER_UPDATED' && session) {
-        // This event typically fires AFTER a password update (or profile update)
-        // through the Auth UI component. This is the definitive signal to redirect.
+        // This event typically fires AFTER a password update (or profile update).
+        // This is the definitive signal to redirect after successful password change.
         console.log('LoginContent: USER_UPDATED event detected. Redirecting to dashboard.');
-        router.push(`/${lang}/dashboard`); // Redirect after successful password update
+        router.push(`/${lang}/dashboard`);
       } else if (event === 'SIGNED_OUT') {
         console.log('LoginContent: User SIGNED_OUT.');
-        // Optionally redirect to login if signed out
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, searchParams, supabase.auth, lang]);
+  }, [router, searchParams, supabase.auth, lang, initialAuthView]); // Added initialAuthView to dependencies
 
   if (!redirectUrl || Object.keys(dictionary).length === 0) {
     return (
@@ -150,8 +168,7 @@ function LoginContent() {
           redirectTo={redirectUrl} // This now correctly points to /auth/handle-action
           onlyThirdPartyProviders={false}
           showLinks={true} // This enables "Forgot your password?" link
-          // REMOVE or comment out the 'view' prop like this:
-          // view="sign_in" // <--- REMOVE THIS LINE
+          view={initialAuthView} // <--- THIS IS THE CRUCIAL CHANGE: Dynamic view prop
           theme="default"
           localization={{
             variables: {
@@ -172,7 +189,6 @@ function LoginContent() {
               },
               forgotten_password: {
                 email_label: dictionary.email || "Email",
-                password_label: dictionary.password || "Password", // Not usually shown on forgot password view itself
                 button_label: dictionary.send_reset_instructions || "Send reset instructions",
                 loading_button_label: dictionary.sending_reset_instructions || "Sending reset instructions...",
                 link_text: dictionary.forgot_password || "Forgot your password?",
