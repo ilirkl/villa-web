@@ -42,8 +42,8 @@ export function createClient() {
 export function createActionClient() {
     const cookieStore = cookies()
     return createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        process.env.NEXT_PUBLIC_SUPABASE_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             cookies: {
                 get(name: string) {
