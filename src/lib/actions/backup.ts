@@ -121,8 +121,7 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
       // Get the category name using the category_id and the lookup map
       const categoryName = expense.category_id ? categoryMap.get(expense.category_id) : null;
       
-      // Log for debugging
-      console.log(`Original category: ${categoryName}, Language: ${lang}`);
+     
       
       // Translate the category name based on the current language
       let translatedCategory;

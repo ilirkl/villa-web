@@ -66,7 +66,7 @@ export default async function DashboardPage({ params }: { params: { lang: string
   // Fetch today's check-ins with user filtering
   const { data: todayCheckInsData, error: checkInsError } = await supabase
     .from('bookings')
-    .select('*') // Select all fields needed by BookingCard
+    .select('id, start_date, end_date, guest_name, source, total_amount, prepayment, notes')
     .eq('user_id', user.id)
     .eq('start_date', todayDateString);
 
@@ -93,7 +93,9 @@ export default async function DashboardPage({ params }: { params: { lang: string
       checkOutsError,
       upcomingError,
     });
-    // Handle error display appropriately
+    
+    // Redirect to error page or show error message
+    throw new Error('Failed to load dashboard data');
   }
 
   const events =

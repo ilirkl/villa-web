@@ -36,13 +36,13 @@ import { useState, useEffect } from 'react';
 import { getCsrfToken, resetCsrfToken } from '@/lib/csrf-client';
 
 interface BookingCardProps {
-  booking: Booking;
-  formattedStartDate: string; // Add this prop
-  formattedEndDate: string;   // Add this prop
+  booking: Pick<Booking, 'id' | 'start_date' | 'end_date' | 'guest_name' | 'source' | 'total_amount' | 'prepayment' | 'notes'>;
+  formattedStartDate: string;
+  formattedEndDate: string;
   hideFooter?: boolean;
   hideNotes?: boolean;
   onDelete?: () => void;
-  onEdit?: () => void; // Add this prop
+  onEdit?: () => void;
 }
 
 export function BookingCard({

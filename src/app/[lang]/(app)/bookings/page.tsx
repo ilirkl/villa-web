@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState, Suspense, JSX } from 'react';
+import { useEffect, useState, JSX } from 'react';
 import { PlusCircle, LayoutGrid, Table as TableIcon, Pencil, Trash2 } from 'lucide-react';
-import Link from 'next/link';
 import { Booking, BookingFormData, BookingSource } from '@/lib/definitions';
 import { createClient } from '@/lib/supabase/client';
 import { SearchBar } from '@/components/SearchBar';
@@ -10,7 +9,6 @@ import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { parse, format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Database } from '@/lib/database.types';
 import { toast } from 'sonner';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -56,7 +54,7 @@ const formatBookingDate = (dateString: string | null | undefined, lang: string |
     return format(date, 'dd MMM'); // e.g., "18 Apr"
   } catch (error) {
     console.error(`Error formatting date: ${dateString}`, error);
-    return dateString; // Fallback to original string on error
+    return dateString;
   }
 };
 
@@ -429,7 +427,6 @@ export default function BookingsPage() {
     );
   }
 
-  // Render empty state
   if (!bookings || bookings.length === 0) {
     return (
       <div className="pb-18">
@@ -477,7 +474,6 @@ export default function BookingsPage() {
     );
   }
 
-  // Render normal state with bookings
   return (
     <div className="pb-18">
       <div className="flex justify-between items-center mb-1">

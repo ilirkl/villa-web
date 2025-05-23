@@ -53,7 +53,56 @@ export default function SettingsPage() {
   const router = useRouter();
   const supabase = createClient();
   
-  const [dictionary, setDictionary] = useState<any>(null);
+  interface Dictionary {
+    expense_categories?: Record<string, string>;
+    signing_out?: string;
+    
+    // Password related
+    password_fields_required?: string;
+    passwords_do_not_match?: string;
+    password_too_short?: string;
+    password_update_failed?: string;
+    new_password?: string;
+    enter_new_password?: string;
+    confirm_new_password?: string;
+    confirm_new_password_placeholder?: string;
+    
+    // Save/Loading states
+    saving_changes?: string;
+    save_changes?: string;
+    all_changes_saved_successfully?: string;
+    some_changes_failed?: string;
+    
+    // Profile related
+    change_profile_picture?: string;
+    avatar?: string;
+    remove_avatar?: string;
+    profile_information?: string;
+    profile_data_not_loaded?: string;
+    
+    // Form fields
+    full_name?: string;
+    company_name?: string;
+    email?: string;
+    email_desc?: string;
+    phone_number?: string;
+    website?: string;
+    vat_number?: string;
+    address?: string;
+    
+    // Image cropping
+    crop_image?: string;
+    image_to_crop?: string;
+    loading_image?: string;
+    cancel?: string;
+    processing?: string;
+    apply_crop?: string;
+    
+    // Actions
+    sign_out?: string;
+  }
+  
+  const [dictionary, setDictionary] = useState<Dictionary | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingProfile, setIsSavingProfile] = useState(false); // Renamed for clarity
@@ -327,6 +376,19 @@ export default function SettingsPage() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Add file type validation
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please select a valid image file (JPEG, PNG, or WebP).');
+      return;
+    }
+    
+    // Add file size validation (existing code is good)
+    if (file.size > 5 * 1024 * 1024) { 
+      toast.error('Image size must be less than 5MB.'); 
+      return; 
+    }
     setCrop(undefined);
     if (avatarPreview?.startsWith('blob:')) { URL.revokeObjectURL(avatarPreview); }
     setAvatarPreview(null);
