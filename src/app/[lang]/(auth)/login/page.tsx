@@ -237,7 +237,6 @@ function LoginContent() {
           showLinks={false} // Hide the default links
           view={initialAuthView}
           theme="default"
-          viewChange={handleViewChange}
           localization={{
             variables: {
               sign_in: {
