@@ -3,7 +3,8 @@
     {
       "path": "/api/cron/ical-sync?apiKey=YOUR_CRON_API_KEY",
       "schedule": "1 3 * * *"
-    }
+    }    
   ]
 }
+
 

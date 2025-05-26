@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Villa Manager - Manage your villas like a pro</title>
+    <meta name="description" content="Streamline bookings, track expenses, and maximize your rental property profits with Villa Manager">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: white;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-icon {
+            width: 2rem;
+            height: 2rem;
+            color: #ef4444;
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #ef4444;
+        }
+
+        .nav {
+            display: none;
+            gap: 2rem;
+        }
+
+        .nav a {
+            text-decoration: none;
+            color: #374151;
+            transition: color 0.2s;
+        }
+
+        .nav a:hover {
+            color: #1f2937;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: #374151;
+        }
+
+        .btn-ghost:hover {
+            background: #f3f4f6;
+        }
+
+        .btn-primary {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #dc2626;
+        }
+
+        .btn-secondary {
+            background: #1f2937;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #111827;
+        }
+
+        /* Hero Section */
+        .hero {
+            background-image: url('./public/images/cover-white.jpg');
+            background-size: cover;
+            background-position: right center;
+            background-repeat: no-repeat;
+            padding: 5rem 1.5rem;
+            position: relative;
+            filter:brightness(0.8);
+
+
+        }
+        
+ 
+        .hero-content {
+            max-width: 50%;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            color: #fd5c63;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: #111827;
+            margin-bottom: 2rem;
+        }
+
+        .signup-form {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            max-width: 400px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .hero {
+                background-size: cover;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                background-size: cover;
+                padding: 4rem 1.5rem;
+            }
+            
+            .hero-content {
+                max-width: 45%;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+                margin-bottom: 1rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .signup-form {
+                padding: 1.25rem;
+            }
+            
+            .form-input {
+                padding: 0.6rem;
+                margin-bottom: 0.75rem;
+            }
+            
+            .btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .hero {
+                background-size: cover;
+                padding: 3rem 1.5rem;
+            }
+            
+            
+            
+            .hero h1 {
+                font-size: 2.25rem;
+            }
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.0); /* Dark overlay for better text readability */
+            z-index: 1;
+        }
+
+        .hero .container {
+            position: relative;
+            z-index: 2; /* Place content above the overlay */
+        }
+
+        .hero-content {
+            max-width: 50%; /* Limit content width to leave space for background image */
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            color:#111827;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .signup-form {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            max-width: 400px;
+        }
+
+        .signup-form .btn-primary {
+            color: white;
+        }
+
+        @media (max-width: 767px) {
+            .hero-content {
+                max-width: 100%;
+            }
+            
+            .hero {
+                background-position: center;
+            }
+        }
+
+        .hero-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+
+        .hero-text {
+            flex: 1;
+        }
+
+        .hero-image {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .hero-image img {
+            max-width: 50%;
+            height: auto;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-height: 400px;
+            object-fit: cover;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: #111827;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .signup-form {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        /* Sections */
+        .section {
+            padding: 5rem 1.5rem;
+        }
+
+        .section-gray {
+            background: #f9fafb;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 4rem;
+            line-height: 1.2;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .feature-card {
+            text-align: center;
+        }
+
+        .feature-icon {
+            width: 4rem;
+            height: 4rem;
+            background: #fef2f2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: #ef4444;
+        }
+
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-description {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .content-block h2 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+        }
+
+        .content-block p {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            font-size: 1.125rem;
+        }
+
+        .placeholder-image {
+            width: 100%;
+            height: 300px;
+            background: #e5e7eb;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+        }
+
+        /* Cards */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-description {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        /* Tools Section */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .tool-card {
+            text-align: center;
+        }
+
+        .tool-image {
+            width: 200px;
+            height: 400px;
+            background: #e5e7eb;
+            border-radius: 1rem;
+            margin: 0 auto 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+        }
+
+        /* FAQ */
+        .faq-item {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .faq-item:hover {
+            background: #f9fafb;
+        }
+
+        .faq-question {
+            font-weight: 500;
+            font-size: 1.125rem;
+        }
+
+        .chevron {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: #9ca3af;
+        }
+
+        /* Footer */
+        .footer {
+            background: #f3f4f6;
+            padding: 4rem 1.5rem;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-column h3 {
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-links a {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: #1f2937;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #d1d5db;
+            padding-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-bottom-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .footer-bottom-right {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        /* Protection Section */
+        .protection-highlight {
+            background: #ef4444;
+            color: white;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .protection-highlight h3 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .protection-highlight p {
+            font-size: 1.125rem;
+            opacity: 0.9;
+        }
+
+        /* Responsive Design */
+        @media (min-width: 768px) {
+            .nav {
+                display: flex;
+            }
+
+            .hero h1 {
+                font-size: 4rem;
+            }
+
+            .section-title {
+                font-size: 3rem;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .hero-content {
+                flex-direction: column;
+            }
+            
+            .hero-image {
+                justify-content: center;
+                margin-top: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <svg class="logo-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m3 12 2-2m0 0 7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11 2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6"/>
+            </svg>
+            <span class="logo-text">Villa Manager</span>
+        </div>
+        <nav class="nav">
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#support">Support</a>
+        </nav>
+        <div class="auth-buttons">
+            <a href="#" class="btn btn-ghost">Sign up</a>
+            <a href="#" class="btn btn-ghost">Log in</a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>Manage your villas<br>like a pro</h1>
+                    <p>Streamline bookings, track expenses, and maximize your rental property profits</p>
+                    <div class="signup-form">
+                        <input type="email" class="form-input" placeholder="Enter your email">
+                        <a href="https://villaime.vercel.app/en/login#auth-sign-up" class="btn btn-primary" style="width: 100%; padding: 0.75rem;">Start managing</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Easy Management Section -->
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title">Everything you need to<br>manage your villa rentals</h2>
+            
+            <div class="two-column">
+                <div class="features-grid" style="grid-template-columns: 1fr;">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">Booking Management</h3>
+                        <p class="feature-description">Create, view, and manage guest bookings with an intuitive calendar interface.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">Expense Tracking</h3>
+                        <p class="feature-description">Record and categorize all property expenses to keep your finances organized.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+                            </svg>
+                        </div>
+                        <h3 class="feature-title">Financial Reports</h3>
+                        <p class="feature-description">Generate detailed revenue reports and analyze your property's profitability.</p>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="placeholder-image">Villa Manager Dashboard</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Multi-language Section -->
+    <section class="section section-gray">
+        <div class="container">
+            <h2 class="section-title">Built for global<br>property managers</h2>
+            <p style="text-align: center; font-size: 1.25rem; color: #6b7280; margin-bottom: 4rem; max-width: 800px; margin-left: auto; margin-right: auto;">
+                Villa Manager supports multiple languages and currencies, making it perfect for international property management.
+            </p>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-icon">🌐</div>
+                    <h3 class="card-title">Multi-language</h3>
+                    <p class="card-description">English and Albanian support</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">💱</div>
+                    <h3 class="card-title">Currency Support</h3>
+                    <p class="card-description">Multiple currency options</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🕐</div>
+                    <h3 class="card-title">Time Zones</h3>
+                    <p class="card-description">Global time zone handling</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📋</div>
+                    <h3 class="card-title">Local Regulations</h3>
+                    <p class="card-description">Compliance with local laws</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-bottom: 3rem;">
+                <h3 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 2rem;">Key Features</h3>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                        </div>
+                        <h4 class="feature-title">Smart Booking Calendar</h4>
+                        <p class="feature-description">Visual calendar with availability management</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <line x1="12" y1="1" x2="12" y2="23"/>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
+                        <h4 class="feature-title">Revenue Analytics</h4>
+                        <p class="feature-description">Track income and optimize pricing</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                        </div>
+                        <h4 class="feature-title">Expense Categories</h4>
+                        <p class="feature-description">Organize expenses by type and property</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                        </div>
+                        <h4 class="feature-title">Secure Authentication</h4>
+                        <p class="feature-description">Protected user accounts and data</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="#" class="btn btn-secondary" style="padding: 0.75rem 2rem;">Try Villa Manager</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security Section -->
+    <section class="section">
+        <div class="container">
+            <div style="text-align: center; max-width: 800px; margin: 0 auto;">
+                <div style="margin-bottom: 2rem;">
+                    <svg width="64" height="64" fill="none" stroke="#ef4444" viewBox="0 0 24 24" style="margin: 0 auto 1.5rem;">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <h2 class="section-title" style="margin-bottom: 1.5rem;">Your data is safe<br>and secure</h2>
+                    <p style="font-size: 1.25rem; color: #6b7280; margin-bottom: 2rem;">
+                        We use industry-standard security measures to protect your property data and financial information.
+                    </p>
+                </div>
+                
+                <div class="protection-highlight">
+                    <h3>Bank-level encryption</h3>
+                    <p>Your sensitive data is encrypted and stored securely using the same standards as major financial institutions.</p>
+                </div>
+                
+                <a href="#" class="btn btn-secondary" style="padding: 0.75rem 2rem;">Learn more about security</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tools Section -->
+    <section class="section section-gray">
+        <div class="container">
+            <h2 class="section-title">All your villa management<br>tools in one place</h2>
+            
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <div class="tool-image">Booking Dashboard</div>
+                    <svg width="32" height="32" fill="none" stroke="#ef4444" viewBox="0 0 24 24" style="margin: 0 auto 1rem;">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem;">Booking Dashboard</h3>
+                    <p style="color: #6b7280;">Manage reservations, check-ins, and guest communications.</p>
+                </div>
+                
+                <div class="tool-card">
+                    <div class="tool-image">Financial Tracking</div>
+                    <svg width="32" height="32" fill="none" stroke="#ef4444" viewBox="0 0 24 24" style="margin: 0 auto 1rem;">
+                        <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+                    </svg>
+                    <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem;">Financial Tracking</h3>
+                    <p style="color: #6b7280;">Monitor revenue, expenses, and profitability in real-time.</p>
+                </div>
+                
+                <div class="tool-card">
+                    <div class="tool-image">Property Management</div>
+                    <svg width="32" height="32" fill="none" stroke="#ef4444" viewBox="0 0 24 24" style="margin: 0 auto 1rem;">
+                        <path d="m3 12 2-2m0 0 7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11 2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6"/>
+                    </svg>
+                    <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem;">Property Management</h3>
+                    <p style="color: #6b7280;">Keep track of maintenance, inventory, and property details.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Property Owners Section -->
+    <section class="section">
+        <div class="container">
+            <div class="two-column">
+                <div class="placeholder-image">Modern villa exterior</div>
+                <div class="content-block">
+                    <h2>Perfect for any size property portfolio</h2>
+                    <p>Whether you manage one villa or a hundred, Villa Manager scales with your business needs.</p>
+                    <a href="#" class="btn btn-primary" style="padding: 0.75rem 2rem;">Start your free trial</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="section section-gray">
+        <div class="container">
+            <h2 class="section-title">Frequently asked<br>questions</h2>
+            
+            <div style="max-width: 800px; margin: 0 auto;">
+                <div class="faq-item">
+                    <span class="faq-question">How do I get started with Villa Manager?</span>
+                    <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </div>
+                
+                <div class="faq-item">
+                    <span class="faq-question">Can I import my existing booking data?</span>
+                    <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </div>
+                
+                <div class="faq-item">
+                    <span class="faq-question">What languages are supported?</span>
+                    <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </div>
+                
+                <div class="faq-item">
+                    <span class="faq-question">How secure is my financial data?</span>
+                    <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </div>
+                
+                <div class="faq-item">
+                    <span class="faq-question">Do you offer customer support?</span>
+                    <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="#" class="btn btn-secondary" style="padding: 0.75rem 2rem;">Contact Support</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <h3>Product</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Features</a></li>
+                        <li><a href="#">Pricing</a></li>
+                        <li><a href="#">Security</a></li>
+                        <li><a href="#">Updates</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Support</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">Tutorials</a></li>
+                        <li><a href="#">Contact Us</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Company</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">About</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Partners</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Legal</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Cookie Policy</a></li>
+                        <li><a href="#">GDPR</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <div class="footer-bottom-left">
+                    <span>© 2024 Villa Manager, Inc.</span>
+                    <span>·</span>
+                    <a href="#">Privacy</a>
+                    <span>·</span>
+                    <a href="#">Terms</a>
+                    <span>·</span>
+                    <a href="#">Sitemap</a>
+                </div>
+                <div class="footer-bottom-right">
+                    <span>🌐 English (EN)</span>
+                    <span>💰 Multi-currency</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Simple FAQ toggle functionality
+        document.querySelectorAll('.faq-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const chevron = this.querySelector('.chevron');
+                chevron.style.transform = chevron.style.transform === 'rotate(180deg)' ? 'rotate(0deg)' : 'rotate(180deg)';
+            });
+        });
+
+        // Form submission
+        document.querySelector('.signup-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Thank you for your interest! We\'ll be in touch soon.');
+        });
+    </script>
+</body>
+</html>

@@ -4,11 +4,12 @@ import { createClient } from '@/lib/supabase/client';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useEffect, useState, Suspense, useMemo } from 'react'; // Added useMemo
+import { useEffect, useState, Suspense, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { getDictionary } from '@/lib/dictionary';
 import Cookies from 'js-cookie';
+import { Button } from '@/components/ui/button';
 
 function LoginContent() {
   const router = useRouter();
@@ -27,6 +28,12 @@ function LoginContent() {
     if (hash.includes('type=recovery') || hash.includes('recovery_token=')) {
       return 'update_password';
     }
+    if (hash.includes('auth-sign_up')) {
+      return 'sign_up';
+    }
+    if (hash.includes('auth-sign_in')) {
+      return 'sign_in';
+    }
     // You can add other hash-based views here if needed (e.g., 'magic_link', 'sign_up' for invites)
     // else if (hash.includes('type=invite') || hash.includes('invite_token=')) {
     //   return 'sign_up';
@@ -37,6 +44,15 @@ function LoginContent() {
     // }
     return 'sign_in'; // Default view if no specific hash is found
   }, []); // Empty dependency array means this runs only once on mount
+
+  const handleViewChange = useCallback((view: 'sign_in' | 'sign_up' | 'forgotten_password' | 'update_password') => {
+    console.log('Auth UI view changed to:', view);
+    
+    // Update URL hash to reflect the current view
+    if (typeof window !== 'undefined') {
+      window.location.hash = `auth-${view}`;
+    }
+  }, []);
 
   useEffect(() => {
     async function loadDictionaryAndSetCookie() {
@@ -99,6 +115,24 @@ function LoginContent() {
     };
   }, [router, searchParams, supabase.auth, lang, initialAuthView]);
 
+  // Add this effect to monitor hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      console.log('Hash changed to:', hash);
+      
+      // Force reload if needed to ensure the correct view is shown
+      if (hash.includes('auth-sign_in') && initialAuthView !== 'sign_in') {
+        window.location.reload();
+      } else if (hash.includes('auth-sign_up') && initialAuthView !== 'sign_up') {
+        window.location.reload();
+      }
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [initialAuthView]);
+
   if (Object.keys(dictionary).length === 0) {
     return (
         <Card className="w-full max-w-md">
@@ -123,6 +157,44 @@ function LoginContent() {
         </Card>
     );
   }
+
+  const CustomAuthComponents = {
+    // Custom component to replace the "Sign Up" link in the Sign In view
+    SignUpLink: () => (
+      <div className="flex justify-center mt-4">
+        <Button 
+          variant="link" 
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              // Set the hash and force reload
+              window.location.hash = 'auth-sign_up';
+              window.location.reload();
+            }
+          }}
+        >
+          {dictionary.dont_have_account || "Don't have an account? Sign up"}
+        </Button>
+      </div>
+    ),
+    
+    // Custom component to replace the "Sign In" link in the Sign Up view
+    SignInLink: () => (
+      <div className="flex justify-center mt-4">
+        <Button 
+          variant="link" 
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              // Set the hash and force reload
+              window.location.hash = 'auth-sign_in';
+              window.location.reload();
+            }
+          }}
+        >
+          {dictionary.already_have_account || "Already have an account? Sign in"}
+        </Button>
+      </div>
+    )
+  };
 
   return (
     <Card className="w-full max-w-md">
@@ -162,9 +234,10 @@ function LoginContent() {
           providers={[]}
           redirectTo={`/${lang}/dashboard`}
           onlyThirdPartyProviders={false}
-          showLinks={true} // This enables "Forgot your password?" link
-          view={initialAuthView} // <--- THIS IS THE CRUCIAL CHANGE: Dynamic view prop
+          showLinks={false} // Hide the default links
+          view={initialAuthView}
           theme="default"
+          viewChange={handleViewChange}
           localization={{
             variables: {
               sign_in: {
@@ -173,14 +246,14 @@ function LoginContent() {
                 button_label: dictionary.sign_in || "Sign in",
                 loading_button_label: dictionary.signing_in || "Signing in...",
                 social_provider_text: dictionary.sign_in_with || "Sign in with {{provider}}",
-                link_text: dictionary.dont_have_account || "Don't have an account? Sign up",
+                // Remove the link_text to hide the default link
               },
               sign_up: {
                 email_label: dictionary.email || "Email",
                 password_label: dictionary.password || "Password",
                 button_label: dictionary.sign_up || "Sign up",
                 loading_button_label: dictionary.signing_up || "Signing up...",
-                link_text: dictionary.already_have_account || "Already have an account? Sign in",
+                // Remove the link_text to hide the default link
               },
               forgotten_password: {
                 email_label: dictionary.email || "Email",
@@ -197,6 +270,10 @@ function LoginContent() {
             }
           }}
         />
+
+        {/* Add our custom links based on the current view */}
+        {initialAuthView === 'sign_in' && <CustomAuthComponents.SignUpLink />}
+        {initialAuthView === 'sign_up' && <CustomAuthComponents.SignInLink />}
       </CardContent>
     </Card>
   );
