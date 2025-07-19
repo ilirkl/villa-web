@@ -230,17 +230,16 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={(date) => {
-                        field.onChange(date); // Update react-hook-form value
-                        setStartDateOpen(false); // Close popover after selection
-                      }}
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                      initialFocus
-                      id="start-date-calendar" // Add ID to link with aria-controls
-                    />
+                      <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={(date) => {
+                              field.onChange(date); // Update react-hook-form value
+                              setStartDateOpen(false); // Close popover after selection
+                          }}
+                          initialFocus
+                          id="start-date-calendar" // Add ID to link with aria-controls
+                      />
                   </PopoverContent>
                 </Popover>
                 {/* FormMessage should be directly under FormItem */}
