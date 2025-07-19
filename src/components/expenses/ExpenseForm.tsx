@@ -52,17 +52,18 @@ interface ExpenseFormProps {
   onSuccess?: () => void; // Add this prop
 }
 
-function SubmitButton({ isEditing, dictionary }: { isEditing: boolean, dictionary: any }) {
-    const { pending } = useFormStatus();
+function SubmitButton({ isEditing, dictionary, isPending }: { isEditing: boolean, dictionary: any, isPending: boolean }) {
+    const { pending: formStatusPending } = useFormStatus();
+    
     return (
         <Button
             type="submit"
-            disabled={pending}
-            aria-disabled={pending}
+            disabled={isPending || formStatusPending}
+            aria-disabled={isPending || formStatusPending}
             style={{ backgroundColor: '#FF5A5F', color: 'white' }}
             className="hover:bg-[#FF5A5F]/90"
         >
-        {pending ? (isEditing ? dictionary.updating || 'Updating...' : dictionary.saving || 'Saving...') :
+        {(isPending || formStatusPending) ? (isEditing ? dictionary.updating || 'Updating...' : dictionary.saving || 'Saving...') :
                   (isEditing ? dictionary.update_expense || 'Update Expense' : dictionary.save_expense || 'Save Expense')}
         </Button>
     );
@@ -129,6 +130,9 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
 
   // Handle form submission
   const onSubmit = (formData: FormSchemaType) => {
+    // Prevent duplicate submissions by checking if already pending
+    if (isPending) return;
+
     console.log("Form data before submission:", formData); // Debug log
 
     const data = new FormData();
@@ -181,37 +185,44 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
     }
 
     startTransition(async () => {
-      // Pass the form object to the server action for error handling
-      const result = await createOrUpdateExpense(undefined, data); // Initial state is passed automatically by useFormState
+      try {
+        // Pass the form object to the server action for error handling
+        const result = await createOrUpdateExpense(undefined, data);
 
-      if (result.errors) {
-        // Set form errors
-        Object.entries(result.errors).forEach(([key, value]) => {
-          form.setError(key as any, {
-            type: "server",
-            message: value[0],
+        if (result.errors) {
+          // Set form errors
+          Object.entries(result.errors).forEach(([key, value]) => {
+            form.setError(key as any, {
+              type: "server",
+              message: value[0],
+            });
           });
-        });
-        toast.error(result.message || dictionary.error_saving || "Error saving expense");
-        return;
-      }
+          toast.error(result.message || dictionary.error_saving || "Error saving expense");
+          return;
+        }
 
-      // Success
-      toast.success(
-        isEditing
-          ? dictionary.expense_updated || "Expense updated"
-          : dictionary.expense_created || "Expense created"
-      );
+        // Success
+        toast.success(
+          isEditing
+            ? dictionary.expense_updated || "Expense updated"
+            : dictionary.expense_created || "Expense created"
+        );
 
-      // Reset form
-      form.reset();
+        // Reset form only for new expenses, not edits
+        if (!isEditing) {
+          form.reset();
+        }
 
-      // Call onSuccess callback if provided
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        // Navigate back if no callback
-        router.back();
+        // Call onSuccess callback if provided
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          // Navigate back if no callback
+          setTimeout(() => router.back(), 100);
+        }
+      } catch (error) {
+        console.error('Error during expense submission:', error);
+        toast.error(dictionary.error_saving || "Error saving expense");
       }
     });
   };
@@ -371,7 +382,7 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
             {dictionary.cancel || "Cancel"}
           </Button>
           {/* Submit Button for ExpenseForm */}
-          <SubmitButton isEditing={isEditing} dictionary={dictionary} />
+          <SubmitButton isEditing={isEditing} dictionary={dictionary} isPending={isPending} />
         </div>
       </form>
     </Form>
