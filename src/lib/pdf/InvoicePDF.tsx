@@ -2,18 +2,18 @@ import React from 'react';
 import { Document, Page, Text, View, Font, StyleSheet, Image } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 import { Booking } from '@/lib/definitions';
-import path from 'path';
 
-// Register fonts using Google Fonts URLs for serverless compatibility
+// Register fonts using bundled local files for serverless compatibility
+// Path relative to src/lib/pdf/InvoicePDF.tsx: ../../../public/fonts/
 Font.register({
   family: 'Roboto',
   fonts: [
     {
-      src: 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.ttf',
+      src: require('../../../public/fonts/Roboto-Regular.ttf'),
       fontWeight: 'normal',
     },
     {
-      src: 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc4AMP6lQ.ttf',
+      src: require('../../../public/fonts/Roboto-Bold.ttf'),
       fontWeight: 'bold',
     },
   ],
@@ -186,7 +186,7 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ booking, profile }) => {
   const formattedEndDate = format(new Date(booking.end_date), 'dd MMMM yyyy');
   const formattedInvoiceDate = format(new Date(), 'dd MMMM yyyy');
 
-  // --- CHANGE HERE: Format booking.id for display ---
+  // Format booking.id for display
   let displayInvoiceId: string;
   const rawBookingId = String(booking.id);
 
@@ -200,7 +200,6 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ booking, profile }) => {
     // Otherwise (e.g., alphanumeric and 4 chars or less, like "AB12" or "A2C"), display as is
     displayInvoiceId = rawBookingId;
   }
-  // --- END CHANGE ---
 
   return (
     <Document>
@@ -214,14 +213,12 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ booking, profile }) => {
             {profile.email && profile.email.trim() && <Text style={styles.companyDetails}>Email: {profile.email}</Text>}
             {profile.phone_number && profile.phone_number.trim() && <Text style={styles.companyDetails}>Phone: {profile.phone_number}</Text>}
             {profile.website && profile.website.trim() && <Text style={styles.companyDetails}>Website: {profile.website}</Text>}
-            {profile.instagram && profile.instagram.trim() && <Text style={styles.companyDetails}>Instagram: @{profile.instagram}</Text>}
+            {profile.instagram && profile.instagram?.trim() && <Text style={styles.companyDetails}>Instagram: @{profile.instagram}</Text>}
             {profile.vat_number && profile.vat_number.trim() && <Text style={styles.companyDetails}>VAT: {profile.vat_number}</Text>}
           </View>
           <View style={styles.invoiceInfo}>
             <Text style={[styles.invoiceTitle, { fontWeight: 'bold' }]}>INVOICE</Text>
-            {/* --- CHANGE HERE: Use the formatted displayInvoiceId --- */}
             <Text style={styles.invoiceSubText}>Invoice #: {displayInvoiceId}</Text>
-            {/* --- END CHANGE --- */}
             <Text style={styles.invoiceSubText}>Date: {formattedInvoiceDate}</Text>
           </View>
         </View>
