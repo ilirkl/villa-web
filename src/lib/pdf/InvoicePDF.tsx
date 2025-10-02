@@ -1,29 +1,16 @@
 import React from 'react';
-import { Document, Page, Text, View, Font, StyleSheet, Image } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 import { Booking } from '@/lib/definitions';
 
-// Register fonts using bundled local files for serverless compatibility
-// Path relative to src/lib/pdf/InvoicePDF.tsx: ../../../public/fonts/
-Font.register({
-  family: 'Roboto',
-  fonts: [
-    {
-      src: require('../../../public/fonts/Roboto-Regular.ttf'),
-      fontWeight: 'normal',
-    },
-    {
-      src: require('../../../public/fonts/Roboto-Bold.ttf'),
-      fontWeight: 'bold',
-    },
-  ],
-});
+// Use built-in Helvetica font to avoid loading issues in serverless environments
+// For custom fonts, encode them as base64 and register as data URLs (see notes below)
 
-// Define styles for the PDF
+// Define styles for the PDF using Helvetica
 const styles = StyleSheet.create({
   page: {
     padding: 40,
-    fontFamily: 'Roboto',
+    fontFamily: 'Helvetica',
     backgroundColor: '#FFFFFF',
   },
   header: {
