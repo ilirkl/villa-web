@@ -4,20 +4,16 @@ import { format } from 'date-fns';
 import { Booking } from '@/lib/definitions';
 import path from 'path';
 
-// Construct absolute paths to the font files located in the 'public' directory
-const robotoRegularPath = path.join(process.cwd(), 'public', 'fonts', 'Roboto-Regular.ttf');
-const robotoBoldPath = path.join(process.cwd(), 'public', 'fonts', 'Roboto-Bold.ttf');
-
-// Register fonts using local paths
+// Register fonts using Google Fonts URLs for serverless compatibility
 Font.register({
   family: 'Roboto',
   fonts: [
     {
-      src: robotoRegularPath,
+      src: 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.ttf',
       fontWeight: 'normal',
     },
     {
-      src: robotoBoldPath,
+      src: 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc4AMP6lQ.ttf',
       fontWeight: 'bold',
     },
   ],
@@ -213,13 +209,13 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ booking, profile }) => {
         <View style={styles.header}>
           <View style={styles.companyInfo}>
             <Text style={[styles.companyName, { fontWeight: 'bold' }]}>{profile.company_name || 'Your Company Name'}</Text>
-            {profile.full_name && <Text style={styles.companyDetails}>{profile.full_name}</Text>}
-            {profile.address && <Text style={styles.companyDetails}>{profile.address}</Text>}
-            {profile.email && <Text style={styles.companyDetails}>Email: {profile.email}</Text>}
-            {profile.phone_number && <Text style={styles.companyDetails}>Phone: {profile.phone_number}</Text>}
-            {profile.website && <Text style={styles.companyDetails}>Website: {profile.website}</Text>}
-            {profile.instagram && <Text style={styles.companyDetails}>Instagram: @{profile.instagram}</Text>}
-            {profile.vat_number && <Text style={styles.companyDetails}>VAT: {profile.vat_number}</Text>}
+            {profile.full_name && profile.full_name.trim() && <Text style={styles.companyDetails}>{profile.full_name}</Text>}
+            {profile.address && profile.address.trim() && <Text style={styles.companyDetails}>{profile.address}</Text>}
+            {profile.email && profile.email.trim() && <Text style={styles.companyDetails}>Email: {profile.email}</Text>}
+            {profile.phone_number && profile.phone_number.trim() && <Text style={styles.companyDetails}>Phone: {profile.phone_number}</Text>}
+            {profile.website && profile.website.trim() && <Text style={styles.companyDetails}>Website: {profile.website}</Text>}
+            {profile.instagram && profile.instagram.trim() && <Text style={styles.companyDetails}>Instagram: @{profile.instagram}</Text>}
+            {profile.vat_number && profile.vat_number.trim() && <Text style={styles.companyDetails}>VAT: {profile.vat_number}</Text>}
           </View>
           <View style={styles.invoiceInfo}>
             <Text style={[styles.invoiceTitle, { fontWeight: 'bold' }]}>INVOICE</Text>
@@ -286,7 +282,7 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ booking, profile }) => {
         {/* Footer */}
         <Text style={styles.footer}>
           Thank you for your booking with {profile.company_name || 'us'}. We look forward to welcoming you!
-          {profile.email && `\nQuestions? Contact us at ${profile.email} or call ${profile.phone_number || 'our support line'}.`}
+          {profile.email && profile.email.trim() && `\nQuestions? Contact us at ${profile.email} or call ${profile.phone_number?.trim() || 'our support line'}.`}
         </Text>
       </Page>
     </Document>
