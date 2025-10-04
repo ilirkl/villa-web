@@ -189,12 +189,22 @@ async function RevenueData({ params }: { params: { lang: string } }) {
           throw new Error('Authentication required');
         }
 
+        // Get the selected property ID from cookies
+        const { cookies } = await import('next/headers');
+        const cookieStore = cookies();
+        const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
+
+        if (!selectedPropertyId) {
+            throw new Error('No property selected');
+        }
+
         // Fetch bookings, expenses, and categories concurrently
         const [bookingsRes, expensesRes, categoriesRes] = await Promise.all([
             supabase
                 .from('bookings')
                 .select('id, start_date, end_date, total_amount') // NO 'status'
                 .eq('user_id', user.id) // IMPORTANT: Explicitly filter by user_id
+                .eq('property_id', selectedPropertyId) // Filter by selected property
                 .gte('start_date', format(threeMonthsAgo, 'yyyy-MM-dd'))
                 .lte('start_date', format(threeMonthsAhead, 'yyyy-MM-dd'))
                 .order('start_date', { ascending: false }),
@@ -202,6 +212,7 @@ async function RevenueData({ params }: { params: { lang: string } }) {
                 .from('expenses')
                 .select('id, date, amount, category_id')
                 .eq('user_id', user.id) // IMPORTANT: Explicitly filter by user_id
+                .eq('property_id', selectedPropertyId) // Filter by selected property
                 .gte('date', format(threeMonthsAgo, 'yyyy-MM-dd'))
                 .lte('date', format(threeMonthsAhead, 'yyyy-MM-dd'))
                 .order('date', { ascending: false }),

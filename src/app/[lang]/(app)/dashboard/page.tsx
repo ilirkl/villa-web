@@ -1,6 +1,7 @@
 // app/(app)/dashboard/page.tsx
 import { createClient } from '@/lib/supabase/server';
 import { Suspense } from 'react';
+import { cookies } from 'next/headers';
 import {
   startOfToday,
   endOfToday,
@@ -36,6 +37,7 @@ const formatBookingDate = (dateString: string | null | undefined, locale: string
 export default async function DashboardPage({ params }: { params: { lang: string } }) {
   const supabase = createClient();
   const dictionary = await getDictionary(params.lang as 'en' | 'sq');
+  const cookieStore = cookies();
 
   // Get the current authenticated user
   const { data: { user } } = await supabase.auth.getUser();
@@ -44,6 +46,21 @@ export default async function DashboardPage({ params }: { params: { lang: string
   if (!user) {
     // This shouldn't happen due to middleware protection, but handle it gracefully
     throw new Error('Authentication required');
+  }
+
+  // Get selected property from cookies
+  const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
+  
+  // If no property selected, get user's default property
+  let propertyId = selectedPropertyId;
+  if (!propertyId) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('default_property_id')
+      .eq('id', user.id)
+      .single();
+    
+    propertyId = profile?.default_property_id || null;
   }
 
   // Get today's date boundaries (use UTC for consistency if needed, but date comparison should be fine)
@@ -57,31 +74,35 @@ export default async function DashboardPage({ params }: { params: { lang: string
   const todayDateString = format(todayStart, 'yyyy-MM-dd');
   const weekEndDateString = format(weekEnd, 'yyyy-MM-dd');
 
-  // Fetch bookings for calendar with explicit user filtering
+  // Fetch bookings for calendar with explicit user and property filtering
   const { data: bookingsData, error: calendarError } = await supabase
     .from('bookings')
     .select('id, start_date, end_date, guest_name, source, total_amount, prepayment, notes')
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .eq('property_id', propertyId);
 
-  // Fetch today's check-ins with user filtering
+  // Fetch today's check-ins with user and property filtering
   const { data: todayCheckInsData, error: checkInsError } = await supabase
     .from('bookings')
     .select('id, start_date, end_date, guest_name, source, total_amount, prepayment, notes')
     .eq('user_id', user.id)
+    .eq('property_id', propertyId)
     .eq('start_date', todayDateString);
 
-  // Fetch today's check-outs with user filtering
+  // Fetch today's check-outs with user and property filtering
   const { data: todayCheckOutsData, error: checkOutsError } = await supabase
     .from('bookings')
     .select('*') // Select all fields needed by BookingCard
     .eq('user_id', user.id)
+    .eq('property_id', propertyId)
     .eq('end_date', todayDateString);
 
-  // Fetch upcoming check-ins this week with user filtering
+  // Fetch upcoming check-ins this week with user and property filtering
   const { data: upcomingCheckInsData, error: upcomingError } = await supabase
     .from('bookings')
     .select('*') // Select all fields needed by BookingCard
     .eq('user_id', user.id)
+    .eq('property_id', propertyId)
     .gt('start_date', todayDateString)
     .lte('start_date', weekEndDateString)
     .order('start_date', { ascending: true });
@@ -91,6 +112,7 @@ export default async function DashboardPage({ params }: { params: { lang: string
     .from('bookings')
     .select('*') // Select all fields needed by BookingCard
     .eq('user_id', user.id)
+    .eq('property_id', propertyId)
     .lt('start_date', todayDateString)
     .gt('end_date', todayDateString)
     .order('start_date', { ascending: true });

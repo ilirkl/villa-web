@@ -147,8 +147,8 @@ const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEv
   const handleBookingClick = (event: CalendarEvent, e: React.MouseEvent) => {
     // Validate the source value
     const validSources = ['DIRECT', 'AIRBNB', 'BOOKING'] as const;
-    const sourceValue = event.source && validSources.includes(event.source as any) 
-      ? (event.source as "DIRECT" | "AIRBNB" | "BOOKING") 
+    const sourceValue = event.source && validSources.includes(event.source as any)
+      ? (event.source as "DIRECT" | "AIRBNB" | "BOOKING")
       : "DIRECT";
     
     // Create a booking object from the event data
@@ -165,7 +165,8 @@ const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEv
       updated_at: null,
       user_id: null,
       airbnb_id: event.extendedProps?.airbnb_id || null,
-      booking_com_id: event.extendedProps?.booking_com_id || null
+      booking_com_id: event.extendedProps?.booking_com_id || null,
+      property_id: event.extendedProps?.property_id || null
     };
     
     setSelectedBooking(booking);

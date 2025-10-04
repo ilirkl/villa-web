@@ -33,6 +33,7 @@ import { useRouter } from 'next/navigation';
 import DOMPurify from 'dompurify';
 import { getCsrfToken } from '@/lib/csrf-client';
 import { createClient } from '@/lib/supabase/client';
+import { getSelectedPropertyId } from '@/lib/property-utils';
 
 // Zod schema update (unchanged)
 const FormSchema = z.object({
@@ -48,6 +49,7 @@ const FormSchema = z.object({
   }),
   notes: z.string().nullable().optional().transform(val =>
     val ? DOMPurify.sanitize(val) : val),
+  property_id: z.string().uuid('Property is required'),
 }).refine((data) => data.end_date > data.start_date, {
   message: 'End date must be after start date',
   path: ['end_date'],
@@ -92,6 +94,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
     fetchCsrfToken();
   }, []);
 
+
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -104,6 +107,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
       prepayment: initialData?.prepayment ?? 0,
       source: initialData?.source ?? 'DIRECT',
       notes: initialData?.notes ?? '',
+      property_id: getSelectedPropertyId() ?? '',
     },
   });
 
@@ -133,6 +137,14 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
   const checkForOverlappingBookings = async (startDate: Date, endDate: Date, excludeBookingId?: string) => {
     const supabase = createClient();
     
+    // Get the selected property ID
+    const selectedPropertyId = await getSelectedPropertyId();
+    
+    if (!selectedPropertyId) {
+      console.error('No property selected for overlap check');
+      return null;
+    }
+
     // Format dates for comparison - ensure we're using UTC dates for consistency
     const startDateStr = format(startDate, 'yyyy-MM-dd');
     const endDateStr = format(endDate, 'yyyy-MM-dd');
@@ -141,6 +153,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
       startDateStr,
       endDateStr,
       excludeBookingId,
+      selectedPropertyId,
       originalStartDate: startDate,
       originalEndDate: endDate
     });
@@ -161,6 +174,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
     let query = supabase
       .from('bookings')
       .select('id, guest_name, start_date, end_date')
+      .eq('property_id', selectedPropertyId) // Filter by selected property
       .lt('start_date', endDateStr)  // existing booking starts before new booking ends
       .gt('end_date', startDateStr)  // existing booking ends after new booking starts
       .limit(1);
@@ -256,6 +270,9 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-2xl">
         {isEditing && <input type="hidden" {...form.register('id')} />}
+
+        {/* Hidden property_id field - automatically uses the currently selected property */}
+        <input type="hidden" {...form.register('property_id')} />
 
         {/* Guest Name and Source */}
         <div className="flex gap-4">

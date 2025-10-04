@@ -18,6 +18,7 @@ const ExpenseSchema = z.object({
     .min(0.01, { message: 'Amount must be positive.' }),
   date: z.coerce.date({ required_error: 'Please select a date.' }), // Coerce to Date object
   description: z.string().optional().nullable(),
+  property_id: z.string().uuid('Property is required'),
   // Optional: Add months validation if you include it in your form
   // months: z.array(z.coerce.number().int().min(1).max(12))
   //   .optional()
@@ -34,6 +35,7 @@ export type ExpenseState = {
     amount?: string[];
     date?: string[];
     description?: string[];
+    property_id?: string[];
     months?: string[]; // Add if using months field
     database?: string[]; // For general DB or other errors
   };
@@ -149,6 +151,15 @@ export async function createOrUpdateExpense(
   // Handle months if using: ensure null if empty array or not provided
   // const finalMonths = expenseData.months && expenseData.months.length > 0 ? expenseData.months : null;
 
+  // Get the selected property ID from cookies
+  const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
+  if (!selectedPropertyId) {
+    return {
+      errors: { property_id: ["No property selected"] },
+      message: "Please select a property first"
+    };
+  }
+
   try {
     let result;
     if (id) {
@@ -160,6 +171,7 @@ export async function createOrUpdateExpense(
           ...expenseData,
           category_id: finalCategoryId,
           date: dateString,
+          property_id: selectedPropertyId,
           // months: finalMonths, // Uncomment if using months
           user_id: user.id, // IMPORTANT: Always set user_id explicitly on update
           updated_at: new Date().toISOString(),
@@ -176,6 +188,7 @@ export async function createOrUpdateExpense(
           ...expenseData,
           category_id: finalCategoryId,
           date: dateString,
+          property_id: selectedPropertyId,
           // months: finalMonths, // Uncomment if using months
           user_id: user.id, // IMPORTANT: Always set user_id explicitly on insert
         })

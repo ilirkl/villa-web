@@ -31,8 +31,20 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { DownloadBackupButton } from '@/components/settings/DownloadBackupButton';
 import { IcalSettings } from '@/components/settings/IcalSettings';
+import { PropertyForm } from '@/components/shared/PropertyForm';
 
 // Helper function (Unchanged)
 function centerAspectCrop(
@@ -100,6 +112,38 @@ export default function SettingsPage() {
     
     // Actions
     sign_out?: string;
+    are_you_sure?: string;
+    delete?: string;
+    
+    // Property management
+    property?: string;
+    properties?: string;
+    property_management?: string;
+    your_properties?: string;
+    add_new_property?: string;
+    edit_property?: string;
+    delete_property?: string;
+    property_name?: string;
+    property_address?: string;
+    property_description?: string;
+    property_name_placeholder?: string;
+    property_address_placeholder?: string;
+    property_description_placeholder?: string;
+    property_created?: string;
+    property_updated?: string;
+    property_deleted?: string;
+    cannot_delete_last_property?: string;
+    cannot_delete_property_with_data?: string;
+    no_property_selected?: string;
+    please_select_property_first?: string;
+    switch_property?: string;
+    loading_properties?: string;
+    no_properties_found?: string;
+    select_property?: string;
+    property_name_required?: string;
+    must_be_logged_in?: string;
+    failed_to_save_property?: string;
+    delete_property_confirmation?: string;
   }
   
   const [dictionary, setDictionary] = useState<Dictionary | null>(null);
@@ -130,6 +174,13 @@ export default function SettingsPage() {
   // Refs for the forms
   const profileFormRef = useRef<HTMLFormElement>(null);
   const passwordFormRef = useRef<HTMLFormElement>(null);
+
+  // Property management state
+  const [properties, setProperties] = useState<Array<{ id: string; name: string; address?: string; description?: string }>>([]);
+  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+  const [isPropertyModalOpen, setIsPropertyModalOpen] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<{ id: string; name: string; address?: string; description?: string } | null>(null);
+  const [propertyToDelete, setPropertyToDelete] = useState<{ id: string; name: string } | null>(null);
 
 
   // --- Image URL Handling (Unchanged) ---
@@ -197,10 +248,97 @@ export default function SettingsPage() {
     }
   }, [supabase, router]);
 
-  // Load profile on component mount
+  // Load profile and properties on component mount
   useEffect(() => {
     fetchProfile();
+    loadProperties();
   }, [fetchProfile]);
+
+  // Function to load properties
+  const loadProperties = useCallback(async () => {
+    try {
+      setIsLoadingProperties(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('properties')
+        .select('id, name, address, description')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      setProperties(data || []);
+    } catch (error) {
+      console.error('Error loading properties:', error);
+      toast.error('Failed to load properties');
+    } finally {
+      setIsLoadingProperties(false);
+    }
+  }, [supabase]);
+
+  // Function to handle property deletion
+  const handleDeleteProperty = async (propertyId: string) => {
+    try {
+      // Check if this is the last property
+      if (properties.length <= 1) {
+        toast.error(dictionary?.cannot_delete_last_property || 'Cannot delete the last property');
+        return;
+      }
+
+      // Check if there are any bookings or expenses associated with this property
+      const [bookingsRes, expensesRes] = await Promise.all([
+        supabase
+          .from('bookings')
+          .select('id')
+          .eq('property_id', propertyId)
+          .limit(1),
+        supabase
+          .from('expenses')
+          .select('id')
+          .eq('property_id', propertyId)
+          .limit(1)
+      ]);
+
+      if (bookingsRes.error) throw bookingsRes.error;
+      if (expensesRes.error) throw expensesRes.error;
+
+      if (bookingsRes.data.length > 0 || expensesRes.data.length > 0) {
+        toast.error(dictionary?.cannot_delete_property_with_data || 'Cannot delete property with existing bookings or expenses');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', propertyId);
+
+      if (error) throw error;
+
+      toast.success(dictionary?.property_deleted || 'Property deleted successfully');
+      loadProperties(); // Refresh the properties list
+    } catch (error: any) {
+      console.error('Error deleting property:', error);
+      toast.error(error.message || 'Failed to delete property');
+    } finally {
+      setPropertyToDelete(null);
+    }
+  };
+
+  // Function to handle property edit
+  const handleEditProperty = (property: { id: string; name: string }) => {
+    setEditingProperty(property);
+    setIsPropertyModalOpen(true);
+  };
+
+  // Function to handle property form success
+  const handlePropertyFormSuccess = () => {
+    setIsPropertyModalOpen(false);
+    setEditingProperty(null);
+    loadProperties(); // Refresh the properties list
+  };
 
   // Set initial iCal URLs when profile loads
   useEffect(() => {
@@ -882,9 +1020,97 @@ export default function SettingsPage() {
           </div>
         </div>
         
+        {/* Property Management Card - full width */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{dictionary?.property_management || 'Property Management'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Properties List */}
+              <div className="space-y-2">
+                <Label>{dictionary?.your_properties || 'Your Properties'}</Label>
+                {isLoadingProperties ? (
+                  <div className="text-center py-4">
+                    <div className="w-4 h-4 border-t-2 border-[#FF5A5F] rounded-full animate-spin mx-auto"></div>
+                  </div>
+                ) : properties.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">
+                    {dictionary?.no_properties_found || 'No properties found'}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {properties.map((property) => (
+                      <div
+                        key={property.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <span className="font-medium">{property.name}</span>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditProperty(property)}
+                            disabled={isAnyOperationInProgress}
+                          >
+                            {dictionary?.edit_property || 'Edit Property'}
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                disabled={isAnyOperationInProgress || properties.length <= 1}
+                              >
+                                {dictionary?.delete_property || 'Delete Property'}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>{dictionary?.are_you_sure || 'Are you sure?'}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {(dictionary?.delete_property_confirmation || 'This action cannot be undone. This will permanently delete the property "{propertyName}".')
+                                    .replace('{propertyName}', property.name)}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>{dictionary?.cancel || 'Cancel'}</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteProperty(property.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  {dictionary?.delete || 'Delete'}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Add Property Button */}
+              <Button
+                type="button"
+                onClick={() => {
+                  setEditingProperty(null);
+                  setIsPropertyModalOpen(true);
+                }}
+                style={{ backgroundColor: '#FF5A5F', color: 'white' }}
+                className="hover:bg-[#FF5A5F]/90"
+                disabled={isAnyOperationInProgress}
+              >
+                {dictionary?.add_new_property || 'Add New Property'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* iCal Settings Card - full width */}
-        <IcalSettings 
-          initialAirbnbUrl={profile?.airbnb_ical_url || ''} 
+        <IcalSettings
+          initialAirbnbUrl={profile?.airbnb_ical_url || ''}
           initialBookingComUrl={profile?.booking_com_ical_url || ''}
           dictionary={dictionary}
           onUrlChange={handleIcalUrlChange}
@@ -914,6 +1140,15 @@ export default function SettingsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Property Form Dialog */}
+        <PropertyForm
+          open={isPropertyModalOpen}
+          onOpenChange={setIsPropertyModalOpen}
+          onSuccess={handlePropertyFormSuccess}
+          property={editingProperty || undefined}
+          dictionary={dictionary}
+        />
       </div>
     </div>
   );

@@ -80,6 +80,7 @@ The project follows Next.js App Router conventions with organized directories fo
   - **pdf/**: PDF generation (InvoicePDF, MonthlyReportPDF)
   - **csrf.ts/client.ts**: CSRF protection (token generation, verification)
   - **database.types.ts**: Supabase-generated types (bookings, expenses, profiles, enums)
+  - **database-documentation.md**: Complete database schema and RLS policies documentation
   - **definitions.ts**: App-specific types (Booking, Expense, Profile)
   - **utils.ts**: Helpers (formatCurrency, cn for classNames)
   - **dictionary.ts/translations.ts**: i18n dictionary loading and category translation
@@ -93,26 +94,22 @@ The project follows Next.js App Router conventions with organized directories fo
 - Jest configuration in package.json for unit/integration tests
 
 ## Database Schema (Supabase PostgreSQL)
+Complete database schema and RLS policies are documented in [`src/lib/database-documentation.md`](src/lib/database-documentation.md).
+
 Generated types in `src/lib/database.types.ts`. Key tables:
 
-- **bookings**:
-  - id (uuid), start_date/end_date (date), guest_name (text), total_amount/prepayment (numeric), source (enum: AIRBNB | BOOKING | DIRECT), notes (text), user_id (uuid), airbnb_id (text), created_at/updated_at (timestamptz)
-  - Relationships: None direct, but filtered by user_id (RLS)
+- **bookings**: Villa booking information with user isolation
+- **expenses**: Expense tracking with categorization and recurring options
+- **expense_categories**: Master list of expense categories (shared across users)
+- **profiles**: User profile information extending auth.users
 
-- **expenses**:
-  - id (uuid), amount (numeric), date (date), description (text), category_id (uuid, FK to expense_categories), months (int[]), user_id (uuid), created_at/updated_at (timestamptz)
-  - Relationships: expense_categories (one-to-many)
+**Security Model**:
+- Row Level Security (RLS) policies enforce user data isolation
+- Users can only access their own bookings, expenses, and profiles
+- Expense categories are readable by all authenticated users
+- Avatar storage has user-specific folder restrictions
 
-- **expense_categories**:
-  - id (uuid), name (text), created_at (timestamptz)
-
-- **profiles**:
-  - id (uuid), full_name/email/username (text), address/phone_number/company_name/vat_number/website/avatar_url (text), airbnb_ical_url (text), updated_at (timestamptz)
-
-Enums:
-- booking_source: AIRBNB | BOOKING | DIRECT
-
-Row Level Security (RLS): Assumed enabled on tables to filter by user_id.
+For complete SQL schema and detailed RLS policies, refer to the database documentation.
 
 ## Authentication and Security
 - **Supabase Auth**: Email/password, OAuth (providers disabled in UI), magic links, password recovery

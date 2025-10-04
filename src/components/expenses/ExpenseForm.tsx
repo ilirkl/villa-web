@@ -30,6 +30,7 @@ import { toast } from "sonner"; // Import sonner toast
 import { useParams, useRouter } from 'next/navigation';
 import { translateExpenseCategory } from '@/lib/translations';
 // import { createClient } from '@/lib/supabase/client'; // Not used directly in this component's logic
+import { getSelectedPropertyId } from '@/lib/property-utils';
 
 // Define the form schema
 const FormSchema = z.object({
@@ -41,6 +42,7 @@ const FormSchema = z.object({
   }),
   category_id: z.string().optional(),
   description: z.string().optional(),
+  property_id: z.string().uuid('Property is required'),
 });
 
 type FormSchemaType = z.infer<typeof FormSchema>;
@@ -119,6 +121,7 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
       date: initialDate, // Ensure this is a Date object
       category_id: initialData?.category_id ?? furnizimCategory?.id ?? undefined,
       description: initialData?.description ?? '',
+      property_id: getSelectedPropertyId() ?? '',
     },
   });
 
@@ -173,6 +176,12 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
     // Add description
     if (formData.description !== undefined) {
       data.append('description', formData.description);
+    }
+
+    // Add property_id
+    const selectedPropertyId = getSelectedPropertyId();
+    if (selectedPropertyId) {
+      data.append('property_id', selectedPropertyId);
     }
 
     // Add CSRF token
@@ -232,6 +241,8 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {isEditing && <input type="hidden" {...form.register('id')} />}
         <input type="hidden" name="csrf_token" value={csrfToken} />
+        {/* Hidden property_id field - automatically uses the currently selected property */}
+        <input type="hidden" {...form.register('property_id')} />
 
         {/* Amount */}
         <FormField

@@ -118,6 +118,16 @@ export default function ExpensesPage() {
       try {
         const supabase = createClient();
         
+        // Get the selected property ID
+        const { getSelectedPropertyId } = await import('@/lib/property-utils');
+        const selectedPropertyId = await getSelectedPropertyId();
+        
+        if (!selectedPropertyId) {
+          setError('No property selected');
+          setIsLoading(false);
+          return;
+        }
+
         // First, fetch expenses with their categories
         const { data, error } = await supabase
           .from('expenses')
@@ -127,6 +137,7 @@ export default function ExpensesPage() {
               name
             )
           `)
+          .eq('property_id', selectedPropertyId)
           .order(sortField, { ascending: sortOrder === 'asc' });
           
         if (error) throw error;

@@ -25,12 +25,22 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
     // Check if we have translations in a different structure
     console.log('Dictionary keys:', Object.keys(dictionary));
 
+    // Get the selected property ID from cookies
+    const { cookies } = await import('next/headers');
+    const cookieStore = cookies();
+    const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
+
+    if (!selectedPropertyId) {
+      throw new Error('No property selected');
+    }
+
     console.log('Fetching bookings data...');
-    // Fetch bookings with explicit user_id check
+    // Fetch bookings with explicit user_id check and property filter
     const { data: bookings, error: bookingsError } = await supabase
       .from('bookings')
       .select('guest_name, start_date, end_date, total_amount, prepayment, notes, source')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .eq('property_id', selectedPropertyId); // Filter by selected property
 
     if (bookingsError) {
       throw new Error(`Failed to fetch bookings: ${bookingsError.message}`);
@@ -55,11 +65,12 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
     });
 
     console.log('Fetching expenses data...');
-    // Fetch expenses with category_id
+    // Fetch expenses with category_id and property filter
     const { data: expenses, error: expensesError } = await supabase
       .from('expenses')
       .select('id, date, amount, description, category_id')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .eq('property_id', selectedPropertyId); // Filter by selected property
 
     if (expensesError) {
       throw new Error(`Failed to fetch expenses: ${expensesError.message}`);

@@ -21,6 +21,7 @@ const BookingSchema = z.object({
  }),
  // ^^^ CHANGE HERE ^^^
  notes: z.string().optional().nullable(),
+ property_id: z.string().uuid('Property is required'),
 });
 
 // Ensure end_date is after start_date
@@ -42,6 +43,7 @@ export type BookingState = {
     prepayment?: string[];
     source?: string[];
     notes?: string[];
+    property_id?: string[];
     database?: string[]; // For general DB errors
   };
   message?: string | null;
@@ -79,7 +81,7 @@ export async function createOrUpdateBooking(prevState: BookingState | undefined,
     };
   }
 
-  const { id, start_date, end_date, ...bookingData } = validatedFields.data;
+  const { id, start_date, end_date, property_id, ...bookingData } = validatedFields.data;
   const startDateString = start_date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
   const endDateString = end_date.toISOString().split('T')[0];     // Format as YYYY-MM-DD
 
@@ -93,6 +95,7 @@ export async function createOrUpdateBooking(prevState: BookingState | undefined,
           ...bookingData,
           start_date: startDateString,
           end_date: endDateString,
+          property_id: property_id,
           user_id: user.id, // IMPORTANT: Always set user_id explicitly on update
           updated_at: new Date().toISOString(),
          })
@@ -108,6 +111,7 @@ export async function createOrUpdateBooking(prevState: BookingState | undefined,
            ...bookingData,
            start_date: startDateString,
            end_date: endDateString,
+           property_id: property_id,
            user_id: user.id, // IMPORTANT: Always set user_id explicitly on insert
          })
         .select()

@@ -71,16 +71,25 @@ export async function generateMonthlyReport(
 
     console.log('Date range:', { monthStartString, monthEndString });
 
+    // Get the selected property ID from cookies
+    const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
+
+    if (!selectedPropertyId) {
+      throw new Error('No property selected');
+    }
+
     // Fetch data in parallel
     const [bookingsRes, expensesRes, categoriesRes] = await Promise.all([
       supabase
         .from('bookings')
         .select('id, start_date, end_date, total_amount, guest_name, source')
+        .eq('property_id', selectedPropertyId) // Filter by selected property
         .or(`and(start_date.lte.${monthEndString},end_date.gte.${monthStartString})`)
         .order('start_date', { ascending: true }),
       supabase
         .from('expenses')
         .select('id, date, amount, category_id, description')
+        .eq('property_id', selectedPropertyId) // Filter by selected property
         .gte('date', monthStartString)
         .lte('date', monthEndString)
         .order('date', { ascending: true }),

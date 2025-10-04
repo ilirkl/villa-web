@@ -22,6 +22,7 @@ export type Booking = {
   user_id: string | null;
   airbnb_id: string | null;
   booking_com_id: string | null;
+  property_id: string | null;
 };
 export type Expense = Database['public']['Tables']['expenses']['Row'] & {
     expense_categories?: ExpenseCategory | null;
@@ -46,6 +47,7 @@ export type BookingFormData = Omit<Booking, 'id' | 'created_at' | 'updated_at' |
     id?: string;
     start_date: Date;
     end_date: Date;
+    property_id: string;
     // No change needed here, as it uses the exported BookingSource type
     // source: BookingSource;
 };

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getDictionary } from "@/lib/dictionary";
+import { SidebarPropertySwitcher } from "./SidebarPropertySwitcher";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -54,6 +55,17 @@ export function Sidebar() {
     <aside className="fixed bottom-4 left-1/2 -translate-x-1/2 z-10 rounded-full bg-white/80 backdrop-blur-sm shadow-sm px-4 py-2 border">
       <nav className="flex items-center justify-center gap-2">
         <TooltipProvider>
+          {/* Property Switcher */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <SidebarPropertySwitcher dictionary={dictionary} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top">{dictionary.switch_property || 'Switch Property'}</TooltipContent>
+          </Tooltip>
+
+          {/* Navigation Items */}
           {navItems.map((item) => (
             <Tooltip key={item.href}>
               <TooltipTrigger asChild>

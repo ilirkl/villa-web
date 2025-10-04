@@ -92,9 +92,9 @@ export function Header() {
             <h1 className="text-xl font-semibold">{pageTitle}</h1>
           </div>
           
-          {/* Right side - empty for now, could add actions later */}
-          <div className="flex-1 flex justify-end">
-            {/* Space for future elements like notifications, user menu, etc. */}
+          {/* Right side - space for future elements like notifications, user menu, etc. */}
+          <div className="flex-1 flex justify-end items-center gap-4">
+            {/* Space reserved for future elements */}
           </div>
         </div>
       </div>

@@ -129,16 +129,27 @@ export default async function MonthlyReportPage({ params }: PageProps) {
     let categoryMap: Map<string, string> = new Map();
 
     try {
+        // Get the selected property ID from cookies
+        const { cookies } = await import('next/headers');
+        const cookieStore = cookies();
+        const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
+
+        if (!selectedPropertyId) {
+            throw new Error('No property selected');
+        }
+
         // Fetch bookings, expenses, and categories concurrently
         const [bookingsRes, expensesRes, categoriesRes] = await Promise.all([
             supabase
                 .from('bookings')
                 .select('id, start_date, end_date, total_amount, guest_name, source')
+                .eq('property_id', selectedPropertyId) // Filter by selected property
                 .or(`and(start_date.lte.${monthEndString},end_date.gte.${monthStartString})`)
                 .order('start_date', { ascending: true }),
             supabase
                 .from('expenses')
                 .select('id, date, amount, category_id, description')
+                .eq('property_id', selectedPropertyId) // Filter by selected property
                 .gte('date', monthStartString)
                 .lte('date', monthEndString)
                 .order('date', { ascending: true }),

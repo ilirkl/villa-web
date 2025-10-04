@@ -155,18 +155,36 @@ export default function BookingsPage() {
 
   useEffect(() => {
     const fetchBookings = async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
-        .order('start_date', { ascending: sortOrder === 'asc' });
+      try {
+        const supabase = createClient();
+        
+        // Get the selected property ID
+        const { getSelectedPropertyId } = await import('@/lib/property-utils');
+        const selectedPropertyId = await getSelectedPropertyId();
+        
+        if (!selectedPropertyId) {
+          setError('No property selected');
+          setIsLoading(false);
+          return;
+        }
 
-      if (error) {
-        setError(error.message);
-      } else {
-        setBookings(data || []);
+        const { data, error } = await supabase
+          .from('bookings')
+          .select('*')
+          .eq('property_id', selectedPropertyId)
+          .order('start_date', { ascending: sortOrder === 'asc' });
+
+        if (error) {
+          setError(error.message);
+        } else {
+          setBookings(data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching bookings:', err);
+        setError('Failed to load bookings');
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchBookings();
