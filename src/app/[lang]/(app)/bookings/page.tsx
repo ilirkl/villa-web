@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, JSX } from 'react';
-import { PlusCircle, LayoutGrid, Table as TableIcon, Pencil, Trash2 } from 'lucide-react';
+import { PlusCircle, LayoutGrid, Table as TableIcon, Pencil, Trash2, FileText } from 'lucide-react';
 import { Booking, BookingFormData, BookingSource } from '@/lib/definitions';
 import { createClient } from '@/lib/supabase/client';
 import { SearchBar } from '@/components/SearchBar';
@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteBooking } from '@/lib/actions/bookings';
+import { generateInvoice } from '@/lib/actions/invoice';
 import { getCsrfToken, resetCsrfToken } from '@/lib/csrf-client';
 
 // Dynamically import components
@@ -293,7 +294,18 @@ export default function BookingsPage() {
                   <TableCell className="text-right">€{booking.total_amount?.toLocaleString()}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <button 
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent row expansion
+                          handleDownloadInvoice(booking.id, booking.guest_name, booking.start_date);
+                        }}
+                        className="p-0 bg-transparent border-none"
+                      >
+                        <FileText className="h-5 w-5 transition-all duration-300 ease-in-out transform
+                                text-[#ff5a5f] hover:scale-110
+                                active:scale-95 cursor-pointer" />
+                      </button>
+                      <button
                         onClick={(e) => {
                           e.stopPropagation(); // Prevent row expansion
                           handleEditBooking(booking.id);
@@ -306,7 +318,7 @@ export default function BookingsPage() {
                       </button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <button 
+                          <button
                             onClick={(e) => e.stopPropagation()}
                             className="p-0 bg-transparent border-none"
                           >
@@ -323,7 +335,7 @@ export default function BookingsPage() {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>{dictionary.cancel || 'Cancel'}</AlertDialogCancel>
-                            <AlertDialogAction 
+                            <AlertDialogAction
                               onClick={() => handleDelete(booking.id)}
                               style={{ backgroundColor: '#FF5A5F', color: 'white' }}
                               className='hover:bg-[#FF5A5F]/90'
@@ -392,6 +404,59 @@ export default function BookingsPage() {
     } catch (error) {
       console.error('Delete error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to delete booking');
+    }
+  };
+
+  // Handle invoice download for table view
+  const handleDownloadInvoice = async (bookingId: string, guestName: string, startDate: string) => {
+    try {
+      toast.info(dictionary.generating_invoice || 'Generating invoice...');
+      
+      // We'll rely on authentication instead of CSRF token
+      const response = await generateInvoice(bookingId, 'not-used');
+
+      if (!response) {
+        throw new Error('No response received from server');
+      }
+
+      let pdfBuffer: Uint8Array;
+      if (response instanceof Uint8Array) {
+        pdfBuffer = response;
+      } else if (Array.isArray(response)) {
+        pdfBuffer = new Uint8Array(response);
+      } else if (typeof response === 'object' && response !== null && 'buffer' in response) {
+        // Handle ArrayBuffer-like objects
+        pdfBuffer = new Uint8Array(response as ArrayBufferLike);
+      } else {
+        throw new Error(`Unexpected response type: ${typeof response}`);
+      }
+
+      const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+
+      const newWindow = window.open(url, '_blank');
+
+      if (!newWindow) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Invoice-${guestName}-${format(new Date(startDate), 'yyyy-MM-dd')}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 1000);
+
+      toast.success(dictionary.invoice_generated_successfully || 'Invoice generated successfully');
+    } catch (error) {
+      console.error('Invoice generation error:', error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : (dictionary.failed_to_generate_invoice || 'Failed to generate invoice')
+      );
     }
   };
 
