@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { useRouter } from 'next/navigation';
 import DOMPurify from 'dompurify';
 import { getCsrfToken } from '@/lib/csrf-client';
+import { createClient } from '@/lib/supabase/client';
 
 // Zod schema update (unchanged)
 const FormSchema = z.object({
@@ -129,7 +130,68 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
      }
  }, [state, isEditing, router, dictionary, onSuccess]);
 
-  const onSubmit = (formData: FormSchemaType) => {
+  const checkForOverlappingBookings = async (startDate: Date, endDate: Date, excludeBookingId?: string) => {
+    const supabase = createClient();
+    
+    // Format dates for comparison
+    const startDateStr = format(startDate, 'yyyy-MM-dd');
+    const endDateStr = format(endDate, 'yyyy-MM-dd');
+    
+    console.log('Checking for overlapping bookings:', { startDateStr, endDateStr, excludeBookingId });
+    
+    // Query for overlapping bookings - check if any booking overlaps with the selected dates
+    // Overlap condition: new booking starts before existing booking ends AND new booking ends after existing booking starts
+    // This translates to: existing_booking.start_date <= new_booking.end_date AND existing_booking.end_date >= new_booking.start_date
+    // Build query conditionally
+    let query = supabase
+      .from('bookings')
+      .select('id, guest_name, start_date, end_date')
+      .lte('start_date', endDateStr)
+      .gte('end_date', startDateStr)
+      .limit(1);
+    
+    // Only add neq filter if excludeBookingId is provided
+    if (excludeBookingId) {
+      query = query.neq('id', excludeBookingId);
+    }
+    
+    const { data: overlappingBookings, error } = await query;
+    
+    console.log('Overlap check result:', { overlappingBookings, error });
+    
+    if (error) {
+      console.error('Error checking for overlapping bookings:', error);
+      return null;
+    }
+    
+    return overlappingBookings && overlappingBookings.length > 0 ? overlappingBookings[0] : null;
+  };
+
+  const onSubmit = async (formData: FormSchemaType) => {
+    console.log('Form submission started:', { formData, isEditing, initialData });
+    
+    // Check for overlapping bookings (only for new bookings or when dates change in edits)
+    if (!isEditing || formData.start_date !== initialData?.start_date || formData.end_date !== initialData?.end_date) {
+      console.log('Performing overlap check...');
+      const overlappingBooking = await checkForOverlappingBookings(
+        formData.start_date,
+        formData.end_date,
+        formData.id
+      );
+      
+      if (overlappingBooking) {
+        console.log('Overlap detected:', overlappingBooking);
+        toast.error(dictionary.overlapping_booking_error || 'Booking conflict detected', {
+          description: `These dates overlap with an existing booking for ${overlappingBooking.guest_name} (${format(new Date(overlappingBooking.start_date), 'MMM dd')} - ${format(new Date(overlappingBooking.end_date), 'MMM dd')})`,
+        });
+        return; // Stop form submission
+      } else {
+        console.log('No overlap detected');
+      }
+    } else {
+      console.log('Skipping overlap check (editing without date change)');
+    }
+
     const data = new FormData();
     data.append('csrf_token', csrfToken);
 
@@ -144,6 +206,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
         }
       }
     });
+    console.log('Dispatching form data...');
     dispatch(data);
   };
 
