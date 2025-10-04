@@ -2,6 +2,7 @@
 
 import { useEffect, useState, JSX } from 'react';
 import { PlusCircle, LayoutGrid, Table as TableIcon, Pencil, Trash2, FileText } from 'lucide-react';
+import Image from 'next/image';
 import { Booking, BookingFormData, BookingSource } from '@/lib/definitions';
 import { createClient } from '@/lib/supabase/client';
 import { SearchBar } from '@/components/SearchBar';
@@ -258,11 +259,11 @@ export default function BookingsPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{dictionary.guest_name || 'Guest Name'}</TableHead>
-            <TableHead>{dictionary.dates || 'Dates'}</TableHead>
-            <TableHead>{dictionary.source || 'Source'}</TableHead>
-            <TableHead className="text-right">{dictionary.amount || 'Amount'}</TableHead>
-            <TableHead className="text-right">{dictionary.actions || 'Actions'}</TableHead>
+            <TableHead className="font-bold">{dictionary.guest_name || 'Guest Name'}</TableHead>
+            <TableHead className="font-bold">{dictionary.dates || 'Dates'}</TableHead>
+            <TableHead className="font-bold">{dictionary.source || 'Source'}</TableHead>
+            <TableHead className="text-right font-bold">{dictionary.amount || 'Amount'}</TableHead>
+            <TableHead className="text-right font-bold">{dictionary.actions || 'Actions'}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -281,15 +282,35 @@ export default function BookingsPage() {
                   <TableCell className="font-medium">{booking.guest_name}</TableCell>
                   <TableCell>{formattedStartDate} - {formattedEndDate}</TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" 
-                          style={{ 
-                            backgroundColor: booking.source === 'AIRBNB' ? '#ffece6' : 
-                                            booking.source === 'BOOKING' ? '#e6f0ff' : '#e6fff0',
-                            color: booking.source === 'AIRBNB' ? '#ff5a5f' : 
-                                   booking.source === 'BOOKING' ? '#003580' : '#10b981'
-                          }}>
-                      {booking.source}
-                    </span>
+                    <div className="flex items-center justify-center">
+                      {booking.source === 'AIRBNB' && (
+                        <Image
+                          src="/airbnb-icon.svg"
+                          alt="Airbnb"
+                          width={20}
+                          height={20}
+                          className="h-5 w-5"
+                        />
+                      )}
+                      {booking.source === 'BOOKING' && (
+                        <Image
+                          src="/booking-icon.svg"
+                          alt="Booking.com"
+                          width={20}
+                          height={20}
+                          className="h-5 w-5"
+                        />
+                      )}
+                      {booking.source === 'DIRECT' && (
+                        <Image
+                          src="/euro-icon.svg"
+                          alt="Cash"
+                          width={20}
+                          height={20}
+                          className="h-5 w-5"
+                        />
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">€{booking.total_amount?.toLocaleString()}</TableCell>
                   <TableCell className="text-right">

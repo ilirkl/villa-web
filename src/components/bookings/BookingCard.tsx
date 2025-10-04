@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 // Remove format import if no longer needed elsewhere in this file,
 // but keep it for the invoice filename for now.
 import { format } from 'date-fns';
-import { Pencil, Trash2, Tag, FileText } from 'lucide-react';
+import { Pencil, Trash2, FileText } from 'lucide-react';
 import { deleteBooking } from '@/lib/actions/bookings';
 import { generateInvoice } from '@/lib/actions/invoice';
 import { toast } from "sonner";
@@ -204,14 +204,36 @@ export function BookingCard({
       )}
       {!hideFooter && (
         <CardFooter className="flex justify-between gap-2 pt-2">
-          {/* Source badge on the left */}
-          <Badge 
-            variant="outline" 
-            className={`${getSourceBadgeStyle(booking.source)}`}
-          >
-            <Tag className="h-3 w-3 mr-1" />
-            {booking.source}
-          </Badge>
+          {/* Source icons on the left */}
+          <div className="flex items-center">
+            {booking.source === 'AIRBNB' && (
+              <Image
+                src="/airbnb-icon.svg"
+                alt="Airbnb"
+                width={20}
+                height={20}
+                className="h-5 w-5"
+              />
+            )}
+            {booking.source === 'BOOKING' && (
+              <Image
+                src="/booking-icon.svg"
+                alt="Booking.com"
+                width={20}
+                height={20}
+                className="h-5 w-5"
+              />
+            )}
+            {booking.source === 'DIRECT' && (
+              <Image
+                src="/euro-icon.svg"
+                alt="Cash"
+                width={20}
+                height={20}
+                className="h-5 w-5"
+              />
+            )}
+          </div>
           
           {/* Icons on the right */}
           <div className="flex gap-2">
