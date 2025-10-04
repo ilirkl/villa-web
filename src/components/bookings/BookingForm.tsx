@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { BookingFormData } from '@/lib/definitions';
@@ -173,20 +174,61 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
             render={({ field }) => (
               <FormItem className="w-[200px]">
                 <FormLabel>{dictionary.source || "Source"}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={dictionary.select_booking_source || "Select booking source"} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Constants.public.Enums.booking_source.map((sourceValue) => (
-                      <SelectItem key={sourceValue} value={sourceValue}>
-                        {sourceValue}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => field.onChange('AIRBNB')}
+                      className={`p-2 rounded-md border transition-all ${
+                        field.value === 'AIRBNB'
+                          ? 'bg-[#ffece6] border-[#ff5a5f] ring-2 ring-[#ff5a5f] ring-opacity-50'
+                          : 'bg-white border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Image
+                        src="/airbnb-icon.svg"
+                        alt="Airbnb"
+                        width={20}
+                        height={20}
+                        className="h-5 w-5"
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => field.onChange('BOOKING')}
+                      className={`p-2 rounded-md border transition-all ${
+                        field.value === 'BOOKING'
+                          ? 'bg-[#e6f0ff] border-[#003580] ring-2 ring-[#003580] ring-opacity-50'
+                          : 'bg-white border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Image
+                        src="/booking-icon.svg"
+                        alt="Booking.com"
+                        width={20}
+                        height={20}
+                        className="h-5 w-5"
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => field.onChange('DIRECT')}
+                      className={`p-2 rounded-md border transition-all ${
+                        field.value === 'DIRECT'
+                          ? 'bg-[#e6fff0] border-[#10b981] ring-2 ring-[#10b981] ring-opacity-50'
+                          : 'bg-white border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <Image
+                        src="/euro-icon.svg"
+                        alt="Cash"
+                        width={20}
+                        height={20}
+                        className="h-5 w-5"
+                      />
+                    </button>
+                  </div>
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
