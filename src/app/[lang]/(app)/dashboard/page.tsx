@@ -86,12 +86,22 @@ export default async function DashboardPage({ params }: { params: { lang: string
     .lte('start_date', weekEndDateString)
     .order('start_date', { ascending: true });
 
-  if (calendarError || checkInsError || checkOutsError || upcomingError) {
+  // Fetch ongoing bookings (bookings that started before today and end after today)
+  const { data: ongoingBookingsData, error: ongoingError } = await supabase
+    .from('bookings')
+    .select('*') // Select all fields needed by BookingCard
+    .eq('user_id', user.id)
+    .lt('start_date', todayDateString)
+    .gt('end_date', todayDateString)
+    .order('start_date', { ascending: true });
+
+  if (calendarError || checkInsError || checkOutsError || upcomingError || ongoingError) {
     console.error('Error fetching data:', {
       calendarError,
       checkInsError,
       checkOutsError,
       upcomingError,
+      ongoingError,
     });
     
     // Redirect to error page or show error message
@@ -129,6 +139,12 @@ export default async function DashboardPage({ params }: { params: { lang: string
     formattedEndDate: formatBookingDate(booking.end_date, params.lang),
   }));
 
+  const ongoingBookings = ongoingBookingsData?.map((booking) => ({
+    ...booking,
+    formattedStartDate: formatBookingDate(booking.start_date, params.lang),
+    formattedEndDate: formatBookingDate(booking.end_date, params.lang),
+  }));
+
   return (
     <div className="space-y-2 pb-20">
       <div className="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -161,6 +177,34 @@ export default async function DashboardPage({ params }: { params: { lang: string
                   </p>
                 ) : (
                   todayCheckIns?.map((booking) => (
+                    <BookingCard
+                      key={booking.id}
+                      booking={booking}
+                      formattedStartDate={booking.formattedStartDate}
+                      formattedEndDate={booking.formattedEndDate}
+                      hideFooter={true}
+                      hideNotes={true}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-border" />
+
+            {/* Ongoing Bookings Section */}
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                {dictionary.ongoing_bookings} ({ongoingBookings?.length || 0})
+              </h3>
+              <div className="space-y-4">
+                {ongoingBookings?.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {dictionary.no_ongoing_bookings}
+                  </p>
+                ) : (
+                  ongoingBookings?.map((booking) => (
                     <BookingCard
                       key={booking.id}
                       booking={booking}

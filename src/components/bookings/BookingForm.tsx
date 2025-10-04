@@ -133,21 +133,36 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
   const checkForOverlappingBookings = async (startDate: Date, endDate: Date, excludeBookingId?: string) => {
     const supabase = createClient();
     
-    // Format dates for comparison
+    // Format dates for comparison - ensure we're using UTC dates for consistency
     const startDateStr = format(startDate, 'yyyy-MM-dd');
     const endDateStr = format(endDate, 'yyyy-MM-dd');
     
-    console.log('Checking for overlapping bookings:', { startDateStr, endDateStr, excludeBookingId });
+    console.log('Checking for overlapping bookings:', {
+      startDateStr,
+      endDateStr,
+      excludeBookingId,
+      originalStartDate: startDate,
+      originalEndDate: endDate
+    });
+    
+    // Overlap logic:
+    // New booking overlaps with existing if:
+    // new_start < existing_end AND new_end > existing_start
+    // This means we need to adjust the comparison to account for exclusive end dates
+    // Since bookings are stored as full days, we need to use lt/gt instead of lte/gte
     
     // Query for overlapping bookings - check if any booking overlaps with the selected dates
     // Overlap condition: new booking starts before existing booking ends AND new booking ends after existing booking starts
     // This translates to: existing_booking.start_date <= new_booking.end_date AND existing_booking.end_date >= new_booking.start_date
     // Build query conditionally
+    // Correct overlap logic: new booking overlaps with existing if:
+    // new_start < existing_end AND new_end > existing_start
+    // This translates to: existing_booking.start_date < new_booking.end_date AND existing_booking.end_date > new_booking.start_date
     let query = supabase
       .from('bookings')
       .select('id, guest_name, start_date, end_date')
-      .lte('start_date', endDateStr)
-      .gte('end_date', startDateStr)
+      .lt('start_date', endDateStr)  // existing booking starts before new booking ends
+      .gt('end_date', startDateStr)  // existing booking ends after new booking starts
       .limit(1);
     
     // Only add neq filter if excludeBookingId is provided
@@ -181,8 +196,35 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
       
       if (overlappingBooking) {
         console.log('Overlap detected:', overlappingBooking);
+        console.log('Raw dates from database:', {
+          start_date: overlappingBooking.start_date,
+          end_date: overlappingBooking.end_date,
+          start_date_type: typeof overlappingBooking.start_date,
+          end_date_type: typeof overlappingBooking.end_date
+        });
+        
+        // Fix timezone issue - database dates are stored as UTC strings
+        // Parse them as UTC to avoid timezone conversion
+        const startDate = new Date(overlappingBooking.start_date + 'T00:00:00Z');
+        const endDate = new Date(overlappingBooking.end_date + 'T00:00:00Z');
+        
+        console.log('Parsed dates (UTC):', { startDate, endDate });
+        
+        // Use UTC date formatting to avoid timezone issues
+        const startDateStr = format(startDate, 'MMM dd');
+        const endDateStr = format(endDate, 'MMM dd');
+        
+        console.log('Formatted dates for display:', { startDateStr, endDateStr });
+        
+        const description = dictionary.overlapping_booking_details
+          ? dictionary.overlapping_booking_details
+              .replace('{{guest_name}}', overlappingBooking.guest_name)
+              .replace('{{start_date}}', startDateStr)
+              .replace('{{end_date}}', endDateStr)
+          : `These dates overlap with an existing booking for ${overlappingBooking.guest_name} (${startDateStr} - ${endDateStr})`;
+        
         toast.error(dictionary.overlapping_booking_error || 'Booking conflict detected', {
-          description: `These dates overlap with an existing booking for ${overlappingBooking.guest_name} (${format(new Date(overlappingBooking.start_date), 'MMM dd')} - ${format(new Date(overlappingBooking.end_date), 'MMM dd')})`,
+          description,
         });
         return; // Stop form submission
       } else {

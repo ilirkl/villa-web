@@ -35,6 +35,8 @@
   "no_check_outs_today": "No check-outs today",
   "upcoming_check_ins_this_week": "Upcoming Check-ins This Week",
   "no_upcoming_check_ins_this_week": "No upcoming check-ins this week",
+  "ongoing_bookings": "Ongoing Bookings",
+  "no_ongoing_bookings": "No ongoing bookings",
   
   "bookings": "Bookings",
   "loading_bookings": "Loading bookings...",
@@ -128,6 +130,8 @@
   "update_booking": "Update Booking",
   "booking_created": "Booking Created",
   "booking_updated": "Booking Updated",
+  "overlapping_booking_error": "Booking conflict detected",
+  "overlapping_booking_details": "These dates overlap with an existing booking for {{guest_name}} ({{start_date}} - {{end_date}})",
   "monthly_report": {
     "title": "Monthly Financial Report",
     "financial_summary": "Financial Summary",

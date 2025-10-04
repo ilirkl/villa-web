@@ -35,6 +35,8 @@
   "no_check_outs_today": "Nuk ka dalje sot",
   "upcoming_check_ins_this_week": "Hyrjet e Ardhshme Këtë Javë",
   "no_upcoming_check_ins_this_week": "Nuk ka hyrje të ardhshme këtë javë",
+  "ongoing_bookings": "Aktive",
+  "no_ongoing_bookings": "Nuk ka rezervime aktive",
   
   "bookings": "Rezervimet",
   "loading_bookings": "Duke ngarkuar rezervimet...",
@@ -130,6 +132,8 @@
   "update_booking": "Përditëso Rezervimin",
   "booking_created": "Rezervimi u Krijua",
   "booking_updated": "Rezervimi u Përditësua",
+  "overlapping_booking_error": "U zbulua konflikt i rezervimeve",
+  "overlapping_booking_details": "Këto data mbivendosen me një rezervim ekzistues për {{guest_name}} ({{start_date}} - {{end_date}})",
   "monthly_report": {
     "title": "Raporti Financiar Mujor",
     "financial_summary": "Përmbledhje Financiare",
