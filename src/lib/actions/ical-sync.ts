@@ -29,6 +29,28 @@ export async function syncAirbnbIcal(icalUrl: string): Promise<{
       throw new Error('Authentication required');
     }
 
+        // Validate the iCal URL to prevent SSRF
+    let allowedHosts = [
+      'www.airbnb.com',
+      'airbnb.com',
+      'calendar.google.com',
+      'www.booking.com',
+      'booking.com',
+      'www.vrbo.com',
+      'vrbo.com',
+      // Add more trusted domains as necessary
+    ];
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(icalUrl);
+    } catch (e) {
+      throw new Error('Provided iCal URL is not a valid URL');
+    }
+    if (!allowedHosts.includes(parsedUrl.hostname)) {
+      throw new Error(`The specified iCal URL host is not allowed: ${parsedUrl.hostname}`);
+    }
+
+
     // Fetch iCal data
     const response = await fetch(icalUrl);
     if (!response.ok) {
@@ -57,10 +79,38 @@ export async function syncAirbnbIcal(icalUrl: string): Promise<{
         
         // Determine the source based on description or summary
         let source: BookingSource = 'AIRBNB';
+
+        
+        // Helper function to extract URLs from a string and match their host against whitelist
+        function matchesBookingComHost(text?: string): boolean {
+          if (!text) return false;
+          // Simple URL regex (not perfect, but OK for iCal typical cases)
+          const urlRegex = /\bhttps?:\/\/[^\s<>"']+/gi;
+          const allowedHosts = [
+            'booking.com',
+            'www.booking.com'
+          ];
+          const matches = text.match(urlRegex);
+          if (matches) {
+            for (const urlStr of matches) {
+              // Parse hostname
+              try {
+                const hostname = new URL(urlStr).hostname.replace(/^www\./, '');
+                if (allowedHosts.includes(hostname) || allowedHosts.includes('www.' + hostname)) {
+                  return true;
+                }
+              } catch {} // Ignore invalid URLs
+            }
+          }
+          // Fallback: substring match (case-insensitive) on plain text, but only on word boundary
+          const bookingPattern = /\bBooking\.com\b/i;
+          return bookingPattern.test(text);
+        }
+
         
         // Check if it's from Booking.com
-        if (event.description?.includes('Booking.com') || 
-            event.summary?.includes('Booking.com')) {
+        if (matchesBookingComHost(event.description) || 
+            matchesBookingComHost(event.summary)) {
           source = 'BOOKING';
         }
         
@@ -177,6 +227,20 @@ export async function syncBookingComIcal(icalUrl: string): Promise<{
     
     if (userError || !user) {
       throw new Error('Authentication required');
+    }
+
+        // Validate icalUrl to prevent SSRF
+    let urlObj;
+    try {
+      urlObj = new URL(icalUrl);
+    } catch (e) {
+      throw new Error('Invalid icalUrl');
+    }
+    if (
+      urlObj.protocol !== 'https:' ||
+      urlObj.hostname !== 'www.booking.com'
+    ) {
+      throw new Error('Provided iCal URL is not a valid Booking.com link');
     }
 
     // Fetch iCal data

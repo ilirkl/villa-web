@@ -3,6 +3,9 @@ const dictionaries = {
   sq: () => import('../../public/locales/sq/common.json').then((module) => module.default),
 };
 
-export const getDictionary = async (locale: 'en' | 'sq') => {
-  return dictionaries[locale]();
+export const getDictionary = async (locale: string) => {
+  if (locale === 'en' || locale === 'sq') {
+    return dictionaries[locale]();
+  }
+  throw new Error(`Unsupported locale: ${locale}`);
 };
