@@ -8,6 +8,7 @@ import { Plus, Building, ChevronUp } from 'lucide-react';
 import { PropertyForm } from './PropertyForm';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
+import { generatePropertyIcon } from '@/lib/property-utils';
 
 interface Property {
   id: string;
@@ -112,12 +113,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
   };
 
   const getPropertyIcon = (propertyName: string) => {
-    // Simple icon selection based on property name
-    if (propertyName.toLowerCase().includes('villa')) return '🏠';
-    if (propertyName.toLowerCase().includes('apartment')) return '🏢';
-    if (propertyName.toLowerCase().includes('house')) return '🏡';
-    if (propertyName.toLowerCase().includes('studio')) return '🏘️';
-    return '🏠'; // Default icon
+    return generatePropertyIcon(propertyName);
   };
 
   const currentProperty = properties.find(p => p.id === selectedProperty);
@@ -158,8 +154,6 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
         {/* Current Property Icon with Dropdown */}
         {currentProperty && (
           <motion.div
-            role="button"
-            aria-label={`Switch property (currently ${currentProperty.name})`}
             className={cn(
               "relative cursor-pointer outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary rounded-full transition-all",
               "ring-2 ring-[#FF5A5F] ring-offset-2"
@@ -180,11 +174,14 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
           >
             {/* Property avatar */}
-            <div className={cn(
-              "w-full h-full rounded-full overflow-hidden border-2 border-white shadow-md flex items-center justify-center text-lg relative",
-              "bg-[#FF5A5F]/10"
-            )}>
-              {getPropertyIcon(currentProperty.name)}
+            <div
+              className={cn(
+                "w-full h-full rounded-full overflow-hidden border-2 border-white shadow-md flex items-center justify-center text-lg font-bold relative",
+                "bg-[#FF5A5F]/10"
+              )}
+              style={{ backgroundColor: getPropertyIcon(currentProperty.name).color }}
+            >
+              {getPropertyIcon(currentProperty.name).initial}
               <ChevronUp
                 className={cn(
                   "absolute bottom-0 right-0 w-3 h-3 text-[#FF5A5F] bg-white rounded-full p-0.5 shadow-sm transition-transform",
@@ -193,23 +190,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
               />
             </div>
 
-            {/* Tooltip */}
-            <AnimatePresence>
-              {hoveredProperty === currentProperty.id && (
-                <motion.div
-                  role="tooltip"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  transition={{ duration: 0.18 }}
-                  className="absolute left-1/2 top-full mt-2 z-50"
-                >
-                  <div className="transform -translate-x-1/2 whitespace-nowrap rounded-md bg-black text-white text-xs px-2 py-1 shadow-lg">
-                    {currentProperty.name}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Tooltip removed as requested */}
           </motion.div>
         )}
 
@@ -227,8 +208,6 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
                 {properties.map((property) => (
                   <motion.div
                     key={property.id}
-                    role="button"
-                    aria-label={`Switch to ${property.name}`}
                     className={cn(
                       "flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors",
                       "hover:bg-gray-100 dark:hover:bg-gray-700",
@@ -241,8 +220,11 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="w-8 h-8 rounded-full bg-background border-2 border-white shadow-sm flex items-center justify-center text-sm">
-                      {getPropertyIcon(property.name)}
+                    <div
+                      className="w-8 h-8 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-sm font-bold"
+                      style={{ backgroundColor: getPropertyIcon(property.name).color }}
+                    >
+                      {getPropertyIcon(property.name).initial}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm truncate">
@@ -259,8 +241,6 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
                 
                 {/* Add New Property Button */}
                 <motion.div
-                  role="button"
-                  aria-label="Add new property"
                   className="flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 pt-3 mt-2"
                   onClick={() => {
                     setShowPropertyForm(true);
@@ -286,6 +266,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
         open={showPropertyForm}
         onOpenChange={setShowPropertyForm}
         onSuccess={handlePropertyCreated}
+        userPropertyCount={properties.length}
         dictionary={dictionary}
       />
     </div>

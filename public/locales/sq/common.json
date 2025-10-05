@@ -236,6 +236,8 @@
   "must_be_logged_in": "Duhet të jeni të kyçur për të krijuar një pronë",
   "failed_to_save_property": "Dështoi ruajtja e pronës. Ju lutemi provoni përsëri.",
   "delete_property_confirmation": "Ky veprim nuk mund të kthehet. Kjo do të fshijë përgjithmonë pronën \"{propertyName}\".",
+  "property_limit_reached": "Keni arritur kufirin maksimal prej 5 pronash",
+  "property_limit_reached_message": "Keni arritur kufirin maksimal prej 5 pronash. Ju lutemi fshini një pronë ekzistuese para se të krijoni një të re.",
   "update": "Përditëso",
   "create": "Krijo"
 }

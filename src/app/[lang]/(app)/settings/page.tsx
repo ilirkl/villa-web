@@ -1147,6 +1147,7 @@ export default function SettingsPage() {
           onOpenChange={setIsPropertyModalOpen}
           onSuccess={handlePropertyFormSuccess}
           property={editingProperty || undefined}
+          userPropertyCount={properties.length}
           dictionary={dictionary}
         />
       </div>

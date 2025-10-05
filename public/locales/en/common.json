@@ -219,6 +219,8 @@
   "must_be_logged_in": "You must be logged in to create a property",
   "failed_to_save_property": "Failed to save property. Please try again.",
   "delete_property_confirmation": "This action cannot be undone. This will permanently delete the property \"{propertyName}\".",
+  "property_limit_reached": "You have reached the maximum limit of 5 properties",
+  "property_limit_reached_message": "You have reached the maximum limit of 5 properties. Please delete an existing property before creating a new one.",
   "update": "Update",
   "create": "Create"
 }

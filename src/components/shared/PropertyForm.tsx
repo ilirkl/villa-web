@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { generatePropertyIcon } from '@/lib/property-utils';
 
 interface PropertyFormProps {
   open: boolean;
@@ -24,14 +25,18 @@ interface PropertyFormProps {
     description?: string;
   };
   dictionary?: any;
+  userPropertyCount?: number;
 }
 
-export function PropertyForm({ open, onOpenChange, onSuccess, property, dictionary = {} }: PropertyFormProps) {
+export function PropertyForm({ open, onOpenChange, onSuccess, property, userPropertyCount = 0, dictionary = {} }: PropertyFormProps) {
   const [name, setName] = useState(property?.name || '');
   const [address, setAddress] = useState(property?.address || '');
   const [description, setDescription] = useState(property?.description || '');
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
+
+  // Check if user has reached the property limit (5 properties)
+  const hasReachedLimit = !property && userPropertyCount >= 5;
 
   const resetForm = () => {
     setName(property?.name || '');
@@ -44,6 +49,12 @@ export function PropertyForm({ open, onOpenChange, onSuccess, property, dictiona
     
     if (!name.trim()) {
       alert(dictionary.property_name_required || 'Property name is required');
+      return;
+    }
+
+    // Check property limit for new properties
+    if (!property && hasReachedLimit) {
+      alert(dictionary.property_limit_reached || 'You have reached the maximum limit of 5 properties');
       return;
     }
 
@@ -102,6 +113,9 @@ export function PropertyForm({ open, onOpenChange, onSuccess, property, dictiona
     onOpenChange(newOpen);
   };
 
+  // Generate property icon preview
+  const propertyIcon = generatePropertyIcon(name || '?');
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -111,7 +125,25 @@ export function PropertyForm({ open, onOpenChange, onSuccess, property, dictiona
           </DialogTitle>
         </DialogHeader>
         
+        {hasReachedLimit && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
+            <p className="text-yellow-800 text-sm">
+              {dictionary.property_limit_reached_message || 'You have reached the maximum limit of 5 properties. Please delete an existing property before creating a new one.'}
+            </p>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Property Icon Preview */}
+          <div className="flex items-center justify-center mb-4">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md"
+              style={{ backgroundColor: propertyIcon.color }}
+            >
+              {propertyIcon.initial}
+            </div>
+          </div>
+          
           <div className="space-y-2">
             <Label htmlFor="name">{dictionary.property_name || 'Property Name'} *</Label>
             <Input
@@ -120,6 +152,7 @@ export function PropertyForm({ open, onOpenChange, onSuccess, property, dictiona
               onChange={(e) => setName(e.target.value)}
               placeholder={dictionary.property_name_placeholder || 'Enter property name'}
               required
+              disabled={hasReachedLimit && !property}
             />
           </div>
           
@@ -130,6 +163,7 @@ export function PropertyForm({ open, onOpenChange, onSuccess, property, dictiona
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder={dictionary.property_address_placeholder || 'Enter property address'}
+              disabled={hasReachedLimit && !property}
             />
           </div>
           
@@ -141,6 +175,7 @@ export function PropertyForm({ open, onOpenChange, onSuccess, property, dictiona
               onChange={(e) => setDescription(e.target.value)}
               placeholder={dictionary.property_description_placeholder || 'Enter property description (optional)'}
               rows={3}
+              disabled={hasReachedLimit && !property}
             />
           </div>
           
@@ -153,7 +188,10 @@ export function PropertyForm({ open, onOpenChange, onSuccess, property, dictiona
             >
               {dictionary.cancel || 'Cancel'}
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button
+              type="submit"
+              disabled={isLoading || (hasReachedLimit && !property)}
+            >
               {isLoading ? (dictionary.saving || 'Saving...') : (property ? (dictionary.update || 'Update') : (dictionary.create || 'Create'))}
             </Button>
           </div>
