@@ -44,11 +44,29 @@ export function generatePropertyIcon(name: string): {
 }
 
 /**
- * Gets the selected property ID from cookies (for server-side use)
+ * Gets the selected property ID from localStorage or cookies (for client-side use)
  */
 export async function getSelectedPropertyId(): Promise<string | null> {
-  // This function is used in server components to get the selected property ID from cookies
-  // The actual implementation would depend on your server-side cookie handling
-  // For now, we'll return null and let the calling code handle the fallback
+  // Try localStorage first (client-side)
+  if (typeof window !== 'undefined') {
+    const savedPropertyId = localStorage.getItem('selectedPropertyId');
+    if (savedPropertyId) {
+      return savedPropertyId;
+    }
+    
+    // If not in localStorage, try cookies
+    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+      const [name, value] = cookie.trim().split('=');
+      acc[name] = value;
+      return acc;
+    }, {} as Record<string, string>);
+    
+    const cookiePropertyId = cookies['selectedPropertyId'];
+    if (cookiePropertyId) {
+      return cookiePropertyId;
+    }
+  }
+  
+  // Return null if no property is selected
   return null;
 }

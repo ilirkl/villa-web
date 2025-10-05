@@ -85,15 +85,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string>('');
-
-  useEffect(() => {
-    const fetchCsrfToken = async () => {
-      const token = await getCsrfToken();
-      setCsrfToken(token);
-    };
-    fetchCsrfToken();
-  }, []);
-
+  const [propertyId, setPropertyId] = useState<string>('');
 
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(FormSchema),
@@ -107,9 +99,27 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
       prepayment: initialData?.prepayment ?? 0,
       source: initialData?.source ?? 'DIRECT',
       notes: initialData?.notes ?? '',
-      property_id: getSelectedPropertyId() ?? '',
+      property_id: propertyId,
     },
   });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = await getCsrfToken();
+      setCsrfToken(token);
+      
+      const selectedPropertyId = await getSelectedPropertyId();
+      setPropertyId(selectedPropertyId ?? '');
+    };
+    fetchData();
+  }, []);
+
+  // Update form property_id when propertyId changes
+  useEffect(() => {
+    if (propertyId) {
+      form.setValue('property_id', propertyId);
+    }
+  }, [propertyId, form]);
 
   const initialState: BookingState = { message: null, errors: {} };
   const [state, dispatch] = useFormState(createOrUpdateBooking, initialState);

@@ -77,23 +77,7 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
   const { lang } = useParams();
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string>('');
-
-  // Fetch CSRF token on component mount
-  useEffect(() => {
-    // Get CSRF token from cookie (client-side)
-    const fetchCsrfToken = async () => { // Renamed getCsrfToken to fetchCsrfToken to avoid confusion with imported getCsrfToken
-      try {
-        const response = await fetch('/api/csrf'); // Assuming this is where your CSRF token is exposed
-        const data = await response.json();
-        setCsrfToken(data.csrfToken);
-      } catch (error) {
-        console.error("Failed to fetch CSRF token:", error);
-        toast.error(dictionary.error_security || "Security error");
-      }
-    };
-
-    fetchCsrfToken();
-  }, [dictionary]);
+  const [propertyId, setPropertyId] = useState<string>('');
 
   // Find the "Furnizim" category if it exists
   const furnizimCategory = categories.find(cat => cat.name === "Furnizim");
@@ -121,9 +105,35 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
       date: initialDate, // Ensure this is a Date object
       category_id: initialData?.category_id ?? furnizimCategory?.id ?? undefined,
       description: initialData?.description ?? '',
-      property_id: getSelectedPropertyId() ?? '',
+      property_id: propertyId,
     },
   });
+
+  // Fetch CSRF token and property ID on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/csrf');
+        const data = await response.json();
+        setCsrfToken(data.csrfToken);
+        
+        const selectedPropertyId = await getSelectedPropertyId();
+        setPropertyId(selectedPropertyId ?? '');
+      } catch (error) {
+        console.error("Failed to fetch CSRF token:", error);
+        toast.error(dictionary.error_security || "Security error");
+      }
+    };
+
+    fetchData();
+  }, [dictionary]);
+
+  // Update form property_id when propertyId changes
+  useEffect(() => {
+    if (propertyId) {
+      form.setValue('property_id', propertyId);
+    }
+  }, [propertyId, form]);
 
   // Log the form's default values for debugging
   console.log("Form default values:", form.getValues());
@@ -178,10 +188,9 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
       data.append('description', formData.description);
     }
 
-    // Add property_id
-    const selectedPropertyId = getSelectedPropertyId();
-    if (selectedPropertyId) {
-      data.append('property_id', selectedPropertyId);
+    // Add property_id - use the state value instead of calling the async function
+    if (propertyId) {
+      data.append('property_id', propertyId);
     }
 
     // Add CSRF token
