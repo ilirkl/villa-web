@@ -42,3 +42,13 @@ export function generatePropertyIcon(name: string): {
     color: getPropertyColor(name)
   };
 }
+
+/**
+ * Gets the selected property ID from cookies (for server-side use)
+ */
+export async function getSelectedPropertyId(): Promise<string | null> {
+  // This function is used in server components to get the selected property ID from cookies
+  // The actual implementation would depend on your server-side cookie handling
+  // For now, we'll return null and let the calling code handle the fallback
+  return null;
+}
