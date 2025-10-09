@@ -85,6 +85,18 @@ export function ExpenseCard({ expense, onDelete, onEdit }: ExpenseCardProps) {
     }
   };
 
+  // Add function to determine payment status badge styling (consistent with bookings)
+  const getPaymentStatusBadgeStyle = (status: string) => {
+    switch (status) {
+      case 'Paid':
+        return 'bg-green-100 text-green-800 border border-green-200'; // Green for paid
+      case 'Pending':
+        return 'bg-yellow-100 text-yellow-800 border border-yellow-200'; // Yellow for pending
+      default:
+        return 'bg-gray-100 text-gray-800 border border-gray-200'; // Gray for unknown
+    }
+  };
+
   const handleDelete = async () => {
     const result = await deleteExpense(expense.id);
     if (result.error) {
@@ -113,6 +125,11 @@ export function ExpenseCard({ expense, onDelete, onEdit }: ExpenseCardProps) {
                 {expense.description}
               </CardDescription>
             )}
+            <div className="mt-2 flex gap-2">
+              <Badge className={getPaymentStatusBadgeStyle(expense.payment_status)}>
+                {expense.payment_status === 'Paid' ? (dictionary.paid || 'Paid') : (dictionary.pending || 'Pending')}
+              </Badge>
+            </div>
           </div>
           <div className="text-right">
             <div className="text-[#ff5a5f] font-bold">

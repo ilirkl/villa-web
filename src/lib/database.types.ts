@@ -41,6 +41,7 @@ export interface Database {
           guest_name: string
           id: string
           notes: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
           prepayment: number
           source: Database["public"]["Enums"]["booking_source"]
           start_date: string
@@ -55,6 +56,7 @@ export interface Database {
           guest_name: string
           id?: string
           notes?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           prepayment?: number
           source?: Database["public"]["Enums"]["booking_source"]
           start_date: string
@@ -69,6 +71,7 @@ export interface Database {
           guest_name?: string
           id?: string
           notes?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           prepayment?: number
           source?: Database["public"]["Enums"]["booking_source"]
           start_date?: string
@@ -106,6 +109,7 @@ export interface Database {
           description: string | null
           id: string
           months: number[] | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
           updated_at: string | null
           user_id: string | null
         }
@@ -117,6 +121,7 @@ export interface Database {
           description?: string | null
           id?: string
           months?: number[] | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string | null
           user_id?: string | null
         }
@@ -128,6 +133,7 @@ export interface Database {
           description?: string | null
           id?: string
           months?: number[] | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string | null
           user_id?: string | null
         }
@@ -195,6 +201,7 @@ export interface Database {
     }
     Enums: {
       booking_source: "AIRBNB" | "BOOKING" | "DIRECT"
+      payment_status: "Paid" | "Pending"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -314,6 +321,7 @@ export const Constants = {
   public: {
     Enums: {
       booking_source: ["AIRBNB", "BOOKING", "DIRECT"],
+      payment_status: ["Paid", "Pending"],
     },
   },
 } as const

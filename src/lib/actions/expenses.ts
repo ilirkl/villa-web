@@ -18,6 +18,9 @@ const ExpenseSchema = z.object({
     .min(0.01, { message: 'Amount must be positive.' }),
   date: z.coerce.date({ required_error: 'Please select a date.' }), // Coerce to Date object
   description: z.string().optional().nullable(),
+  payment_status: z.enum(["Paid", "Pending"] as const, {
+    errorMap: (issue, ctx) => ({ message: 'Please select a valid payment status.' })
+  }).default('Pending'),
   property_id: z.string().uuid('Property is required'),
   // Optional: Add months validation if you include it in your form
   // months: z.array(z.coerce.number().int().min(1).max(12))

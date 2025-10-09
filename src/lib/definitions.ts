@@ -14,6 +14,7 @@ export type Booking = {
   start_date: string;
   end_date: string;
   source: "DIRECT" | "AIRBNB" | "BOOKING";
+  payment_status: "Paid" | "Pending";
   total_amount: number;
   prepayment: number;
   notes: string | null;

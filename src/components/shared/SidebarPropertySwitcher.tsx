@@ -148,6 +148,47 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
     );
   }
 
+  // If user has only one property, show it without dropdown functionality
+  if (properties.length === 1) {
+    const singleProperty = properties[0];
+    return (
+      <div className="flex items-center justify-center">
+        <div className="relative">
+          {/* Single Property Icon - No dropdown */}
+          <motion.div
+            className={cn(
+              "relative outline-none rounded-full transition-all",
+              "ring-2 ring-[#FF5A5F] ring-offset-2"
+            )}
+            style={{
+              width: 48,
+              height: 48,
+            }}
+          >
+            {/* Property avatar */}
+            <div
+              className={cn(
+                "w-full h-full rounded-full overflow-hidden border-2 border-white shadow-md flex items-center justify-center text-lg font-bold relative",
+                "bg-[#FF5A5F]/10"
+              )}
+              style={{ backgroundColor: getPropertyIcon(singleProperty.name).color }}
+            >
+              {getPropertyIcon(singleProperty.name).initial}
+            </div>
+          </motion.div>
+        </div>
+        
+        <PropertyForm
+          open={showPropertyForm}
+          onOpenChange={setShowPropertyForm}
+          onSuccess={handlePropertyCreated}
+          userPropertyCount={properties.length}
+          dictionary={dictionary}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-center">
       <div className="relative">

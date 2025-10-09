@@ -118,12 +118,18 @@ export default function ExpensesPage() {
       try {
         const supabase = createClient();
         
-        // Get the selected property ID
-        const { getSelectedPropertyId } = await import('@/lib/property-utils');
-        const selectedPropertyId = await getSelectedPropertyId();
+        // Get properties with auto-selection for single property case
+        const { getPropertiesWithAutoSelection } = await import('@/lib/property-utils');
+        const { properties, selectedPropertyId } = await getPropertiesWithAutoSelection(supabase);
+        
+        if (properties.length === 0) {
+          setError('No properties found. Please add a property first.');
+          setIsLoading(false);
+          return;
+        }
         
         if (!selectedPropertyId) {
-          setError('No property selected');
+          setError('Please select a property');
           setIsLoading(false);
           return;
         }
@@ -317,6 +323,18 @@ export default function ExpensesPage() {
     }
   };
 
+  // Add function to get payment status badge style (consistent with bookings)
+  const getPaymentStatusBadgeStyle = (status: string) => {
+    switch (status) {
+      case 'Paid':
+        return 'bg-green-100 text-green-800 border border-green-200'; // Green for paid
+      case 'Pending':
+        return 'bg-yellow-100 text-yellow-800 border border-yellow-200'; // Yellow for pending
+      default:
+        return 'bg-gray-100 text-gray-800 border border-gray-200'; // Gray for unknown
+    }
+  };
+
   // Add function to render expense table
   function renderExpenseTable(): JSX.Element {
     return (
@@ -326,6 +344,7 @@ export default function ExpensesPage() {
             <TableHead>{dictionary.date || 'Date'}</TableHead>
             <TableHead>{dictionary.description || 'Description'}</TableHead>
             <TableHead>{dictionary.category || 'Category'}</TableHead>
+            <TableHead>{dictionary.payment_status || 'Payment Status'}</TableHead>
             <TableHead className="text-right">{dictionary.amount || 'Amount'}</TableHead>
             <TableHead className="text-right">{dictionary.actions || 'Actions'}</TableHead>
           </TableRow>
@@ -347,10 +366,15 @@ export default function ExpensesPage() {
                     {categoryName}
                   </span>
                 </TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusBadgeStyle(expense.payment_status)}`}>
+                    {expense.payment_status === 'Paid' ? (dictionary.paid || 'Paid') : (dictionary.pending || 'Pending')}
+                  </span>
+                </TableCell>
                 <TableCell className="text-right">€{expense.amount?.toLocaleString()}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <button 
+                    <button
                       onClick={() => handleEditExpense(expense.id)}
                       className="p-0 bg-transparent border-none"
                     >
@@ -360,7 +384,7 @@ export default function ExpensesPage() {
                     </button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <button 
+                        <button
                           className="p-0 bg-transparent border-none"
                         >
                           <Trash2 className="h-5 w-5 text-[#ff5a5f] cursor-pointer" />
@@ -376,7 +400,7 @@ export default function ExpensesPage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>{dictionary.cancel || 'Cancel'}</AlertDialogCancel>
-                          <AlertDialogAction 
+                          <AlertDialogAction
                             onClick={() => handleDelete(expense.id)}
                             style={{ backgroundColor: '#FF5A5F', color: 'white' }}
                             className='hover:bg-[#FF5A5F]/90'

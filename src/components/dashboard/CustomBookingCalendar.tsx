@@ -161,6 +161,7 @@ const CustomBookingCalendar: React.FC<CustomBookingCalendarProps> = ({ initialEv
       total_amount: event.extendedProps?.total_amount || 0,
       prepayment: event.extendedProps?.prepayment || 0,
       notes: event.extendedProps?.notes || '',
+      payment_status: event.extendedProps?.payment_status || 'Pending',
       created_at: null,
       updated_at: null,
       user_id: null,

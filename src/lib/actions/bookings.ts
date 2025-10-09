@@ -20,6 +20,9 @@ const BookingSchema = z.object({
     errorMap: (issue, ctx) => ({ message: 'Please select a valid booking source.' }) // Optional custom error
  }),
  // ^^^ CHANGE HERE ^^^
+ payment_status: z.enum(Constants.public.Enums.payment_status, {
+    errorMap: (issue, ctx) => ({ message: 'Please select a valid payment status.' })
+ }).default('Pending'),
  notes: z.string().optional().nullable(),
  property_id: z.string().uuid('Property is required'),
 });

@@ -36,13 +36,14 @@ import { useState, useEffect } from 'react';
 import { getCsrfToken, resetCsrfToken } from '@/lib/csrf-client';
 
 interface BookingCardProps {
-  booking: Pick<Booking, 'id' | 'start_date' | 'end_date' | 'guest_name' | 'source' | 'total_amount' | 'prepayment' | 'notes'>;
+  booking: Pick<Booking, 'id' | 'start_date' | 'end_date' | 'guest_name' | 'source' | 'total_amount' | 'prepayment' | 'notes' | 'payment_status'>;
   formattedStartDate: string;
   formattedEndDate: string;
   hideFooter?: boolean;
   hideNotes?: boolean;
   onDelete?: () => void;
   onEdit?: () => void;
+  dictionary?: any;
 }
 
 export function BookingCard({
@@ -52,7 +53,8 @@ export function BookingCard({
   hideFooter = false,
   hideNotes = false,
   onDelete,
-  onEdit
+  onEdit,
+  dictionary = {}
 }: BookingCardProps) {
   const [csrfToken, setCsrfToken] = useState<string>('');
   const [isTokenLoaded, setIsTokenLoaded] = useState(false);
@@ -98,6 +100,18 @@ export function BookingCard({
         return 'bg-[#003580]/10 text-[#003580] border-[#003580]/20'; // Booking.com blue
       default:
         return '';
+    }
+  };
+
+  // Function to determine payment status badge styling
+  const getPaymentStatusBadgeStyle = (status: string) => {
+    switch (status) {
+      case 'Paid':
+        return 'bg-green-100 text-green-800 border-green-200'; // Green for paid
+      case 'Pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200'; // Yellow for pending
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200'; // Gray for unknown
     }
   };
 
@@ -181,7 +195,11 @@ export function BookingCard({
             <CardDescription>
               {formattedStartDate} - {formattedEndDate}
             </CardDescription>
-            
+            <div className="mt-2 flex gap-2">
+              <Badge className={getPaymentStatusBadgeStyle(booking.payment_status)}>
+                {booking.payment_status === 'Paid' ? (dictionary.paid || 'Paid') : (dictionary.pending || 'Pending')}
+              </Badge>
+            </div>
           </div>
           <div className="text-right">
             <div className="text-[#ff5a5f] font-bold">

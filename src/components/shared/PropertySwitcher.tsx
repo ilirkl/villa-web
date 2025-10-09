@@ -142,6 +142,40 @@ export function PropertySwitcher({ onPropertyChange, dictionary = {} }: Property
     );
   }
 
+  // If user has only one property, show it as selected without dropdown
+  if (properties.length === 1) {
+    const singleProperty = properties[0];
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-3 py-2 text-sm">
+          <Building className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium">{singleProperty.name}</span>
+          {singleProperty.address && (
+            <span className="text-xs text-muted-foreground">
+              ({singleProperty.address})
+            </span>
+          )}
+        </div>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowPropertyForm(true)}
+          className="flex items-center gap-1"
+        >
+          <Plus className="h-3 w-3" />
+        </Button>
+        
+        <PropertyForm
+          open={showPropertyForm}
+          onOpenChange={setShowPropertyForm}
+          onSuccess={handlePropertyCreated}
+          dictionary={dictionary}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2">
       <div className="flex items-center gap-2">

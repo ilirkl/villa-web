@@ -47,6 +47,9 @@ const FormSchema = z.object({
   source: z.enum(Constants.public.Enums.booking_source, {
     errorMap: (issue, ctx) => ({ message: 'Please select a valid booking source.' })
   }),
+  payment_status: z.enum(Constants.public.Enums.payment_status, {
+    errorMap: (issue, ctx) => ({ message: 'Please select a valid payment status.' })
+  }),
   notes: z.string().nullable().optional().transform(val =>
     val ? DOMPurify.sanitize(val) : val),
   property_id: z.string().uuid('Property is required'),
@@ -98,6 +101,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
       total_amount: initialData?.total_amount ?? 0,
       prepayment: initialData?.prepayment ?? 0,
       source: initialData?.source ?? 'DIRECT',
+      payment_status: initialData?.payment_status ?? 'Pending',
       notes: initialData?.notes ?? '',
       property_id: propertyId,
     },
@@ -475,6 +479,33 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
             )}
           />
         </div>
+
+        {/* Payment Status */}
+        <FormField
+          control={form.control}
+          name="payment_status"
+          render={({ field }) => (
+            <FormItem className="w-[200px]">
+              <FormLabel>{dictionary.payment_status || "Payment Status"}</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Pending">
+                    {dictionary.pending || "Pending"}
+                  </SelectItem>
+                  <SelectItem value="Paid">
+                    {dictionary.paid || "Paid"}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* Amounts */}
         <div className="flex gap-4">

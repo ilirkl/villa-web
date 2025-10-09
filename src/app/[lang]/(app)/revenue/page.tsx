@@ -189,13 +189,24 @@ async function RevenueData({ params }: { params: { lang: string } }) {
           throw new Error('Authentication required');
         }
 
-        // Get the selected property ID from cookies
+        // Get the selected property ID from cookies or check for single property
         const { cookies } = await import('next/headers');
         const cookieStore = cookies();
-        const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
+        let selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
 
+        // If no property selected, check if user has only one property
         if (!selectedPropertyId) {
-            throw new Error('No property selected');
+            const { data: userProperties } = await supabase
+                .from('properties')
+                .select('id')
+                .eq('user_id', user.id);
+            
+            // If user has only one property, automatically use it
+            if (userProperties && userProperties.length === 1) {
+                selectedPropertyId = userProperties[0].id;
+            } else {
+                throw new Error('No property selected');
+            }
         }
 
         // Fetch bookings, expenses, and categories concurrently
@@ -517,20 +528,27 @@ async function RevenueData({ params }: { params: { lang: string } }) {
 // --- Main Page Component ---
 // Wraps the data fetching component with Suspense for loading state
 export default async function RevenuePage({ params }: { params: { lang: string } }) {
-    const dictionary = await getDictionary(params.lang as 'en' | 'sq');
-    
-    return (
-        // Main page container with padding, including bottom padding
-        <div className="p-2 md:p-6 pb-20"> {/* Reduced padding on mobile */}
-            {/* Page Title */}
-            <h3 className="text-xl font-semibold mb-1 hidden">
-                {dictionary.finances}
-            </h3>
-            {/* Suspense handles the loading state while RevenueData fetches */}
-            <Suspense fallback={<div className="text-center p-4">{dictionary.loading_revenue_data}</div>}>
-                {/* Render the server component that fetches and processes data */}
-                <RevenueData params={params} />
-            </Suspense>
-        </div>
-    );
+  const dictionary = await getDictionary(params.lang as 'en' | 'sq');
+  
+  return (
+    // Main page container with padding, including bottom padding
+    <div className="p-2 md:p-6 pb-20"> {/* Reduced padding on mobile */}
+      {/* Page Title and Cash Flow Button */}
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-semibold hidden">
+          {dictionary.finances}
+        </h3>
+        <Button asChild className="bg-blue-600 hover:bg-blue-700">
+          <a href={`/${params.lang}/cash-flow`}>
+            {dictionary.cash_flow_report || 'Cash Flow Report'}
+          </a>
+        </Button>
+      </div>
+      {/* Suspense handles the loading state while RevenueData fetches */}
+      <Suspense fallback={<div className="text-center p-4">{dictionary.loading_revenue_data}</div>}>
+        {/* Render the server component that fetches and processes data */}
+        <RevenueData params={params} />
+      </Suspense>
+    </div>
+  );
 }

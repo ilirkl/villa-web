@@ -130,13 +130,29 @@ export default async function MonthlyReportPage({ params }: PageProps) {
     let categoryMap: Map<string, string> = new Map();
 
     try {
-        // Get the selected property ID from cookies
+        // Get the selected property ID from cookies or check for single property
         const { cookies } = await import('next/headers');
         const cookieStore = cookies();
-        const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
+        let selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
 
+        // If no property selected, check if user has only one property
         if (!selectedPropertyId) {
-            throw new Error('No property selected');
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: userProperties } = await supabase
+                    .from('properties')
+                    .select('id')
+                    .eq('user_id', user.id);
+                
+                // If user has only one property, automatically use it
+                if (userProperties && userProperties.length === 1) {
+                    selectedPropertyId = userProperties[0].id;
+                } else {
+                    throw new Error('No property selected');
+                }
+            } else {
+                throw new Error('No property selected');
+            }
         }
 
         // Fetch bookings, expenses, and categories concurrently

@@ -70,3 +70,50 @@ export async function getSelectedPropertyId(): Promise<string | null> {
   // Return null if no property is selected
   return null;
 }
+
+/**
+ * Gets the user's properties and automatically selects the only property if user has just one
+ */
+export async function getPropertiesWithAutoSelection(supabase: any): Promise<{
+  properties: any[];
+  selectedPropertyId: string | null;
+}> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { properties: [], selectedPropertyId: null };
+    }
+
+    const { data, error } = await supabase
+      .from('properties')
+      .select('id, name, address, is_active')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    const properties = data || [];
+    
+    // If user has only one property, automatically select it
+    if (properties.length === 1) {
+      const singleProperty = properties[0];
+      
+      // Save to localStorage and cookies for consistency
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('selectedPropertyId', singleProperty.id);
+        document.cookie = `selectedPropertyId=${singleProperty.id}; path=/; max-age=31536000; SameSite=Lax`;
+      }
+      
+      return { properties, selectedPropertyId: singleProperty.id };
+    }
+    
+    // For multiple properties, use existing selection logic
+    const selectedPropertyId = await getSelectedPropertyId();
+    
+    return { properties, selectedPropertyId };
+  } catch (error) {
+    console.error('Error loading properties:', error);
+    return { properties: [], selectedPropertyId: null };
+  }
+}

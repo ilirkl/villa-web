@@ -51,16 +51,28 @@ export default async function DashboardPage({ params }: { params: { lang: string
   // Get selected property from cookies
   const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
   
-  // If no property selected, get user's default property
+  // If no property selected, get user's default property or check for single property
   let propertyId = selectedPropertyId;
   if (!propertyId) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('default_property_id')
-      .eq('id', user.id)
-      .single();
+    // First check if user has only one property
+    const { data: userProperties } = await supabase
+      .from('properties')
+      .select('id')
+      .eq('user_id', user.id);
     
-    propertyId = profile?.default_property_id || null;
+    // If user has only one property, automatically use it
+    if (userProperties && userProperties.length === 1) {
+      propertyId = userProperties[0].id;
+    } else {
+      // Otherwise, use the default property from profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('default_property_id')
+        .eq('id', user.id)
+        .single();
+      
+      propertyId = profile?.default_property_id || null;
+    }
   }
 
   // Get today's date boundaries (use UTC for consistency if needed, but date comparison should be fine)
@@ -77,14 +89,14 @@ export default async function DashboardPage({ params }: { params: { lang: string
   // Fetch bookings for calendar with explicit user and property filtering
   const { data: bookingsData, error: calendarError } = await supabase
     .from('bookings')
-    .select('id, start_date, end_date, guest_name, source, total_amount, prepayment, notes')
+    .select('id, start_date, end_date, guest_name, source, total_amount, prepayment, notes, payment_status')
     .eq('user_id', user.id)
     .eq('property_id', propertyId);
 
   // Fetch today's check-ins with user and property filtering
   const { data: todayCheckInsData, error: checkInsError } = await supabase
     .from('bookings')
-    .select('id, start_date, end_date, guest_name, source, total_amount, prepayment, notes')
+    .select('id, start_date, end_date, guest_name, source, total_amount, prepayment, notes, payment_status')
     .eq('user_id', user.id)
     .eq('property_id', propertyId)
     .eq('start_date', todayDateString);
