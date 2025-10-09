@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getDictionary } from '@/lib/dictionary';
 import { formatCurrency } from '@/lib/utils';
+import Image from 'next/image';
 
 // Define the colors to match existing source colors in the app
 const SOURCE_COLORS = {
@@ -108,6 +109,64 @@ export default function BookingsBySourceChart({
     return null;
   };
 
+  // Custom legend component with icons - using unique sources from data
+  const CustomLegend = () => {
+    // Get unique sources from the data
+    const uniqueSources = data.reduce((acc: any[], item) => {
+      if (!acc.find(source => source.name === item.name)) {
+        acc.push(item);
+      }
+      return acc;
+    }, []);
+
+    return (
+      <div className="flex justify-center items-center gap-4 mt-4">
+        {uniqueSources.map((item, index) => {
+          let iconSrc = '';
+          let altText = '';
+          
+          switch (item.name) {
+            case 'AIRBNB':
+              iconSrc = '/airbnb-icon.svg';
+              altText = 'Airbnb';
+              break;
+            case 'BOOKING':
+              iconSrc = '/booking-icon.svg';
+              altText = 'Booking.com';
+              break;
+            case 'DIRECT':
+              iconSrc = '/euro-icon.svg';
+              altText = 'Cash';
+              break;
+            default:
+              iconSrc = '';
+              altText = item.name;
+          }
+          
+          return (
+            <div key={`legend-${index}`} className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: item.color }}
+              />
+              {iconSrc ? (
+                <Image
+                  src={iconSrc}
+                  alt={altText}
+                  width={16}
+                  height={16}
+                  className="h-4 w-4"
+                />
+              ) : (
+                <span className="text-xs">{item.name}</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -152,15 +211,8 @@ export default function BookingsBySourceChart({
               </Pie>
               
               <Tooltip content={<CustomTooltip />} />
-              <Legend 
-                payload={data.map(item => ({
-                  value: item.name,
-                  type: 'circle',
-                  color: item.color,
-                }))}
-                layout="horizontal"
-                verticalAlign="bottom"
-                align="center"
+              <Legend
+                content={<CustomLegend />}
               />
             </PieChart>
           </ResponsiveContainer>

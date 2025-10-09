@@ -25,22 +25,31 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
     // Check if we have translations in a different structure
     console.log('Dictionary keys:', Object.keys(dictionary));
 
-    // Get the selected property ID from cookies
-    const { cookies } = await import('next/headers');
-    const cookieStore = cookies();
-    const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
+    // Fetch all properties for the user to create a lookup map
+    console.log('Fetching properties data...');
+    const { data: properties, error: propertiesError } = await supabase
+      .from('properties')
+      .select('id, name')
+      .eq('user_id', user.id);
 
-    if (!selectedPropertyId) {
-      throw new Error('No property selected');
+    if (propertiesError) {
+      throw new Error(`Failed to fetch properties: ${propertiesError.message}`);
     }
+    console.log(`Retrieved ${properties?.length || 0} properties`);
+
+    // Create a map of property IDs to names
+    const propertyMap = new Map();
+    properties?.forEach(property => {
+      propertyMap.set(property.id, property.name);
+    });
 
     console.log('Fetching bookings data...');
-    // Fetch bookings with explicit user_id check and property filter
+    // Fetch ALL bookings for the user (from all properties)
     const { data: bookings, error: bookingsError } = await supabase
       .from('bookings')
-      .select('guest_name, start_date, end_date, total_amount, prepayment, notes, source')
+      .select('guest_name, start_date, end_date, total_amount, prepayment, notes, source, property_id')
       .eq('user_id', user.id)
-      .eq('property_id', selectedPropertyId); // Filter by selected property
+      .order('start_date', { ascending: true }); // Order by date to show historical data
 
     if (bookingsError) {
       throw new Error(`Failed to fetch bookings: ${bookingsError.message}`);
@@ -65,12 +74,12 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
     });
 
     console.log('Fetching expenses data...');
-    // Fetch expenses with category_id and property filter
+    // Fetch ALL expenses for the user (from all properties)
     const { data: expenses, error: expensesError } = await supabase
       .from('expenses')
-      .select('id, date, amount, description, category_id')
+      .select('id, date, amount, description, category_id, property_id')
       .eq('user_id', user.id)
-      .eq('property_id', selectedPropertyId); // Filter by selected property
+      .order('date', { ascending: true }); // Order by date to show historical data
 
     if (expensesError) {
       throw new Error(`Failed to fetch expenses: ${expensesError.message}`);
@@ -90,6 +99,7 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
     
     // Add headers
     bookingsSheet.columns = [
+      { header: 'Property', key: 'property', width: 20 },
       { header: 'Guest Name', key: 'guestName', width: 20 },
       { header: 'Check-in Date', key: 'startDate', width: 15 },
       { header: 'Check-out Date', key: 'endDate', width: 15 },
@@ -99,9 +109,12 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
       { header: 'Notes', key: 'notes', width: 30 }
     ];
     
-    // Add data
+    // Add data with property information
     bookings.forEach(booking => {
+      const propertyName = booking.property_id ? propertyMap.get(booking.property_id) : 'Unknown Property';
+      
       bookingsSheet.addRow({
+        property: propertyName || 'Unknown Property',
         guestName: booking.guest_name || '',
         startDate: booking.start_date || '',
         endDate: booking.end_date || '',
@@ -121,18 +134,20 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
     
     // Add headers
     expensesSheet.columns = [
+      { header: 'Property', key: 'property', width: 20 },
       { header: 'Date', key: 'date', width: 15 },
       { header: 'Amount', key: 'amount', width: 15 },
       { header: 'Description', key: 'description', width: 30 },
       { header: 'Category', key: 'category', width: 20 }
     ];
     
-    // Add data with translated categories
+    // Add data with translated categories and property information
     expenses.forEach(expense => {
       // Get the category name using the category_id and the lookup map
       const categoryName = expense.category_id ? categoryMap.get(expense.category_id) : null;
       
-     
+      // Get the property name
+      const propertyName = expense.property_id ? propertyMap.get(expense.property_id) : 'Unknown Property';
       
       // Translate the category name based on the current language
       let translatedCategory;
@@ -141,17 +156,17 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
       const expenseCategories = (dictionary as any)?.expense_categories;
       
       // Check if we have translations in the expense_categories dictionary structure
-      if (expenseCategories && 
-          typeof expenseCategories === 'object' && 
-          categoryName && 
+      if (expenseCategories &&
+          typeof expenseCategories === 'object' &&
+          categoryName &&
           expenseCategories[categoryName]) {
         translatedCategory = expenseCategories[categoryName];
         console.log(`Using dictionary.expense_categories: ${translatedCategory}`);
       } else {
         // Fall back to the old translation method
         translatedCategory = translateExpenseCategory(
-          categoryName, 
-          dictionary, 
+          categoryName,
+          dictionary,
           lang
         );
         console.log(`Using translateExpenseCategory: ${translatedCategory}`);
@@ -161,6 +176,7 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
       console.log(`Translated to: ${translatedCategory}`);
       
       expensesSheet.addRow({
+        property: propertyName || 'Unknown Property',
         date: expense.date || '',
         amount: expense.amount || 0,
         description: expense.description || '',
@@ -170,6 +186,36 @@ export async function generateDataBackup(lang: string = 'en'): Promise<string> {
     
     // Format headers
     expensesSheet.getRow(1).font = { bold: true };
+    
+    // Add summary worksheet
+    console.log('Creating summary worksheet...');
+    const summarySheet = workbook.addWorksheet('Summary');
+    
+    // Add summary information
+    summarySheet.columns = [
+      { header: 'Metric', key: 'metric', width: 30 },
+      { header: 'Value', key: 'value', width: 20 }
+    ];
+    
+    // Calculate summary statistics
+    const totalBookings = bookings?.length || 0;
+    const totalExpenses = expenses?.length || 0;
+    const totalProperties = properties?.length || 0;
+    
+    const totalBookingRevenue = bookings?.reduce((sum, booking) => sum + (booking.total_amount || 0), 0) || 0;
+    const totalExpenseAmount = expenses?.reduce((sum, expense) => sum + (expense.amount || 0), 0) || 0;
+    
+    // Add summary data
+    summarySheet.addRow({ metric: 'Total Properties', value: totalProperties });
+    summarySheet.addRow({ metric: 'Total Bookings', value: totalBookings });
+    summarySheet.addRow({ metric: 'Total Expenses', value: totalExpenses });
+    summarySheet.addRow({ metric: 'Total Booking Revenue', value: totalBookingRevenue });
+    summarySheet.addRow({ metric: 'Total Expense Amount', value: totalExpenseAmount });
+    summarySheet.addRow({ metric: 'Net Profit', value: totalBookingRevenue - totalExpenseAmount });
+    summarySheet.addRow({ metric: 'Backup Generated', value: new Date().toLocaleString() });
+    
+    // Format headers
+    summarySheet.getRow(1).font = { bold: true };
     
     // Generate buffer
     console.log('Writing Excel file to buffer...');

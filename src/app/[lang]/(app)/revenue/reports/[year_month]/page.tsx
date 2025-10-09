@@ -22,17 +22,18 @@ import { ChevronLeft } from 'lucide-react'; // Icon
 import { getDictionary } from '@/lib/dictionary';
 import { translateExpenseCategory } from '@/lib/translations';
 import { getServerCsrfToken } from '@/lib/csrf';
-import { 
-    Table, 
-    TableBody, 
-    TableCell, 
-    TableHead, 
-    TableHeader, 
-    TableRow 
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
 } from '@/components/ui/table';
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BookingsBySourceChart, { BookingSourceData } from '@/components/revenue/report/BookingsBySourceChart';
+import Image from 'next/image';
 
 // --- Import helper and sub-components ---
 // Ensure these paths are correct for your project structure
@@ -435,18 +436,38 @@ export default async function MonthlyReportPage({ params }: PageProps) {
                                                             <TableCell className="font-medium">{booking.guest_name || 'N/A'}</TableCell>
                                                             <TableCell>{formattedStartDate} - {formattedEndDate}</TableCell>
                                                             <TableCell className="hidden md:table-cell">
-                                                                {booking.source && (
-                                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" 
-                                                                        style={{ 
-                                                                            backgroundColor: booking.source === 'AIRBNB' ? '#ffece6' : 
-                                                                                            booking.source === 'BOOKING' ? '#e6f0ff' : '#e6fff0',
-                                                                            color: booking.source === 'AIRBNB' ? '#ff5a5f' : 
-                                                                                    booking.source === 'BOOKING' ? '#003580' : '#10b981'
-                                                                        }}>
-                                                                        {booking.source}
-                                                                    </span>
-                                                                )}
-                                                            </TableCell>
+                                                               {booking.source && (
+                                                                   <div className="flex items-center justify-center">
+                                                                     {booking.source === 'AIRBNB' && (
+                                                                       <Image
+                                                                         src="/airbnb-icon.svg"
+                                                                         alt="Airbnb"
+                                                                         width={20}
+                                                                         height={20}
+                                                                         className="h-5 w-5"
+                                                                       />
+                                                                     )}
+                                                                     {booking.source === 'BOOKING' && (
+                                                                       <Image
+                                                                         src="/booking-icon.svg"
+                                                                         alt="Booking.com"
+                                                                         width={20}
+                                                                         height={20}
+                                                                         className="h-5 w-5"
+                                                                       />
+                                                                     )}
+                                                                     {booking.source === 'DIRECT' && (
+                                                                       <Image
+                                                                         src="/euro-icon.svg"
+                                                                         alt="Cash"
+                                                                         width={20}
+                                                                         height={20}
+                                                                         className="h-5 w-5"
+                                                                       />
+                                                                     )}
+                                                                   </div>
+                                                               )}
+                                                           </TableCell>
                                                             <TableCell className="text-right">€{booking.total_amount?.toLocaleString() || '0'}</TableCell>
                                                         </TableRow>
                                                     );
