@@ -97,14 +97,23 @@ export default async function DashboardPage({ params }: { params: { lang: string
     .eq('property_id', propertyId)
     .eq('end_date', todayDateString);
 
-  // Fetch upcoming check-ins this week with user and property filtering
+  // Calculate date range for upcoming 10 days starting from tomorrow
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tenDaysFromTomorrow = new Date(tomorrow);
+  tenDaysFromTomorrow.setDate(tenDaysFromTomorrow.getDate() + 10);
+  
+  const tomorrowDateString = format(tomorrow, 'yyyy-MM-dd');
+  const tenDaysFromTomorrowDateString = format(tenDaysFromTomorrow, 'yyyy-MM-dd');
+
+  // Fetch upcoming check-ins for the next 10 days with user and property filtering
   const { data: upcomingCheckInsData, error: upcomingError } = await supabase
     .from('bookings')
     .select('*') // Select all fields needed by BookingCard
     .eq('user_id', user.id)
     .eq('property_id', propertyId)
-    .gt('start_date', todayDateString)
-    .lte('start_date', weekEndDateString)
+    .gte('start_date', tomorrowDateString)
+    .lte('start_date', tenDaysFromTomorrowDateString)
     .order('start_date', { ascending: true });
 
   // Fetch ongoing bookings (bookings that started before today and end after today)
@@ -270,11 +279,11 @@ export default async function DashboardPage({ params }: { params: { lang: string
           </CardContent>
         </Card>
 
-        {/* Upcoming Check-ins This Week */}
+        {/* Upcoming Check-ins Next 10 Days */}
         <Card className="[&>*:last-child]:!pb-0">
           <CardHeader>
             <CardTitle className="text-lg font-medium">
-              {dictionary.upcoming_check_ins_this_week ?? 'Upcoming Check-ins This Week'} ({upcomingCheckIns?.length || 0})
+              {dictionary.upcoming_check_ins_next_10_days ?? 'Upcoming Check-ins Next 10 Days'} ({upcomingCheckIns?.length || 0})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
