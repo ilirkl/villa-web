@@ -145,7 +145,7 @@ export function CashFlowData({ params, dictionary }: CashFlowDataProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-16 md:pb-8">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>

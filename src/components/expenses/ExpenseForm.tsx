@@ -36,6 +36,9 @@ import { getSelectedPropertyId } from '@/lib/property-utils';
 const FormSchema = z.object({
   id: z.string().optional(),
   amount: z.coerce.number().min(0.01, { message: "Amount must be greater than 0" }),
+  payment_status: z.enum(["Paid", "Pending"] as const, {
+    errorMap: (issue, ctx) => ({ message: 'Please select a valid payment status.' })
+  }).optional(),
   date: z.date({
     required_error: "Date is required",
     invalid_type_error: "Date is required",
@@ -102,6 +105,7 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
     defaultValues: {
       id: initialData?.id ?? undefined,
       amount: initialData?.amount ?? undefined,
+      payment_status: initialData?.payment_status ?? 'Pending',
       date: initialDate, // Ensure this is a Date object
       category_id: initialData?.category_id ?? furnizimCategory?.id ?? undefined,
       description: initialData?.description ?? '',
@@ -158,6 +162,14 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
     // Add amount
     if (formData.amount !== undefined) {
       data.append('amount', String(formData.amount));
+    }
+
+    // Add payment_status
+    if (formData.payment_status) {
+      data.append('payment_status', formData.payment_status);
+    } else {
+      // Default to 'Pending' if not provided
+      data.append('payment_status', 'Pending');
     }
 
     // Add date - this is critical
@@ -253,27 +265,60 @@ export function ExpenseForm({ initialData, categories = [], dictionary = {}, onS
         {/* Hidden property_id field - automatically uses the currently selected property */}
         <input type="hidden" {...form.register('property_id')} />
 
-        {/* Amount */}
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{dictionary.amount || "Amount"} (€)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="0.00"
-                  {...field}
-                  value={field.value ?? ''}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Amount and Payment Status in same line */}
+        <div className="flex gap-4">
+          {/* Amount */}
+          <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormLabel>{dictionary.amount || "Amount"} (€)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="0.00"
+                    {...field}
+                    value={field.value ?? ''}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Payment Status */}
+          <FormField
+            control={form.control}
+            name="payment_status"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormLabel>{dictionary.payment_status || "Payment Status"}</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={dictionary.select_payment_status || "Select status"} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Pending">
+                      {dictionary.pending || "Pending"}
+                    </SelectItem>
+                    <SelectItem value="Paid">
+                      {dictionary.paid || "Paid"}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         {/* Date and Category in same line */}
         <div className="flex gap-4">

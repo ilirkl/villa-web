@@ -57,4 +57,5 @@ export type ExpenseFormData = Omit<Expense, 'id' | 'created_at' | 'updated_at' |
     id?: string;
     date: Date;
     category_id?: string | null;
+    payment_status?: "Paid" | "Pending";
 };
