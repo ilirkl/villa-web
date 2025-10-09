@@ -30,6 +30,10 @@ interface FilterSheetProps {
   onSortFieldChange: (field: string) => void;
   onSortOrderChange: (order: 'asc' | 'desc') => void;
   onFilterChange: (filter: string) => void;
+  // New optional props for payment status filtering
+  paymentStatusFilterOptions?: FilterOption[];
+  currentPaymentStatusFilter?: string;
+  onPaymentStatusFilterChange?: (filter: string) => void;
 }
 
 // Function to validate and sanitize CSS color values
@@ -103,11 +107,16 @@ export function FilterSheet({
   onSortFieldChange,
   onSortOrderChange,
   onFilterChange,
+  // New payment status filter props
+  paymentStatusFilterOptions,
+  currentPaymentStatusFilter = 'all',
+  onPaymentStatusFilterChange,
 }: FilterSheetProps) {
   const [open, setOpen] = useState(false);
   const [tempSortField, setTempSortField] = useState(currentSortField);
   const [tempSortOrder, setTempSortOrder] = useState(currentSortOrder);
   const [tempFilter, setTempFilter] = useState(currentFilter);
+  const [tempPaymentStatusFilter, setTempPaymentStatusFilter] = useState(currentPaymentStatusFilter);
   const { lang } = useParams();
 
   // Define a more specific type for the dictionary
@@ -187,6 +196,9 @@ export function FilterSheet({
     if (tempSortField) onSortFieldChange(tempSortField);
     onSortOrderChange(tempSortOrder);
     onFilterChange(tempFilter);
+    if (onPaymentStatusFilterChange) {
+      onPaymentStatusFilterChange(tempPaymentStatusFilter);
+    }
     setOpen(false);
   };
 
@@ -194,9 +206,13 @@ export function FilterSheet({
     setTempSortField(sortOptions[0].field);
     setTempSortOrder('desc');
     setTempFilter('all');
+    setTempPaymentStatusFilter('all');
     onSortFieldChange(sortOptions[0].field);
     onSortOrderChange('desc');
     onFilterChange('all');
+    if (onPaymentStatusFilterChange) {
+      onPaymentStatusFilterChange('all');
+    }
     setOpen(false);
   };
 
@@ -267,6 +283,32 @@ export function FilterSheet({
               ))}
             </div>
           </div>
+
+          {/* Payment Status Filter Section */}
+          {paymentStatusFilterOptions && paymentStatusFilterOptions.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{dictionary.payment_status || 'Payment Status'}</label>
+              <div className="flex flex-wrap gap-2">
+                <div
+                  onClick={() => setTempPaymentStatusFilter('all')}
+                  className={getFilterBadgeStyle('all', tempPaymentStatusFilter === 'all')}
+                >
+                  <Tag className="h-4 w-4" />
+                  <span>{allText}</span>
+                </div>
+                {paymentStatusFilterOptions.map((option) => (
+                  <div
+                    key={option.id}
+                    onClick={() => setTempPaymentStatusFilter(option.id)}
+                    className={getFilterBadgeStyle(option.id, tempPaymentStatusFilter === option.id)}
+                  >
+                    <Tag className="h-4 w-4" />
+                    <span>{dictionary[option.id.toLowerCase()] || option.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-2 mt-4">

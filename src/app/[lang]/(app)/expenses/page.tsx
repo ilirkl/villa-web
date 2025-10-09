@@ -37,6 +37,11 @@ const sortOptions = [
   { field: 'amount', label: 'Amount' }
 ];
 
+const paymentStatusOptions = [
+  { id: 'Paid', name: 'Paid', color: '#10b981' },
+  { id: 'Pending', name: 'Pending', color: '#f59e0b' },
+];
+
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<ExpenseWithCategory[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseWithCategory[]>([]);
@@ -46,6 +51,7 @@ export default function ExpensesPage() {
   const [sortField, setSortField] = useState<'date' | 'amount'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
   const [filterOptions, setFilterOptions] = useState<Array<{ id: string; name: string; color: string }>>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [dictionary, setDictionary] = useState<any>({});
@@ -172,17 +178,22 @@ export default function ExpensesPage() {
       filtered = filtered.filter(expense => expense.category_id === categoryFilter);
     }
     
+    // Apply payment status filter
+    if (paymentStatusFilter !== 'all') {
+      filtered = filtered.filter(expense => expense.payment_status === paymentStatusFilter);
+    }
+    
     // Apply search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(expense => 
-        expense.description?.toLowerCase().includes(term) || 
+      filtered = filtered.filter(expense =>
+        expense.description?.toLowerCase().includes(term) ||
         expense.expense_categories?.name?.toLowerCase().includes(term)
       );
     }
     
     setFilteredExpenses(filtered);
-  }, [expenses, categoryFilter, searchTerm]);
+  }, [expenses, categoryFilter, paymentStatusFilter, searchTerm]);
 
   // Function to handle opening the modal for adding a new expense
   const handleAddExpense = () => {
@@ -463,7 +474,7 @@ export default function ExpensesPage() {
             placeholder={dictionary.search_expenses || "Search description or category..."}
           />
         </div>
-        <FilterSheet 
+        <FilterSheet
           title={dictionary.filter_expenses || "Filter Expenses"}
           sortOptions={sortOptions}
           filterOptions={filterOptions}
@@ -473,6 +484,9 @@ export default function ExpensesPage() {
           onSortFieldChange={(field) => setSortField(field as 'date' | 'amount')}
           onSortOrderChange={setSortOrder}
           onFilterChange={setCategoryFilter}
+          paymentStatusFilterOptions={paymentStatusOptions}
+          currentPaymentStatusFilter={paymentStatusFilter}
+          onPaymentStatusFilterChange={setPaymentStatusFilter}
         />
       </div>
       
@@ -531,7 +545,7 @@ export default function ExpensesPage() {
               {dictionary.table || 'Table'}
             </Button>
           </div>
-          <FilterSheet 
+          <FilterSheet
             title={dictionary.filter_expenses || "Filter Expenses"}
             sortOptions={sortOptions}
             filterOptions={filterOptions}
@@ -541,6 +555,9 @@ export default function ExpensesPage() {
             onSortFieldChange={(field) => setSortField(field as 'date' | 'amount')}
             onSortOrderChange={setSortOrder}
             onFilterChange={setCategoryFilter}
+            paymentStatusFilterOptions={paymentStatusOptions}
+            currentPaymentStatusFilter={paymentStatusFilter}
+            onPaymentStatusFilterChange={setPaymentStatusFilter}
           />
         </div>
       </div>

@@ -42,6 +42,11 @@ const bookingSourceOptions = [
   { id: 'BOOKING', name: 'Booking', color: '#003580' },
 ];
 
+const paymentStatusOptions = [
+  { id: 'Paid', name: 'Paid', color: '#10b981' },
+  { id: 'Pending', name: 'Pending', color: '#f59e0b' },
+];
+
 const sortOptions = [
   { field: 'start_date', label: 'Check-in Date' }
 ];
@@ -68,6 +73,7 @@ export default function BookingsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [sourceFilter, setSourceFilter] = useState<BookingSource | 'all'>('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [dictionary, setDictionary] = useState<any>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -205,6 +211,11 @@ export default function BookingsPage() {
       result = result.filter(booking => booking.source === sourceFilter);
     }
 
+    // Apply payment status filter
+    if (paymentStatusFilter !== 'all') {
+      result = result.filter(booking => booking.payment_status === paymentStatusFilter);
+    }
+
     // Apply search
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -214,7 +225,7 @@ export default function BookingsPage() {
     }
 
     setFilteredBookings(result);
-  }, [bookings, sourceFilter, searchTerm]);
+  }, [bookings, sourceFilter, paymentStatusFilter, searchTerm]);
 
   // Add this useEffect to detect mobile screens
   useEffect(() => {
@@ -578,7 +589,7 @@ export default function BookingsPage() {
               placeholder={dictionary.search_guest_name || "Search guest name..."}
             />
           </div>
-          <FilterSheet 
+          <FilterSheet
             title={dictionary.filter_bookings || "Filter Bookings"}
             sortOptions={sortOptions}
             filterOptions={bookingSourceOptions}
@@ -588,6 +599,9 @@ export default function BookingsPage() {
             onSortFieldChange={() => {}}
             onSortOrderChange={setSortOrder}
             onFilterChange={(filter) => setSourceFilter(filter as BookingSource | 'all')}
+            paymentStatusFilterOptions={paymentStatusOptions}
+            currentPaymentStatusFilter={paymentStatusFilter}
+            onPaymentStatusFilterChange={setPaymentStatusFilter}
           />
         </div>
         
@@ -646,7 +660,7 @@ export default function BookingsPage() {
               {dictionary.table || 'Table'}
             </Button>
           </div>
-          <FilterSheet 
+          <FilterSheet
             title={dictionary.filter_bookings || "Filter Bookings"}
             sortOptions={sortOptions}
             filterOptions={bookingSourceOptions}
@@ -656,6 +670,9 @@ export default function BookingsPage() {
             onSortFieldChange={() => {}}
             onSortOrderChange={setSortOrder}
             onFilterChange={(filter) => setSourceFilter(filter as BookingSource | 'all')}
+            paymentStatusFilterOptions={paymentStatusOptions}
+            currentPaymentStatusFilter={paymentStatusFilter}
+            onPaymentStatusFilterChange={setPaymentStatusFilter}
           />
         </div>
       </div>
