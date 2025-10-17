@@ -2,6 +2,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { Suspense } from 'react';
 import { cookies } from 'next/headers';
+import { ensureUserHasProperty } from '@/lib/actions/property-creation';
 import {
   startOfToday,
   endOfToday,
@@ -48,31 +49,49 @@ export default async function DashboardPage({ params }: { params: { lang: string
     throw new Error('Authentication required');
   }
 
+  // Ensure user has at least one property
+  const propertyResult = await ensureUserHasProperty();
+  if (!propertyResult.success) {
+    console.error('Failed to ensure user has property:', propertyResult.error);
+    throw new Error('Failed to initialize user properties');
+  }
+
   // Get selected property from cookies
   const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
   
-  // If no property selected, get user's default property or check for single property
-  let propertyId = selectedPropertyId;
-  if (!propertyId) {
-    // First check if user has only one property
-    const { data: userProperties } = await supabase
-      .from('properties')
-      .select('id')
-      .eq('user_id', user.id);
-    
+  // Get user's properties
+  const { data: userProperties, error: propertiesError } = await supabase
+    .from('properties')
+    .select('id, name, is_active')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: true });
+
+  if (propertiesError) {
+    console.error('Error fetching user properties:', propertiesError);
+    throw new Error('Failed to load user properties');
+  }
+
+  let propertyId: string | undefined = selectedPropertyId;
+  
+  // If no property selected or selected property doesn't exist in user's properties
+  if (!propertyId || !userProperties?.some(p => p.id === propertyId)) {
     // If user has only one property, automatically use it
     if (userProperties && userProperties.length === 1) {
       propertyId = userProperties[0].id;
+    } else if (userProperties && userProperties.length > 0) {
+      // Otherwise, use the first active property or the first property
+      const activeProperty = userProperties.find(p => p.is_active) || userProperties[0];
+      propertyId = activeProperty.id;
     } else {
-      // Otherwise, use the default property from profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('default_property_id')
-        .eq('id', user.id)
-        .single();
-      
-      propertyId = profile?.default_property_id || null;
+      // This should not happen since we ensured user has a property
+      throw new Error('No properties found for user');
     }
+  }
+
+  // If we have a valid propertyId, ensure it's set in cookies for consistency
+  if (propertyId) {
+    // Note: We can't set cookies directly in server components,
+    // but the client-side PropertySwitcher will handle this
   }
 
   // Get today's date boundaries (use UTC for consistency if needed, but date comparison should be fine)

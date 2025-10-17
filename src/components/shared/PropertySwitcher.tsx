@@ -57,9 +57,17 @@ export function PropertySwitcher({ onPropertyChange, dictionary = {} }: Property
         savedPropertyId = cookies['selectedPropertyId'] || null;
       }
       
-      const defaultProperty = savedPropertyId
-        ? properties.find(p => p.id === savedPropertyId)
-        : properties.find(p => p.is_active) || properties[0];
+      // Find the best property to select
+      let defaultProperty = null;
+      
+      if (savedPropertyId) {
+        defaultProperty = properties.find(p => p.id === savedPropertyId);
+      }
+      
+      // If saved property not found or invalid, use first active property or first property
+      if (!defaultProperty) {
+        defaultProperty = properties.find(p => p.is_active) || properties[0];
+      }
       
       if (defaultProperty) {
         setSelectedProperty(defaultProperty.id);

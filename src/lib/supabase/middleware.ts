@@ -60,7 +60,18 @@ export async function updateSession(request: NextRequest) {
 
   // Refresh session if expired - required for Server Components
   // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  // If there's an auth error (like invalid refresh token), clear the session
+  if (error) {
+    console.log('Auth error in middleware:', error.message);
+    // Clear auth cookies to force re-authentication
+    response.cookies.delete('sb-access-token');
+    response.cookies.delete('sb-refresh-token');
+  }
 
   return response;
 }

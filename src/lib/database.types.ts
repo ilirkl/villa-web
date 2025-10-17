@@ -49,6 +49,7 @@ export interface Database {
           updated_at: string | null
           user_id: string | null
           airbnb_id: string | null
+          property_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -64,6 +65,7 @@ export interface Database {
           updated_at?: string | null
           user_id?: string | null
           airbnb_id?: string | null
+          property_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -79,8 +81,17 @@ export interface Database {
           updated_at?: string | null
           user_id?: string | null
           airbnb_id?: string | null
+          property_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bookings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       expense_categories: {
         Row: {
@@ -112,6 +123,7 @@ export interface Database {
           payment_status: Database["public"]["Enums"]["payment_status"]
           updated_at: string | null
           user_id: string | null
+          property_id: string | null
         }
         Insert: {
           amount?: number
@@ -124,6 +136,7 @@ export interface Database {
           payment_status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string | null
           user_id?: string | null
+          property_id?: string | null
         }
         Update: {
           amount?: number
@@ -136,6 +149,7 @@ export interface Database {
           payment_status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string | null
           user_id?: string | null
+          property_id?: string | null
         }
         Relationships: [
           {
@@ -145,6 +159,13 @@ export interface Database {
             referencedRelation: "expense_categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "expenses_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          }
         ]
       }
       profiles: {
@@ -161,6 +182,7 @@ export interface Database {
           vat_number: string | null
           website: string | null
           airbnb_ical_url: string | null
+          default_property_id: string | null
         }
         Insert: {
           address?: string | null
@@ -175,6 +197,7 @@ export interface Database {
           vat_number?: string | null
           website?: string | null
           airbnb_ical_url?: string | null
+          default_property_id?: string | null
         }
         Update: {
           address?: string | null
@@ -189,8 +212,58 @@ export interface Database {
           vat_number?: string | null
           website?: string | null
           airbnb_ical_url?: string | null
+          default_property_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_default_property_id_fkey"
+            columns: ["default_property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      properties: {
+        Row: {
+          id: string
+          name: string
+          address: string | null
+          description: string | null
+          is_active: boolean
+          created_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          address?: string | null
+          description?: string | null
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          address?: string | null
+          description?: string | null
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {
