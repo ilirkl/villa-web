@@ -118,6 +118,15 @@ export default function ExpensesPage() {
       try {
         const supabase = createClient();
         
+        // Get the current authenticated user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          setError('Authentication required');
+          setIsLoading(false);
+          return;
+        }
+
         // First, fetch expenses with their categories
         const { data, error } = await supabase
           .from('expenses')
@@ -127,6 +136,7 @@ export default function ExpensesPage() {
               name
             )
           `)
+          .eq('user_id', user.id)
           .order(sortField, { ascending: sortOrder === 'asc' });
           
         if (error) throw error;

@@ -156,9 +156,20 @@ export default function BookingsPage() {
   useEffect(() => {
     const fetchBookings = async () => {
       const supabase = createClient();
+      
+      // Get the current authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setError('Authentication required');
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('bookings')
         .select('*')
+        .eq('user_id', user.id)
         .order('start_date', { ascending: sortOrder === 'asc' });
 
       if (error) {

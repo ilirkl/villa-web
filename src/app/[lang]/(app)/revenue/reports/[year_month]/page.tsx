@@ -129,16 +129,26 @@ export default async function MonthlyReportPage({ params }: PageProps) {
     let categoryMap: Map<string, string> = new Map();
 
     try {
+        // Get the current authenticated user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // Check if user is authenticated
+        if (!user) {
+            throw new Error('Authentication required');
+        }
+
         // Fetch bookings, expenses, and categories concurrently
         const [bookingsRes, expensesRes, categoriesRes] = await Promise.all([
             supabase
                 .from('bookings')
                 .select('id, start_date, end_date, total_amount, guest_name, source')
+                .eq('user_id', user.id) // IMPORTANT: Explicitly filter by user_id
                 .or(`and(start_date.lte.${monthEndString},end_date.gte.${monthStartString})`)
                 .order('start_date', { ascending: true }),
             supabase
                 .from('expenses')
                 .select('id, date, amount, category_id, description')
+                .eq('user_id', user.id) // IMPORTANT: Explicitly filter by user_id
                 .gte('date', monthStartString)
                 .lte('date', monthEndString)
                 .order('date', { ascending: true }),
