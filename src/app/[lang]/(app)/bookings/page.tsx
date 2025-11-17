@@ -618,11 +618,6 @@ export default function BookingsPage() {
           <AddButton />
         </div>
   
-        {/* Property Switcher - Add this to allow manual property selection */}
-        <div className="mb-4">
-          <PropertySwitcher dictionary={dictionary} />
-        </div>
-  
         <div className="flex gap-2 mb-6">
           <div className="flex-1">
             <SearchBar

@@ -26,7 +26,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteExpense } from '@/lib/actions/expenses';
-import { PropertySwitcher } from '@/components/shared/PropertySwitcher';
 
 type ExpenseWithCategory = Expense & {
     expense_categories: Pick<ExpenseCategory, 'name'> | null;
@@ -549,11 +548,6 @@ export default function ExpensesPage() {
     <div className="pb-18">
       <div className="flex justify-between items-center mb-1">
         <AddButton />
-      </div>
-
-      {/* Property Switcher - Add this to allow manual property selection */}
-      <div className="mb-4">
-        <PropertySwitcher dictionary={dictionary} />
       </div>
 
       <div className="flex gap-2 mb-6">
