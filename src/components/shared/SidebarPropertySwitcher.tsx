@@ -29,6 +29,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [hoveredProperty, setHoveredProperty] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const supabase = createClient();
   
   const params = useParams();
@@ -36,7 +37,19 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
 
   useEffect(() => {
     loadProperties();
-  }, []);
+  }, []); // Initial load
+
+  // Add effect to reload when user changes (e.g., after login)
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        console.log('SidebarPropertySwitcher: User detected, reloading properties');
+        loadProperties();
+      }
+    };
+    checkAuth();
+  }, [supabase.auth]);
 
   useEffect(() => {
     // Set initial selected property from localStorage, cookies, or first property
@@ -74,9 +87,20 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
   const loadProperties = async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
+      
+      console.log('SidebarPropertySwitcher: Starting property load...');
+      
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) return;
+      if (!user) {
+        console.log('SidebarPropertySwitcher: No user found, setting error state');
+        setLoadError('No user authenticated');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('SidebarPropertySwitcher: Loading properties for user:', user.id);
 
       const { data, error } = await supabase
         .from('properties')
@@ -84,11 +108,22 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('SidebarPropertySwitcher: Supabase error:', error);
+        throw error;
+      }
 
+      console.log('SidebarPropertySwitcher: Properties loaded successfully:', data?.length || 0, 'properties');
+      
+      if (!data || data.length === 0) {
+        console.log('SidebarPropertySwitcher: No properties found for user');
+        setLoadError('No properties found');
+      }
+      
       setProperties(data || []);
     } catch (error) {
-      console.error('Error loading properties:', error);
+      console.error('SidebarPropertySwitcher: Error loading properties:', error);
+      setLoadError('Failed to load properties');
     } finally {
       setIsLoading(false);
     }
@@ -122,6 +157,20 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
     return (
       <div className="flex items-center justify-center p-4">
         <div className="w-6 h-6 border-t-2 border-[#FF5A5F] rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <button
+          onClick={loadProperties}
+          className="p-2 text-xs text-red-500 hover:text-red-700"
+          title={loadError}
+        >
+          ⚠️
+        </button>
       </div>
     );
   }

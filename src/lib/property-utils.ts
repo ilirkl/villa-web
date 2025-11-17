@@ -149,3 +149,44 @@ export async function refreshSelectedPropertyId(): Promise<string | null> {
   
   return null;
 }
+
+/**
+ * Validates that a property ID belongs to the user and returns a valid property ID
+ * This matches the logic used in the dashboard page
+ */
+export async function getValidatedPropertyId(supabase: any, userId: string, selectedPropertyId: string | null): Promise<string | null> {
+  try {
+    // Get user's properties
+    const { data: userProperties, error: propertiesError } = await supabase
+      .from('properties')
+      .select('id, name, is_active')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+
+    if (propertiesError) {
+      console.error('Error fetching user properties:', propertiesError);
+      return null;
+    }
+
+    if (!userProperties || userProperties.length === 0) {
+      return null;
+    }
+
+    // If we have a selected property ID and it belongs to the user, use it
+    if (selectedPropertyId && userProperties.some(p => p.id === selectedPropertyId)) {
+      return selectedPropertyId;
+    }
+
+    // If user has only one property, automatically use it
+    if (userProperties.length === 1) {
+      return userProperties[0].id;
+    }
+
+    // Otherwise, use the first active property or the first property
+    const activeProperty = userProperties.find(p => p.is_active) || userProperties[0];
+    return activeProperty.id;
+  } catch (error) {
+    console.error('Error validating property ID:', error);
+    return null;
+  }
+}

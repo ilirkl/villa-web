@@ -184,29 +184,23 @@ export default function BookingsPage() {
           return;
         }
 
-        // Get properties with auto-selection for single property case
-        const { getPropertiesWithAutoSelection, refreshSelectedPropertyId } = await import('@/lib/property-utils');
+        // Get properties and validate property selection (same logic as dashboard)
+        const { getValidatedPropertyId } = await import('@/lib/property-utils');
         
-        // Force refresh the selected property to avoid cache issues
-        const refreshedPropertyId = await refreshSelectedPropertyId();
+        // Get selected property from cookies (same as dashboard)
+        const { cookies } = await import('next/headers');
+        const cookieStore = cookies();
+        const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value || null;
         
-        const { properties, selectedPropertyId } = await getPropertiesWithAutoSelection(supabase);
-        
-        // Use the refreshed property ID if available, otherwise use the one from auto-selection
-        const finalPropertyId = refreshedPropertyId || selectedPropertyId;
+        // Validate and get the correct property ID using the same logic as dashboard
+        const finalPropertyId = await getValidatedPropertyId(supabase, user.id, selectedPropertyId);
         
         console.log('Bookings page - User ID:', user.id);
-        console.log('Bookings page - Properties found:', properties.length);
-        console.log('Bookings page - Selected property ID:', finalPropertyId);
-        
-        if (properties.length === 0) {
-          setError('No properties found. Please add a property first.');
-          setIsLoading(false);
-          return;
-        }
-        
+        console.log('Bookings page - Selected property ID from cookie:', selectedPropertyId);
+        console.log('Bookings page - Validated property ID:', finalPropertyId);
+
         if (!finalPropertyId) {
-          setError('Please select a property');
+          setError('No valid property found. Please add a property first.');
           setIsLoading(false);
           return;
         }
