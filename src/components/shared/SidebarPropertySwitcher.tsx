@@ -36,7 +36,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
   const lang = params?.lang as string || 'en';
 
   useEffect(() => {
-    console.log('SidebarPropertySwitcher: Component mounted, loading properties...');
+    // SidebarPropertySwitcher: Component mounted, loading properties
     loadProperties();
   }, []); // Initial load
 
@@ -45,7 +45,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        console.log('SidebarPropertySwitcher: User detected, reloading properties');
+        // SidebarPropertySwitcher: User detected, reloading properties
         loadProperties();
       }
     };
@@ -90,18 +90,18 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
       setIsLoading(true);
       setLoadError(null);
       
-      console.log('SidebarPropertySwitcher: Starting property load...');
+      // SidebarPropertySwitcher: Starting property load
       
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        console.log('SidebarPropertySwitcher: No user found, setting error state');
+        // SidebarPropertySwitcher: No user found, setting error state
         setLoadError('No user authenticated');
         setIsLoading(false);
         return;
       }
 
-      console.log('SidebarPropertySwitcher: Loading properties for user:', user.id);
+      // SidebarPropertySwitcher: Loading properties for user
       const { data, error } = await supabase
         .from('properties')
         .select('id, name, address, is_active')
@@ -109,20 +109,20 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('SidebarPropertySwitcher: Supabase error:', error);
+        // SidebarPropertySwitcher: Supabase error
         throw error;
       }
 
-      console.log('SidebarPropertySwitcher: Properties loaded successfully:', data?.length || 0, 'properties');
+      // SidebarPropertySwitcher: Properties loaded successfully
       
       if (!data || data.length === 0) {
-        console.log('SidebarPropertySwitcher: No properties found for user');
+        // SidebarPropertySwitcher: No properties found for user
         setLoadError('No properties found');
       }
       
       setProperties(data || []);
     } catch (error) {
-      console.error('SidebarPropertySwitcher: Error loading properties:', error);
+      // SidebarPropertySwitcher: Error loading properties
       setLoadError('Failed to load properties');
     } finally {
       setIsLoading(false);
@@ -154,7 +154,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
   const currentProperty = properties.find(p => p.id === selectedProperty);
 
   if (isLoading) {
-    console.log('SidebarPropertySwitcher: Rendering loading state');
+    // SidebarPropertySwitcher: Rendering loading state
     return (
       <div className="flex items-center justify-center p-4">
         <div className="w-6 h-6 border-t-2 border-[#FF5A5F] rounded-full animate-spin"></div>
@@ -163,7 +163,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
   }
 
   if (loadError) {
-    console.log('SidebarPropertySwitcher: Rendering error state:', loadError);
+    // SidebarPropertySwitcher: Rendering error state
     return (
       <div className="flex items-center justify-center p-4">
         <button
@@ -178,7 +178,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
   }
 
   if (properties.length === 0) {
-    console.log('SidebarPropertySwitcher: Rendering no properties state');
+    // SidebarPropertySwitcher: Rendering no properties state
     return (
       <div className="flex items-center justify-center p-4">
         <Button
@@ -202,7 +202,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
 
   // Always show dropdown when there are multiple properties, even if one is selected
   if (properties.length > 1) {
-    console.log('SidebarPropertySwitcher: Rendering multiple properties state with dropdown');
+    // SidebarPropertySwitcher: Rendering multiple properties state with dropdown
     
     // Ensure we have a current property to display
     const displayProperty = currentProperty || properties[0];
@@ -331,7 +331,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
   }
 
   // Only show single property without dropdown when there's exactly one property
-  console.log('SidebarPropertySwitcher: Rendering single property state');
+  // SidebarPropertySwitcher: Rendering single property state
   const singleProperty = properties[0];
   return (
     <div className="flex items-center justify-center">

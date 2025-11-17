@@ -110,7 +110,7 @@ export default function ExpensesPage() {
         
         setFilterOptions(options);
       } catch (err: any) {
-        console.error('Error loading initial data:', err);
+        // Error loading initial data
         setError(err.message);
       }
     };
@@ -143,8 +143,7 @@ export default function ExpensesPage() {
         // Validate and get the correct property ID using the same logic as bookings page
         const finalPropertyId = await getValidatedPropertyId(supabase, user.id, selectedPropertyId);
         
-        console.log('Expenses page - User ID:', user.id);
-        console.log('Expenses page - Selected property ID:', finalPropertyId);
+        // Expenses page data loaded
 
         if (!finalPropertyId) {
           setError('No properties found. Please add a property first.');
@@ -165,16 +164,14 @@ export default function ExpensesPage() {
           .eq('property_id', finalPropertyId)
           .order(sortField, { ascending: sortOrder === 'asc' });
           
-        console.log('Expenses query - User ID:', user.id);
-        console.log('Expenses query - Property ID:', finalPropertyId);
-        console.log('Expenses query - Results:', data?.length || 0);
+        // Expenses query completed
 
         if (error) throw error;
         
         setExpenses(data || []);
         setFilteredExpenses(data || []);
       } catch (err: any) {
-        console.error('Error fetching expenses:', err);
+        // Error fetching expenses
         setError(err.message);
       } finally {
         setIsLoading(false);
@@ -251,7 +248,7 @@ export default function ExpensesPage() {
       setCurrentExpense(expenseData);
       setIsModalOpen(true);
     } catch (err: any) {
-      console.error('Error fetching expense:', err);
+      // Error fetching expense
       toast.error(dictionary.error_loading_expense || "Error loading expense");
     }
   };
@@ -283,7 +280,7 @@ export default function ExpensesPage() {
         handleRefresh();
       }
     } catch (error) {
-      console.error('Delete error:', error);
+      // Delete error
       toast.error(error instanceof Error ? error.message : 'Failed to delete expense');
     }
   };

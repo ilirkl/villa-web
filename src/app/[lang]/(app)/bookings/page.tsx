@@ -62,7 +62,7 @@ const formatBookingDate = (dateString: string | null | undefined, lang: string |
     // Format the date object
     return format(date, 'dd MMM'); // e.g., "18 Apr"
   } catch (error) {
-    console.error(`Error formatting date: ${dateString}`, error);
+    // Error formatting date
     return dateString;
   }
 };
@@ -99,7 +99,7 @@ export default function BookingsPage() {
         const dict = await import('@/lib/dictionary').then(mod => mod.getDictionary(lang as 'en' | 'sq'));
         setDictionary(dict);
       } catch (error) {
-        console.error('Failed to load dictionary:', error);
+        // Failed to load dictionary
       }
     }
     loadDictionary();
@@ -157,7 +157,7 @@ export default function BookingsPage() {
       setCurrentBooking(bookingData);
       setIsModalOpen(true);
     } catch (err: any) {
-      console.error('Error fetching booking:', err);
+      // Error fetching booking
       toast.error(dictionary.error_loading_booking || "Error loading booking");
     } finally {
       setIsLoading(false);
@@ -194,9 +194,7 @@ export default function BookingsPage() {
         // Validate and get the correct property ID using the same logic as dashboard
         const finalPropertyId = await getValidatedPropertyId(supabase, user.id, selectedPropertyId);
         
-        console.log('Bookings page - User ID:', user.id);
-        console.log('Bookings page - Selected property ID from cookie:', selectedPropertyId);
-        console.log('Bookings page - Validated property ID:', finalPropertyId);
+        // Bookings page data loaded
 
         if (!finalPropertyId) {
           setError('No valid property found. Please add a property first.');
@@ -211,9 +209,7 @@ export default function BookingsPage() {
           .eq('property_id', finalPropertyId)
           .order('start_date', { ascending: sortOrder === 'asc' });
 
-        console.log('Bookings query - User ID:', user.id);
-        console.log('Bookings query - Property ID:', finalPropertyId);
-        console.log('Bookings query - Results:', data?.length || 0);
+        // Bookings query completed
 
         if (error) {
           setError(error.message);
@@ -221,7 +217,7 @@ export default function BookingsPage() {
           setBookings(data || []);
         }
       } catch (err) {
-        console.error('Error fetching bookings:', err);
+        // Error fetching bookings
         setError('Failed to load bookings');
       } finally {
         setIsLoading(false);
@@ -513,7 +509,7 @@ export default function BookingsPage() {
       toast.success('Booking deleted successfully');
       handleRefresh();
     } catch (error) {
-      console.error('Delete error:', error);
+      // Delete error
       toast.error(error instanceof Error ? error.message : 'Failed to delete booking');
     }
   };
@@ -562,7 +558,7 @@ export default function BookingsPage() {
 
       toast.success(dictionary.invoice_generated_successfully || 'Invoice generated successfully');
     } catch (error) {
-      console.error('Invoice generation error:', error);
+      // Invoice generation error
       toast.error(
         error instanceof Error
           ? error.message

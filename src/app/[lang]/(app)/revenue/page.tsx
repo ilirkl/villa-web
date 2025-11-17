@@ -97,7 +97,7 @@ function allocateBookingRevenueAcrossMonths(booking: PartialBooking): { monthKey
         
         return result;
     } catch (error) {
-        console.error('Error allocating booking revenue:', error);
+        // Error allocating booking revenue
         return [];
     }
 }
@@ -202,7 +202,7 @@ async function RevenueData({ params }: { params: { lang: string } }) {
             .order('created_at', { ascending: true });
 
         if (propertiesError) {
-            console.error('Error fetching user properties:', propertiesError);
+            // Error fetching user properties
             throw new Error('Failed to load user properties');
         }
 
@@ -222,9 +222,7 @@ async function RevenueData({ params }: { params: { lang: string } }) {
             }
         }
         
-        console.log('Revenue page - User ID:', user.id);
-        console.log('Revenue page - Selected property ID from cookie:', selectedPropertyId);
-        console.log('Revenue page - Validated property ID:', finalPropertyId);
+        // Revenue page data loaded
         
         if (!finalPropertyId) {
             throw new Error('No property selected');
@@ -263,15 +261,13 @@ async function RevenueData({ params }: { params: { lang: string } }) {
         allExpenses = expensesRes.data || [];
         categories = categoriesRes.data || [];
 
-        console.log('Revenue page - Bookings query results:', allBookings.length);
-        console.log('Revenue page - Expenses query results:', allExpenses.length);
-        console.log('Revenue page - Categories query results:', categories.length);
+        // Revenue queries completed
 
         // Create a map of category IDs to names for easier lookup
         categoryMap = new Map(categories.map(cat => [cat.id, cat.name]));
 
     } catch (error: any) {
-        console.error("Error fetching revenue data:", error);
+        // Error fetching revenue data
         // Render an error message if fetching fails
         return <p className="text-red-500 text-center p-4">{dictionary.error_loading_revenue_data} {error.message}</p>;
     }
@@ -280,7 +276,7 @@ async function RevenueData({ params }: { params: { lang: string } }) {
     try {
         // Ensure arrays are arrays before starting calculations
         if (!Array.isArray(allBookings) || !Array.isArray(allExpenses)) {
-            console.error("Calculation Start Error: Fetched data is not in array format.", { allBookings, allExpenses });
+            // Calculation Start Error: Fetched data is not in array format
             throw new Error("Fetched data format error.");
         }
 
@@ -349,7 +345,7 @@ async function RevenueData({ params }: { params: { lang: string } }) {
                     monthlyDataMap[monthKey].expenses += expense.amount;
                 }
             } catch (error) {
-                console.error('Error processing expense:', error);
+                // Error processing expense
             }
         });
 
@@ -460,14 +456,14 @@ async function RevenueData({ params }: { params: { lang: string } }) {
                         expenses: expenses
                     };
                 } catch (error) {
-                    console.error(`Error processing monthly report for ${key}:`, error);
+                    // Error processing monthly report
                     return null;
                 }
             })
             .filter((report): report is MonthlyReportItemOrNull => report !== null) as MonthlyReportItem[];
 
     } catch (calculationError: any) {
-        console.error("Error during data calculations:", calculationError);
+        // Error during data calculations
         // Display error message if calculations fail
         return <p className="text-red-500 text-center p-4">Error processing revenue data: {calculationError.message}</p>;
     }

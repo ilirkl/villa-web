@@ -183,7 +183,7 @@ export async function getValidatedPropertyId(supabase: any, userId: string, sele
     }
 
     // Otherwise, use the first active property or the first property
-    const activeProperty = userProperties.find(p => p.is_active) || userProperties[0];
+    const activeProperty = userProperties.find((p: any) => p.is_active) || userProperties[0];
     return activeProperty.id;
   } catch (error) {
     console.error('Error validating property ID:', error);
