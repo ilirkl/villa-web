@@ -130,6 +130,13 @@ export default async function MonthlyReportPage({ params }: PageProps) {
     let categoryMap: Map<string, string> = new Map();
 
     try {
+        // Get the current authenticated user first
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+            throw new Error('Authentication required');
+        }
+
         // Get the selected property ID from cookies or check for single property
         const { cookies } = await import('next/headers');
         const cookieStore = cookies();
@@ -137,19 +144,14 @@ export default async function MonthlyReportPage({ params }: PageProps) {
 
         // If no property selected, check if user has only one property
         if (!selectedPropertyId) {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data: userProperties } = await supabase
-                    .from('properties')
-                    .select('id')
-                    .eq('user_id', user.id);
-                
-                // If user has only one property, automatically use it
-                if (userProperties && userProperties.length === 1) {
-                    selectedPropertyId = userProperties[0].id;
-                } else {
-                    throw new Error('No property selected');
-                }
+            const { data: userProperties } = await supabase
+                .from('properties')
+                .select('id')
+                .eq('user_id', user.id);
+            
+            // If user has only one property, automatically use it
+            if (userProperties && userProperties.length === 1) {
+                selectedPropertyId = userProperties[0].id;
             } else {
                 throw new Error('No property selected');
             }
@@ -160,12 +162,14 @@ export default async function MonthlyReportPage({ params }: PageProps) {
             supabase
                 .from('bookings')
                 .select('id, start_date, end_date, total_amount, guest_name, source')
+                .eq('user_id', user.id) // IMPORTANT: Explicitly filter by user_id
                 .eq('property_id', selectedPropertyId) // Filter by selected property
                 .or(`and(start_date.lte.${monthEndString},end_date.gte.${monthStartString})`)
                 .order('start_date', { ascending: true }),
             supabase
                 .from('expenses')
                 .select('id, date, amount, category_id, description')
+                .eq('user_id', user.id) // IMPORTANT: Explicitly filter by user_id
                 .eq('property_id', selectedPropertyId) // Filter by selected property
                 .gte('date', monthStartString)
                 .lte('date', monthEndString)
