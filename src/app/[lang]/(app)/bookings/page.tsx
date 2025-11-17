@@ -28,6 +28,7 @@ import { deleteBooking } from '@/lib/actions/bookings';
 import { generateInvoice } from '@/lib/actions/invoice';
 import { getCsrfToken, resetCsrfToken } from '@/lib/csrf-client';
 import { PropertySwitcher } from '@/components/shared/PropertySwitcher';
+import { getSelectedPropertyId } from '@/lib/property-utils';
 
 // Dynamically import components
 const BookingCard = dynamic(() => import('@/components/bookings/BookingCard').then(mod => ({ default: mod.BookingCard })), {
@@ -187,10 +188,8 @@ export default function BookingsPage() {
         // Get properties and validate property selection (same logic as dashboard)
         const { getValidatedPropertyId } = await import('@/lib/property-utils');
         
-        // Get selected property from cookies (same as dashboard)
-        const { cookies } = await import('next/headers');
-        const cookieStore = cookies();
-        const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value || null;
+        // Get selected property from client-side storage (localStorage/cookies)
+        const selectedPropertyId = await getSelectedPropertyId();
         
         // Validate and get the correct property ID using the same logic as dashboard
         const finalPropertyId = await getValidatedPropertyId(supabase, user.id, selectedPropertyId);
