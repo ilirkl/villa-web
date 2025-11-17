@@ -26,6 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteExpense } from '@/lib/actions/expenses';
+import { getSelectedPropertyId } from '@/lib/property-utils';
 
 type ExpenseWithCategory = Expense & {
     expense_categories: Pick<ExpenseCategory, 'name'> | null;
@@ -133,29 +134,20 @@ export default function ExpensesPage() {
           return;
         }
 
-        // Get properties with auto-selection for single property case
-        const { getPropertiesWithAutoSelection, refreshSelectedPropertyId } = await import('@/lib/property-utils');
+        // Get properties and validate property selection (same logic as bookings page)
+        const { getValidatedPropertyId } = await import('@/lib/property-utils');
         
-        // Force refresh the selected property to avoid cache issues
-        const refreshedPropertyId = await refreshSelectedPropertyId();
+        // Get selected property from client-side storage (localStorage/cookies)
+        const selectedPropertyId = await getSelectedPropertyId();
         
-        const { properties, selectedPropertyId } = await getPropertiesWithAutoSelection(supabase);
-        
-        // Use the refreshed property ID if available, otherwise use the one from auto-selection
-        const finalPropertyId = refreshedPropertyId || selectedPropertyId;
+        // Validate and get the correct property ID using the same logic as bookings page
+        const finalPropertyId = await getValidatedPropertyId(supabase, user.id, selectedPropertyId);
         
         console.log('Expenses page - User ID:', user.id);
-        console.log('Expenses page - Properties found:', properties.length);
         console.log('Expenses page - Selected property ID:', finalPropertyId);
 
-        if (properties.length === 0) {
-          setError('No properties found. Please add a property first.');
-          setIsLoading(false);
-          return;
-        }
-        
         if (!finalPropertyId) {
-          setError('Please select a property');
+          setError('No properties found. Please add a property first.');
           setIsLoading(false);
           return;
         }

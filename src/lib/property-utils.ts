@@ -173,7 +173,7 @@ export async function getValidatedPropertyId(supabase: any, userId: string, sele
     }
 
     // If we have a selected property ID and it belongs to the user, use it
-    if (selectedPropertyId && userProperties.some(p => p.id === selectedPropertyId)) {
+    if (selectedPropertyId && userProperties.some((p: any) => p.id === selectedPropertyId)) {
       return selectedPropertyId;
     }
 

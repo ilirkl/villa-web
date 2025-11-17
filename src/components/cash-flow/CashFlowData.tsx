@@ -79,9 +79,13 @@ export function CashFlowData({ params, dictionary }: CashFlowDataProps) {
           throw new Error('Authentication required');
         }
 
+        console.log('CashFlowData: User authenticated:', user.id);
+
         // Get properties with auto-selection for single property case
         const { getPropertiesWithAutoSelection } = await import('@/lib/property-utils');
         const { properties, selectedPropertyId } = await getPropertiesWithAutoSelection(supabase);
+        
+        console.log('CashFlowData: Properties loaded:', properties.length, 'Selected property:', selectedPropertyId);
         
         if (properties.length === 0) {
           throw new Error('No properties found. Please add a property first.');
@@ -89,6 +93,33 @@ export function CashFlowData({ params, dictionary }: CashFlowDataProps) {
         
         if (!selectedPropertyId) {
           throw new Error('Please select a property');
+        }
+
+        // Debug: Check what payment status values exist in the database
+        const [allBookings, allExpenses] = await Promise.all([
+          supabase
+            .from('bookings')
+            .select('id, payment_status, property_id')
+            .eq('user_id', user.id)
+            .eq('property_id', selectedPropertyId),
+          supabase
+            .from('expenses')
+            .select('id, payment_status, property_id')
+            .eq('user_id', user.id)
+            .eq('property_id', selectedPropertyId),
+        ]);
+
+        console.log('CashFlowData: All bookings for property:', allBookings.data?.length || 0);
+        console.log('CashFlowData: All expenses for property:', allExpenses.data?.length || 0);
+        
+        if (allBookings.data && allBookings.data.length > 0) {
+          const paymentStatuses = [...new Set(allBookings.data.map(b => b.payment_status))];
+          console.log('CashFlowData: Booking payment statuses:', paymentStatuses);
+        }
+        
+        if (allExpenses.data && allExpenses.data.length > 0) {
+          const paymentStatuses = [...new Set(allExpenses.data.map(e => e.payment_status))];
+          console.log('CashFlowData: Expense payment statuses:', paymentStatuses);
         }
 
         // Fetch pending bookings and expenses with categories
@@ -108,6 +139,9 @@ export function CashFlowData({ params, dictionary }: CashFlowDataProps) {
             .eq('payment_status', 'Pending')
             .order('date', { ascending: true }),
         ]);
+
+        console.log('CashFlowData: Pending bookings fetch result:', bookingsRes.data?.length || 0);
+        console.log('CashFlowData: Pending expenses fetch result:', expensesRes.data?.length || 0);
 
         if (bookingsRes.error) throw new Error(`Bookings fetch error: ${bookingsRes.error.message}`);
         if (expensesRes.error) throw new Error(`Expenses fetch error: ${expensesRes.error.message}`);
@@ -344,13 +378,13 @@ export function CashFlowData({ params, dictionary }: CashFlowDataProps) {
                   </thead>
                   <tbody>
                     {pendingBookings.map((booking) => (
-                      <tr key={booking.id} className="border-b">
+                      <tr key={`booking-${booking.id}`} className="border-b">
                         <td className="py-2">{booking.guest_name}</td>
                         <td className="py-2">
-                          {format(new Date(booking.start_date), 'MMM dd', { 
-                            locale: params.lang === 'sq' ? sq : undefined 
-                          })} - {format(new Date(booking.end_date), 'MMM dd', { 
-                            locale: params.lang === 'sq' ? sq : undefined 
+                          {format(new Date(booking.start_date), 'MMM dd', {
+                            locale: params.lang === 'sq' ? sq : undefined
+                          })} - {format(new Date(booking.end_date), 'MMM dd', {
+                            locale: params.lang === 'sq' ? sq : undefined
                           })}
                         </td>
                         <td className="py-2 text-right">{formatCurrency(booking.total_amount)}</td>
@@ -359,9 +393,9 @@ export function CashFlowData({ params, dictionary }: CashFlowDataProps) {
                           {formatCurrency(booking.total_amount - booking.prepayment)}
                         </td>
                         <td className="py-2 text-right">
-                          <UpdatePaymentStatusButton 
-                            id={booking.id} 
-                            type="booking" 
+                          <UpdatePaymentStatusButton
+                            id={booking.id}
+                            type="booking"
                             dictionary={dictionary}
                           />
                         </td>
@@ -399,7 +433,7 @@ export function CashFlowData({ params, dictionary }: CashFlowDataProps) {
                   </thead>
                   <tbody>
                     {filteredExpenses.map((expense) => (
-                      <tr key={expense.id} className="border-b">
+                      <tr key={`expense-${expense.id}`} className="border-b">
                         <td className="py-2">
                           {expense.description || dictionary.uncategorized || 'Uncategorized'}
                         </td>
@@ -409,15 +443,15 @@ export function CashFlowData({ params, dictionary }: CashFlowDataProps) {
                           </Badge>
                         </td>
                         <td className="py-2">
-                          {format(new Date(expense.date), 'MMM dd, yyyy', { 
-                            locale: params.lang === 'sq' ? sq : undefined 
+                          {format(new Date(expense.date), 'MMM dd, yyyy', {
+                            locale: params.lang === 'sq' ? sq : undefined
                           })}
                         </td>
                         <td className="py-2 text-right">{formatCurrency(expense.amount)}</td>
                         <td className="py-2 text-right">
-                          <UpdatePaymentStatusButton 
-                            id={expense.id} 
-                            type="expense" 
+                          <UpdatePaymentStatusButton
+                            id={expense.id}
+                            type="expense"
                             dictionary={dictionary}
                           />
                         </td>

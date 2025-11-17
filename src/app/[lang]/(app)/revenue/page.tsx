@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'; // Supabase server client
 import { Suspense } from 'react'; // For loading states
+import { cookies } from 'next/headers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Shadcn Card
 import { Button } from '@/components/ui/button'; // Shadcn Button
 import {
@@ -106,6 +107,7 @@ function allocateBookingRevenueAcrossMonths(booking: PartialBooking): { monthKey
 async function RevenueData({ params }: { params: { lang: string } }) {
     const supabase = createClient(); // Initialize Supabase server client
     const dictionary = await getDictionary(params.lang as 'en' | 'sq');
+    const cookieStore = cookies();
     const now = new Date();
     const currentMonthStart = startOfMonth(now);
     const currentMonthEnd = endOfMonth(now);
@@ -189,25 +191,45 @@ async function RevenueData({ params }: { params: { lang: string } }) {
           throw new Error('Authentication required');
         }
 
-        // Get the selected property ID from cookies or check for single property
-        const { cookies } = await import('next/headers');
-        const cookieStore = cookies();
-        let selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
+        // Get selected property from cookies (server-side)
+        const selectedPropertyId = cookieStore.get('selectedPropertyId')?.value;
+        
+        // Get user's properties to validate and select property
+        const { data: userProperties, error: propertiesError } = await supabase
+            .from('properties')
+            .select('id, name, is_active')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: true });
 
-        // If no property selected, check if user has only one property
-        if (!selectedPropertyId) {
-            const { data: userProperties } = await supabase
-                .from('properties')
-                .select('id')
-                .eq('user_id', user.id);
-            
+        if (propertiesError) {
+            console.error('Error fetching user properties:', propertiesError);
+            throw new Error('Failed to load user properties');
+        }
+
+        let finalPropertyId: string | null = selectedPropertyId || null;
+        
+        // If no property selected or selected property doesn't exist in user's properties
+        if (!finalPropertyId || !userProperties?.some(p => p.id === finalPropertyId)) {
             // If user has only one property, automatically use it
             if (userProperties && userProperties.length === 1) {
-                selectedPropertyId = userProperties[0].id;
+                finalPropertyId = userProperties[0].id;
+            } else if (userProperties && userProperties.length > 0) {
+                // Otherwise, use the first active property or the first property
+                const activeProperty = userProperties.find(p => p.is_active) || userProperties[0];
+                finalPropertyId = activeProperty.id;
             } else {
-                throw new Error('No property selected');
+                throw new Error('No properties found for user');
             }
         }
+        
+        console.log('Revenue page - User ID:', user.id);
+        console.log('Revenue page - Selected property ID from cookie:', selectedPropertyId);
+        console.log('Revenue page - Validated property ID:', finalPropertyId);
+        
+        if (!finalPropertyId) {
+            throw new Error('No property selected');
+        }
+        
 
         // Fetch bookings, expenses, and categories concurrently
         const [bookingsRes, expensesRes, categoriesRes] = await Promise.all([
@@ -215,7 +237,7 @@ async function RevenueData({ params }: { params: { lang: string } }) {
                 .from('bookings')
                 .select('id, start_date, end_date, total_amount') // NO 'status'
                 .eq('user_id', user.id) // IMPORTANT: Explicitly filter by user_id
-                .eq('property_id', selectedPropertyId) // Filter by selected property
+                .eq('property_id', finalPropertyId) // Filter by selected property
                 .gte('start_date', format(threeMonthsAgo, 'yyyy-MM-dd'))
                 .lte('start_date', format(threeMonthsAhead, 'yyyy-MM-dd'))
                 .order('start_date', { ascending: false }),
@@ -223,7 +245,7 @@ async function RevenueData({ params }: { params: { lang: string } }) {
                 .from('expenses')
                 .select('id, date, amount, category_id')
                 .eq('user_id', user.id) // IMPORTANT: Explicitly filter by user_id
-                .eq('property_id', selectedPropertyId) // Filter by selected property
+                .eq('property_id', finalPropertyId) // Filter by selected property
                 .gte('date', format(threeMonthsAgo, 'yyyy-MM-dd'))
                 .lte('date', format(threeMonthsAhead, 'yyyy-MM-dd'))
                 .order('date', { ascending: false }),
@@ -240,6 +262,10 @@ async function RevenueData({ params }: { params: { lang: string } }) {
         allBookings = bookingsRes.data || [];
         allExpenses = expensesRes.data || [];
         categories = categoriesRes.data || [];
+
+        console.log('Revenue page - Bookings query results:', allBookings.length);
+        console.log('Revenue page - Expenses query results:', allExpenses.length);
+        console.log('Revenue page - Categories query results:', categories.length);
 
         // Create a map of category IDs to names for easier lookup
         categoryMap = new Map(categories.map(cat => [cat.id, cat.name]));

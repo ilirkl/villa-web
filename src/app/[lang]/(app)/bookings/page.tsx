@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, JSX } from 'react';
+import { useEffect, useState, JSX, Fragment } from 'react';
 import { PlusCircle, LayoutGrid, Table as TableIcon, Pencil, Trash2, FileText } from 'lucide-react';
 import Image from 'next/image';
 import { Booking, BookingFormData, BookingSource } from '@/lib/definitions';
@@ -352,9 +352,8 @@ export default function BookingsPage() {
             const isExpanded = expandedRows.has(booking.id);
             
             return (
-              <>
-                <TableRow 
-                  key={booking.id} 
+              <Fragment key={booking.id}>
+                <TableRow
                   className={`cursor-pointer ${isExpanded ? 'bg-muted/50' : ''}`}
                   onClick={() => toggleRowExpansion(booking.id)}
                 >
@@ -461,10 +460,10 @@ export default function BookingsPage() {
                   </TableCell>
                 </TableRow>
                 {isExpanded && (
-                  <TableRow key={`${booking.id}-expanded`} className="bg-muted/30">
+                  <TableRow className="bg-muted/30">
                     <TableCell colSpan={7} className="px-4 py-3">
                       <div className="text-sm">
-                        <span className="font-medium"></span> 
+                        <span className="font-medium"></span>
                         {booking.notes ? (
                           <span className="ml-2">{booking.notes}</span>
                         ) : (
@@ -475,14 +474,14 @@ export default function BookingsPage() {
                       </div>
                       {booking.prepayment > 0 && (
                         <div className="text-sm mt-1">
-                          <span className="font-medium">{dictionary.prepayment || 'Prepayment'}:</span> 
+                          <span className="font-medium">{dictionary.prepayment || 'Prepayment'}:</span>
                           <span className="ml-2">€{booking.prepayment.toLocaleString()}</span>
                         </div>
                       )}
                     </TableCell>
                   </TableRow>
                 )}
-              </>
+              </Fragment>
             );
           })}
         </TableBody>

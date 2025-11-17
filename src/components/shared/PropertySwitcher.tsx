@@ -37,6 +37,7 @@ export function PropertySwitcher({ onPropertyChange, dictionary = {} }: Property
   const lang = params?.lang as string || 'en';
 
   useEffect(() => {
+    console.log('PropertySwitcher: Component mounted, loading properties...');
     loadProperties();
   }, []);
 
@@ -84,18 +85,27 @@ export function PropertySwitcher({ onPropertyChange, dictionary = {} }: Property
   const loadProperties = async () => {
     try {
       setIsLoading(true);
+      console.log('PropertySwitcher: Starting property load...');
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) return;
+      if (!user) {
+        console.log('PropertySwitcher: No user found, cannot load properties');
+        return;
+      }
 
+      console.log('PropertySwitcher: Loading properties for user:', user.id);
       const { data, error } = await supabase
         .from('properties')
         .select('id, name, address, is_active')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('PropertySwitcher: Error loading properties:', error);
+        throw error;
+      }
 
+      console.log('PropertySwitcher: Properties loaded successfully:', data?.length || 0, 'properties');
       setProperties(data || []);
     } catch (error) {
       console.error('Error loading properties:', error);

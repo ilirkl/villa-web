@@ -36,6 +36,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
   const lang = params?.lang as string || 'en';
 
   useEffect(() => {
+    console.log('SidebarPropertySwitcher: Component mounted, loading properties...');
     loadProperties();
   }, []); // Initial load
 
@@ -101,7 +102,6 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
       }
 
       console.log('SidebarPropertySwitcher: Loading properties for user:', user.id);
-
       const { data, error } = await supabase
         .from('properties')
         .select('id, name, address, is_active')
@@ -154,6 +154,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
   const currentProperty = properties.find(p => p.id === selectedProperty);
 
   if (isLoading) {
+    console.log('SidebarPropertySwitcher: Rendering loading state');
     return (
       <div className="flex items-center justify-center p-4">
         <div className="w-6 h-6 border-t-2 border-[#FF5A5F] rounded-full animate-spin"></div>
@@ -162,6 +163,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
   }
 
   if (loadError) {
+    console.log('SidebarPropertySwitcher: Rendering error state:', loadError);
     return (
       <div className="flex items-center justify-center p-4">
         <button
@@ -176,6 +178,7 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
   }
 
   if (properties.length === 0) {
+    console.log('SidebarPropertySwitcher: Rendering no properties state');
     return (
       <div className="flex items-center justify-center p-4">
         <Button
@@ -197,22 +200,36 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
     );
   }
 
-  // If user has only one property, show it without dropdown functionality
-  if (properties.length === 1) {
-    const singleProperty = properties[0];
+  // Always show dropdown when there are multiple properties, even if one is selected
+  if (properties.length > 1) {
+    console.log('SidebarPropertySwitcher: Rendering multiple properties state with dropdown');
+    
+    // Ensure we have a current property to display
+    const displayProperty = currentProperty || properties[0];
+    
     return (
       <div className="flex items-center justify-center">
         <div className="relative">
-          {/* Single Property Icon - No dropdown */}
+          {/* Current Property Icon with Dropdown */}
           <motion.div
             className={cn(
-              "relative outline-none rounded-full transition-all",
+              "relative cursor-pointer outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary rounded-full transition-all",
               "ring-2 ring-[#FF5A5F] ring-offset-2"
             )}
             style={{
               width: 48,
               height: 48,
             }}
+            tabIndex={0}
+            onMouseEnter={() => setHoveredProperty(displayProperty.id)}
+            onMouseLeave={() => setHoveredProperty(null)}
+            onFocus={() => setHoveredProperty(displayProperty.id)}
+            onBlur={() => setHoveredProperty(null)}
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            animate={{
+              scale: hoveredProperty === displayProperty.id ? 1.2 : 1,
+            }}
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
           >
             {/* Property avatar */}
             <div
@@ -220,11 +237,86 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
                 "w-full h-full rounded-full overflow-hidden border-2 border-white shadow-md flex items-center justify-center text-lg font-bold relative",
                 "bg-[#FF5A5F]/10"
               )}
-              style={{ backgroundColor: getPropertyIcon(singleProperty.name).color }}
+              style={{ backgroundColor: getPropertyIcon(displayProperty.name).color }}
             >
-              {getPropertyIcon(singleProperty.name).initial}
+              {getPropertyIcon(displayProperty.name).initial}
+              <ChevronUp
+                className={cn(
+                  "absolute bottom-0 right-0 w-3 h-3 text-[#FF5A5F] bg-white rounded-full p-0.5 shadow-sm transition-transform",
+                  isDropdownOpen ? "rotate-180" : ""
+                )}
+              />
             </div>
+
+            {/* Tooltip removed as requested */}
           </motion.div>
+
+          {/* Dropup Menu */}
+          <AnimatePresence>
+            {isDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                transition={{ duration: 0.15 }}
+                className="absolute left-0 bottom-full mb-2 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 min-w-[200px]"
+              >
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {properties.map((property) => (
+                    <motion.div
+                      key={property.id}
+                      className={cn(
+                        "flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors",
+                        "hover:bg-gray-100 dark:hover:bg-gray-700",
+                        selectedProperty === property.id && "bg-[#FF5A5F]/10"
+                      )}
+                      onClick={() => {
+                        handlePropertyChange(property.id);
+                        setIsDropdownOpen(false);
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div
+                        className="w-8 h-8 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-sm font-bold"
+                        style={{ backgroundColor: getPropertyIcon(property.name).color }}
+                      >
+                        {getPropertyIcon(property.name).initial}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">
+                          {property.name}
+                        </div>
+                        {property.address && (
+                          <div className="text-xs text-muted-foreground truncate">
+                            {property.address}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                  
+                  {/* Add New Property Button */}
+                  <motion.div
+                    className="flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 pt-3 mt-2"
+                    onClick={() => {
+                      setShowPropertyForm(true);
+                      setIsDropdownOpen(false);
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-background border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-sm">
+                      <Plus className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div className="font-medium text-sm text-muted-foreground">
+                      {dictionary.add_new_property || 'Add New Property'}
+                    </div>
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         
         <PropertyForm
@@ -238,118 +330,34 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
     );
   }
 
+  // Only show single property without dropdown when there's exactly one property
+  console.log('SidebarPropertySwitcher: Rendering single property state');
+  const singleProperty = properties[0];
   return (
     <div className="flex items-center justify-center">
       <div className="relative">
-        {/* Current Property Icon with Dropdown */}
-        {currentProperty && (
-          <motion.div
-            className={cn(
-              "relative cursor-pointer outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary rounded-full transition-all",
-              "ring-2 ring-[#FF5A5F] ring-offset-2"
-            )}
-            style={{
-              width: 48,
-              height: 48,
-            }}
-            tabIndex={0}
-            onMouseEnter={() => setHoveredProperty(currentProperty.id)}
-            onMouseLeave={() => setHoveredProperty(null)}
-            onFocus={() => setHoveredProperty(currentProperty.id)}
-            onBlur={() => setHoveredProperty(null)}
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            animate={{
-              scale: hoveredProperty === currentProperty.id ? 1.2 : 1,
-            }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
-          >
-            {/* Property avatar */}
-            <div
-              className={cn(
-                "w-full h-full rounded-full overflow-hidden border-2 border-white shadow-md flex items-center justify-center text-lg font-bold relative",
-                "bg-[#FF5A5F]/10"
-              )}
-              style={{ backgroundColor: getPropertyIcon(currentProperty.name).color }}
-            >
-              {getPropertyIcon(currentProperty.name).initial}
-              <ChevronUp
-                className={cn(
-                  "absolute bottom-0 right-0 w-3 h-3 text-[#FF5A5F] bg-white rounded-full p-0.5 shadow-sm transition-transform",
-                  isDropdownOpen ? "rotate-180" : ""
-                )}
-              />
-            </div>
-
-            {/* Tooltip removed as requested */}
-          </motion.div>
-        )}
-
-        {/* Dropup Menu */}
-        <AnimatePresence>
-          {isDropdownOpen && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 8 }}
-              transition={{ duration: 0.15 }}
-              className="absolute left-0 bottom-full mb-2 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 min-w-[200px]"
-            >
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {properties.map((property) => (
-                  <motion.div
-                    key={property.id}
-                    className={cn(
-                      "flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors",
-                      "hover:bg-gray-100 dark:hover:bg-gray-700",
-                      selectedProperty === property.id && "bg-[#FF5A5F]/10"
-                    )}
-                    onClick={() => {
-                      handlePropertyChange(property.id);
-                      setIsDropdownOpen(false);
-                    }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div
-                      className="w-8 h-8 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-sm font-bold"
-                      style={{ backgroundColor: getPropertyIcon(property.name).color }}
-                    >
-                      {getPropertyIcon(property.name).initial}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">
-                        {property.name}
-                      </div>
-                      {property.address && (
-                        <div className="text-xs text-muted-foreground truncate">
-                          {property.address}
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-                
-                {/* Add New Property Button */}
-                <motion.div
-                  className="flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 pt-3 mt-2"
-                  onClick={() => {
-                    setShowPropertyForm(true);
-                    setIsDropdownOpen(false);
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div className="w-8 h-8 rounded-full bg-background border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center text-sm">
-                    <Plus className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="font-medium text-sm text-muted-foreground">
-                    {dictionary.add_new_property || 'Add New Property'}
-                  </div>
-                </motion.div>
-              </div>
-            </motion.div>
+        {/* Single Property Icon - No dropdown */}
+        <motion.div
+          className={cn(
+            "relative outline-none rounded-full transition-all",
+            "ring-2 ring-[#FF5A5F] ring-offset-2"
           )}
-        </AnimatePresence>
+          style={{
+            width: 48,
+            height: 48,
+          }}
+        >
+          {/* Property avatar */}
+          <div
+            className={cn(
+              "w-full h-full rounded-full overflow-hidden border-2 border-white shadow-md flex items-center justify-center text-lg font-bold relative",
+              "bg-[#FF5A5F]/10"
+            )}
+            style={{ backgroundColor: getPropertyIcon(singleProperty.name).color }}
+          >
+            {getPropertyIcon(singleProperty.name).initial}
+          </div>
+        </motion.div>
       </div>
       
       <PropertyForm
