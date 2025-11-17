@@ -32,6 +32,7 @@ interface CashFlowDataProps {
 }
 
 export function CashFlowData({ params, dictionary }: CashFlowDataProps) {
+  const [allPendingBookings, setAllPendingBookings] = useState<Booking[]>([]);
   const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
   const [pendingExpenses, setPendingExpenses] = useState<ExpenseWithCategory[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseWithCategory[]>([]);
@@ -56,13 +57,16 @@ export function CashFlowData({ params, dictionary }: CashFlowDataProps) {
     }
   }, [pendingExpenses, selectedCategory]);
 
-  // Calculate summary based on filtered expenses
+  // Calculate summary
+  // Use all pending bookings for prepayment revenue (all dates)
+  // Use filtered pending bookings for pending revenue (up to today)
+  // Use filtered expenses for pending expenses (up to today)
   const summary: CashFlowSummary = {
-    totalPendingRevenue: pendingBookings.reduce((sum, booking) => 
+    totalPendingRevenue: pendingBookings.reduce((sum, booking) =>
       sum + (booking.total_amount - booking.prepayment), 0),
-    totalPrepaidRevenue: pendingBookings.reduce((sum, booking) => 
+    totalPrepaidRevenue: allPendingBookings.reduce((sum, booking) =>
       sum + booking.prepayment, 0),
-    totalPendingExpenses: filteredExpenses.reduce((sum, expense) => 
+    totalPendingExpenses: filteredExpenses.reduce((sum, expense) =>
       sum + expense.amount, 0),
   };
 
@@ -122,8 +126,13 @@ export function CashFlowData({ params, dictionary }: CashFlowDataProps) {
           console.log('CashFlowData: Expense payment statuses:', paymentStatuses);
         }
 
-        // Fetch pending bookings and expenses with categories
-        const [bookingsRes, expensesRes] = await Promise.all([
+        // Get today's date in YYYY-MM-DD format for filtering
+        const today = new Date().toISOString().split('T')[0];
+        
+        console.log('CashFlowData: Filtering for dates up to:', today);
+
+        // Fetch ALL pending bookings for prepayment revenue calculation
+        const [allPendingBookingsRes, pendingBookingsRes, expensesRes] = await Promise.all([
           supabase
             .from('bookings')
             .select('*')
@@ -132,23 +141,57 @@ export function CashFlowData({ params, dictionary }: CashFlowDataProps) {
             .eq('payment_status', 'Pending')
             .order('start_date', { ascending: true }),
           supabase
+            .from('bookings')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('property_id', selectedPropertyId)
+            .eq('payment_status', 'Pending')
+            .lte('start_date', today) // Only bookings that started on or before today
+            .order('start_date', { ascending: true }),
+          supabase
             .from('expenses')
             .select('*, expense_categories(*)')
             .eq('user_id', user.id)
             .eq('property_id', selectedPropertyId)
             .eq('payment_status', 'Pending')
+            .lte('date', today) // Only expenses with dates on or before today
             .order('date', { ascending: true }),
         ]);
 
-        console.log('CashFlowData: Pending bookings fetch result:', bookingsRes.data?.length || 0);
+        console.log('CashFlowData: All pending bookings fetch result:', allPendingBookingsRes.data?.length || 0);
+        console.log('CashFlowData: Pending bookings (up to today) fetch result:', pendingBookingsRes.data?.length || 0);
         console.log('CashFlowData: Pending expenses fetch result:', expensesRes.data?.length || 0);
 
-        if (bookingsRes.error) throw new Error(`Bookings fetch error: ${bookingsRes.error.message}`);
+        if (allPendingBookingsRes.error) throw new Error(`All bookings fetch error: ${allPendingBookingsRes.error.message}`);
+        if (pendingBookingsRes.error) throw new Error(`Pending bookings fetch error: ${pendingBookingsRes.error.message}`);
         if (expensesRes.error) throw new Error(`Expenses fetch error: ${expensesRes.error.message}`);
 
-        setPendingBookings(bookingsRes.data || []);
+        // Debug: Log current dates for analysis
+        console.log('CashFlowData: Current date:', new Date().toISOString());
+        if (pendingBookingsRes.data && pendingBookingsRes.data.length > 0) {
+          console.log('CashFlowData: Booking dates range (up to today):', {
+            earliest: pendingBookingsRes.data[0].start_date,
+            latest: pendingBookingsRes.data[pendingBookingsRes.data.length - 1].start_date
+          });
+        }
+        if (expensesRes.data && expensesRes.data.length > 0) {
+          console.log('CashFlowData: Expense dates range:', {
+            earliest: expensesRes.data[0].date,
+            latest: expensesRes.data[expensesRes.data.length - 1].date
+          });
+        }
+
+        setAllPendingBookings(allPendingBookingsRes.data || []);
+        setPendingBookings(pendingBookingsRes.data || []);
         setPendingExpenses(expensesRes.data || []);
         setFilteredExpenses(expensesRes.data || []);
+        
+        // Debug: Log prepayment revenue calculation
+        if (allPendingBookingsRes.data) {
+          const totalPrepaidRevenue = allPendingBookingsRes.data.reduce((sum, booking) =>
+            sum + booking.prepayment, 0);
+          console.log('CashFlowData: Total prepayment revenue (all dates):', totalPrepaidRevenue);
+        }
       } catch (error: any) {
         console.error("Error fetching cash flow data:", error);
         setError(error.message);
