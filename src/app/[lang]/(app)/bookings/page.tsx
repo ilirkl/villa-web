@@ -620,7 +620,7 @@ export default function BookingsPage() {
   
         {/* Property Switcher - Add this to allow manual property selection */}
         <div className="mb-4">
-          <PropertySwitcher dictionary={dictionary} onPropertyChange={handleRefresh} />
+          <PropertySwitcher dictionary={dictionary} />
         </div>
   
         <div className="flex gap-2 mb-6">
