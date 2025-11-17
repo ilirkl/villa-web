@@ -117,3 +117,35 @@ export async function getPropertiesWithAutoSelection(supabase: any): Promise<{
     return { properties: [], selectedPropertyId: null };
   }
 }
+
+/**
+ * Force refresh the selected property from storage
+ */
+export async function refreshSelectedPropertyId(): Promise<string | null> {
+  // Clear any cached values and re-read from storage
+  if (typeof window !== 'undefined') {
+    // Try localStorage first (most reliable for client-side)
+    const localStorageId = localStorage.getItem('selectedPropertyId');
+    if (localStorageId) {
+      // Sync to cookie as well
+      document.cookie = `selectedPropertyId=${localStorageId}; path=/; max-age=31536000; SameSite=Lax`;
+      return localStorageId;
+    }
+    
+    // Fallback to cookie
+    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+      const [name, value] = cookie.trim().split('=');
+      acc[name] = value;
+      return acc;
+    }, {} as Record<string, string>);
+    
+    const cookiePropertyId = cookies['selectedPropertyId'];
+    if (cookiePropertyId) {
+      // Sync to localStorage
+      localStorage.setItem('selectedPropertyId', cookiePropertyId);
+      return cookiePropertyId;
+    }
+  }
+  
+  return null;
+}

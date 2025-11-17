@@ -103,8 +103,8 @@ export function SidebarPropertySwitcher({ onPropertyChange, dictionary = {} }: S
     
     onPropertyChange?.(propertyId);
     
-    // Refresh the page to show data for the new property
-    window.location.reload();
+    // Force immediate reload to ensure data is fetched with new property
+    window.location.href = window.location.pathname;
   };
 
   const handlePropertyCreated = () => {

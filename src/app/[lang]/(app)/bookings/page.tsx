@@ -27,6 +27,7 @@ import {
 import { deleteBooking } from '@/lib/actions/bookings';
 import { generateInvoice } from '@/lib/actions/invoice';
 import { getCsrfToken, resetCsrfToken } from '@/lib/csrf-client';
+import { PropertySwitcher } from '@/components/shared/PropertySwitcher';
 
 // Dynamically import components
 const BookingCard = dynamic(() => import('@/components/bookings/BookingCard').then(mod => ({ default: mod.BookingCard })), {
@@ -127,10 +128,20 @@ export default function BookingsPage() {
       setIsLoading(true);
       const supabase = createClient();
       
+      // Get the current authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error('Authentication required');
+        setIsLoading(false);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('bookings')
         .select('*')
         .eq('id', bookingId)
+        .eq('user_id', user.id) // IMPORTANT: Explicitly check user ownership
         .single();
         
       if (error) throw error;
@@ -164,9 +175,29 @@ export default function BookingsPage() {
       try {
         const supabase = createClient();
         
+        // Get the current authenticated user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          setError('Authentication required');
+          setIsLoading(false);
+          return;
+        }
+
         // Get properties with auto-selection for single property case
-        const { getPropertiesWithAutoSelection } = await import('@/lib/property-utils');
+        const { getPropertiesWithAutoSelection, refreshSelectedPropertyId } = await import('@/lib/property-utils');
+        
+        // Force refresh the selected property to avoid cache issues
+        const refreshedPropertyId = await refreshSelectedPropertyId();
+        
         const { properties, selectedPropertyId } = await getPropertiesWithAutoSelection(supabase);
+        
+        // Use the refreshed property ID if available, otherwise use the one from auto-selection
+        const finalPropertyId = refreshedPropertyId || selectedPropertyId;
+        
+        console.log('Bookings page - User ID:', user.id);
+        console.log('Bookings page - Properties found:', properties.length);
+        console.log('Bookings page - Selected property ID:', finalPropertyId);
         
         if (properties.length === 0) {
           setError('No properties found. Please add a property first.');
@@ -174,7 +205,7 @@ export default function BookingsPage() {
           return;
         }
         
-        if (!selectedPropertyId) {
+        if (!finalPropertyId) {
           setError('Please select a property');
           setIsLoading(false);
           return;
@@ -183,8 +214,13 @@ export default function BookingsPage() {
         const { data, error } = await supabase
           .from('bookings')
           .select('*')
-          .eq('property_id', selectedPropertyId)
+          .eq('user_id', user.id) // IMPORTANT: Explicitly filter by user_id
+          .eq('property_id', finalPropertyId)
           .order('start_date', { ascending: sortOrder === 'asc' });
+
+        console.log('Bookings query - User ID:', user.id);
+        console.log('Bookings query - Property ID:', finalPropertyId);
+        console.log('Bookings query - Results:', data?.length || 0);
 
         if (error) {
           setError(error.message);
@@ -581,10 +617,15 @@ export default function BookingsPage() {
         <div className="flex justify-between items-center mb-1">
           <AddButton />
         </div>
-        
+  
+        {/* Property Switcher - Add this to allow manual property selection */}
+        <div className="mb-4">
+          <PropertySwitcher dictionary={dictionary} onPropertyChange={handleRefresh} />
+        </div>
+  
         <div className="flex gap-2 mb-6">
           <div className="flex-1">
-            <SearchBar 
+            <SearchBar
               onSearch={setSearchTerm}
               placeholder={dictionary.search_guest_name || "Search guest name..."}
             />

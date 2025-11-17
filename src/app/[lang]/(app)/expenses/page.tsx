@@ -26,6 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteExpense } from '@/lib/actions/expenses';
+import { PropertySwitcher } from '@/components/shared/PropertySwitcher';
 
 type ExpenseWithCategory = Expense & {
     expense_categories: Pick<ExpenseCategory, 'name'> | null;
@@ -124,17 +125,37 @@ export default function ExpensesPage() {
       try {
         const supabase = createClient();
         
+        // Get the current authenticated user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          setError('Authentication required');
+          setIsLoading(false);
+          return;
+        }
+
         // Get properties with auto-selection for single property case
-        const { getPropertiesWithAutoSelection } = await import('@/lib/property-utils');
+        const { getPropertiesWithAutoSelection, refreshSelectedPropertyId } = await import('@/lib/property-utils');
+        
+        // Force refresh the selected property to avoid cache issues
+        const refreshedPropertyId = await refreshSelectedPropertyId();
+        
         const { properties, selectedPropertyId } = await getPropertiesWithAutoSelection(supabase);
         
+        // Use the refreshed property ID if available, otherwise use the one from auto-selection
+        const finalPropertyId = refreshedPropertyId || selectedPropertyId;
+        
+        console.log('Expenses page - User ID:', user.id);
+        console.log('Expenses page - Properties found:', properties.length);
+        console.log('Expenses page - Selected property ID:', finalPropertyId);
+
         if (properties.length === 0) {
           setError('No properties found. Please add a property first.');
           setIsLoading(false);
           return;
         }
         
-        if (!selectedPropertyId) {
+        if (!finalPropertyId) {
           setError('Please select a property');
           setIsLoading(false);
           return;
@@ -149,9 +170,14 @@ export default function ExpensesPage() {
               name
             )
           `)
-          .eq('property_id', selectedPropertyId)
+          .eq('user_id', user.id) // IMPORTANT: Explicitly filter by user_id
+          .eq('property_id', finalPropertyId)
           .order(sortField, { ascending: sortOrder === 'asc' });
           
+        console.log('Expenses query - User ID:', user.id);
+        console.log('Expenses query - Property ID:', finalPropertyId);
+        console.log('Expenses query - Results:', data?.length || 0);
+
         if (error) throw error;
         
         setExpenses(data || []);
@@ -208,10 +234,19 @@ export default function ExpensesPage() {
       // Instead, we could add a separate loading state for the modal
       const supabase = createClient();
       
+      // Get the current authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error('Authentication required');
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
         .eq('id', expenseId)
+        .eq('user_id', user.id) // IMPORTANT: Explicitly check user ownership
         .single();
         
       if (error) throw error;
@@ -516,9 +551,14 @@ export default function ExpensesPage() {
         <AddButton />
       </div>
 
+      {/* Property Switcher - Add this to allow manual property selection */}
+      <div className="mb-4">
+        <PropertySwitcher dictionary={dictionary} onPropertyChange={handleRefresh} />
+      </div>
+
       <div className="flex gap-2 mb-6">
         <div className="flex-1">
-          <SearchBar 
+          <SearchBar
             onSearch={setSearchTerm}
             placeholder={dictionary.search_expenses || "Search description or category..."}
           />
