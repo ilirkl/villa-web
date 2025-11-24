@@ -84,12 +84,13 @@ export default function BookingsPage() {
   const [isMobile, setIsMobile] = useState(false);
   // Add state to track expanded rows
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [currentPropertyId, setCurrentPropertyId] = useState<string>('');
 
   const { lang } = useParams();
 
   // Define modalTitle based on whether we're adding or editing
-  const modalTitle = currentBooking?.id 
-    ? (dictionary.edit_booking || "Edit Booking") 
+  const modalTitle = currentBooking?.id
+    ? (dictionary.edit_booking || "Edit Booking")
     : (dictionary.add_new_booking || "Add New Booking");
 
   // Load dictionary
@@ -128,32 +129,32 @@ export default function BookingsPage() {
     try {
       setIsLoading(true);
       const supabase = createClient();
-      
+
       // Get the current authenticated user
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         toast.error('Authentication required');
         setIsLoading(false);
         return;
       }
-      
+
       const { data, error } = await supabase
         .from('bookings')
         .select('*')
         .eq('id', bookingId)
         .eq('user_id', user.id) // IMPORTANT: Explicitly check user ownership
         .single();
-        
+
       if (error) throw error;
-      
+
       // Convert date strings to Date objects for the form
       const bookingData: BookingFormData = {
         ...data,
         start_date: data.start_date ? new Date(data.start_date + 'T00:00:00') : undefined,
         end_date: data.end_date ? new Date(data.end_date + 'T00:00:00') : undefined,
       };
-      
+
       setCurrentBooking(bookingData);
       setIsModalOpen(true);
     } catch (err: any) {
@@ -175,10 +176,10 @@ export default function BookingsPage() {
     const fetchBookings = async () => {
       try {
         const supabase = createClient();
-        
+
         // Get the current authenticated user
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           setError('Authentication required');
           setIsLoading(false);
@@ -187,13 +188,13 @@ export default function BookingsPage() {
 
         // Get properties and validate property selection (same logic as dashboard)
         const { getValidatedPropertyId } = await import('@/lib/property-utils');
-        
+
         // Get selected property from client-side storage (localStorage/cookies)
         const selectedPropertyId = await getSelectedPropertyId();
-        
+
         // Validate and get the correct property ID using the same logic as dashboard
         const finalPropertyId = await getValidatedPropertyId(supabase, user.id, selectedPropertyId);
-        
+
         // Bookings page data loaded
 
         if (!finalPropertyId) {
@@ -201,6 +202,8 @@ export default function BookingsPage() {
           setIsLoading(false);
           return;
         }
+
+        setCurrentPropertyId(finalPropertyId);
 
         const { data, error } = await supabase
           .from('bookings')
@@ -257,38 +260,38 @@ export default function BookingsPage() {
     const checkIfMobile = () => {
       const isMobileScreen = window.innerWidth < 768;
       setIsMobile(isMobileScreen);
-      
+
       // Set default view mode based on screen size
       // Mobile: card view, Non-mobile: table view
       setViewMode(isMobileScreen ? 'card' : 'table');
     };
-    
+
     // Initial check
     checkIfMobile();
-    
+
     // Add event listener for window resize
     window.addEventListener('resize', checkIfMobile);
-    
+
     // Cleanup
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
 
   // Replace the AddButton component with this floating version
   const AddButton = () => (
-    <button 
+    <button
       onClick={handleAddBooking}
       className="fixed bottom-25 right-6 z-10 group"
     >
       <div className="relative">
         <div className="absolute inset-0 rounded-full bg-white shadow-lg"></div>
-        <PlusCircle 
+        <PlusCircle
           className="h-12 w-12 transition-all duration-300 ease-in-out transform 
                      group-hover:scale-110 group-hover:rotate-90 
-                     active:scale-95 active:rotate-180 relative z-10" 
-          style={{ 
+                     active:scale-95 active:rotate-180 relative z-10"
+          style={{
             color: '#ff5a5f',
             filter: 'drop-shadow(0 0 0.75rem rgba(255, 90, 95, 0.5))'
-          }} 
+          }}
         />
         <div className="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-20 
                       transition-opacity duration-300 z-20"></div>
@@ -300,7 +303,7 @@ export default function BookingsPage() {
     // Format dates for display
     const formattedStartDate = formatBookingDate(booking.start_date, lang);
     const formattedEndDate = formatBookingDate(booking.end_date, lang);
-    
+
     return (
       <BookingCard
         key={booking.id}
@@ -346,7 +349,7 @@ export default function BookingsPage() {
             const formattedStartDate = formatBookingDate(booking.start_date, lang);
             const formattedEndDate = formatBookingDate(booking.end_date, lang);
             const isExpanded = expandedRows.has(booking.id);
-            
+
             return (
               <Fragment key={booking.id}>
                 <TableRow
@@ -504,7 +507,7 @@ export default function BookingsPage() {
       // Always get a fresh token right before deletion
       resetCsrfToken(); // Clear any cached token
       const freshToken = await getCsrfToken(true); // Force refresh
-      
+
       await deleteBooking(bookingId, freshToken);
       toast.success('Booking deleted successfully');
       handleRefresh();
@@ -518,7 +521,7 @@ export default function BookingsPage() {
   const handleDownloadInvoice = async (bookingId: string, guestName: string, startDate: string) => {
     try {
       toast.info(dictionary.generating_invoice || 'Generating invoice...');
-      
+
       // We'll rely on authentication instead of CSRF token
       const response = await generateInvoice(bookingId, 'not-used');
 
@@ -580,17 +583,18 @@ export default function BookingsPage() {
           <AddButton />
         </div>
         <p>{dictionary.error_loading_bookings || 'Error loading bookings:'} {error}</p>
-        
+
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>{modalTitle}</DialogTitle>
             </DialogHeader>
             {isModalOpen && (
-              <BookingForm 
-                initialData={currentBooking} 
-                dictionary={dictionary} 
-                onSuccess={handleFormSuccess} 
+              <BookingForm
+                initialData={currentBooking}
+                dictionary={dictionary}
+                onSuccess={handleFormSuccess}
+                selectedPropertyId={currentPropertyId}
               />
             )}
           </DialogContent>
@@ -605,7 +609,7 @@ export default function BookingsPage() {
         <div className="flex justify-between items-center mb-1">
           <AddButton />
         </div>
-  
+
         <div className="flex gap-2 mb-6">
           <div className="flex-1">
             <SearchBar
@@ -620,7 +624,7 @@ export default function BookingsPage() {
             currentSortField="start_date"
             currentSortOrder={sortOrder}
             currentFilter={sourceFilter}
-            onSortFieldChange={() => {}}
+            onSortFieldChange={() => { }}
             onSortOrderChange={setSortOrder}
             onFilterChange={(filter) => setSourceFilter(filter as BookingSource | 'all')}
             paymentStatusFilterOptions={paymentStatusOptions}
@@ -628,19 +632,20 @@ export default function BookingsPage() {
             onPaymentStatusFilterChange={setPaymentStatusFilter}
           />
         </div>
-        
+
         <p className="text-center py-10">{dictionary.no_bookings_found || 'No bookings found.'}</p>
-        
+
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>{modalTitle}</DialogTitle>
             </DialogHeader>
             {isModalOpen && (
-              <BookingForm 
-                initialData={currentBooking} 
-                dictionary={dictionary} 
-                onSuccess={handleFormSuccess} 
+              <BookingForm
+                initialData={currentBooking}
+                dictionary={dictionary}
+                onSuccess={handleFormSuccess}
+                selectedPropertyId={currentPropertyId} // Pass the property ID
               />
             )}
           </DialogContent>
@@ -657,7 +662,7 @@ export default function BookingsPage() {
 
       <div className="flex gap-2 mb-6">
         <div className="flex-1">
-          <SearchBar 
+          <SearchBar
             onSearch={setSearchTerm}
             placeholder={dictionary.search_guest_name || "Search guest name..."}
           />
@@ -691,7 +696,7 @@ export default function BookingsPage() {
             currentSortField="start_date"
             currentSortOrder={sortOrder}
             currentFilter={sourceFilter}
-            onSortFieldChange={() => {}}
+            onSortFieldChange={() => { }}
             onSortOrderChange={setSortOrder}
             onFilterChange={(filter) => setSourceFilter(filter as BookingSource | 'all')}
             paymentStatusFilterOptions={paymentStatusOptions}
@@ -711,17 +716,18 @@ export default function BookingsPage() {
           {renderBookingTable()}
         </div>
       )}
-      
+
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{modalTitle}</DialogTitle>
           </DialogHeader>
           {isModalOpen && (
-            <BookingForm 
-              initialData={currentBooking} 
-              dictionary={dictionary} 
-              onSuccess={handleFormSuccess} 
+            <BookingForm
+              initialData={currentBooking}
+              dictionary={dictionary}
+              onSuccess={handleFormSuccess}
+              selectedPropertyId={currentPropertyId}
             />
           )}
         </DialogContent>

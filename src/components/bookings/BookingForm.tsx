@@ -64,6 +64,7 @@ interface BookingFormProps {
   initialData?: BookingFormData | null;
   dictionary?: any;
   onSuccess?: () => void;
+  selectedPropertyId?: string; // Add this prop
 }
 
 function SubmitButton({ isEditing, dictionary }: { isEditing: boolean, dictionary?: any }) {
@@ -82,13 +83,14 @@ function SubmitButton({ isEditing, dictionary }: { isEditing: boolean, dictionar
     );
 }
 
-export function BookingForm({ initialData, dictionary = {}, onSuccess }: BookingFormProps) {
+export function BookingForm({ initialData, dictionary = {}, onSuccess, selectedPropertyId: propPropertyId }: BookingFormProps) {
   const isEditing = !!initialData?.id;
   const router = useRouter();
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string>('');
-  const [propertyId, setPropertyId] = useState<string>('');
+  // Initialize with prop if available
+  const [propertyId, setPropertyId] = useState<string>(propPropertyId || '');
 
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(FormSchema),
@@ -103,7 +105,7 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
       source: initialData?.source ?? 'DIRECT',
       payment_status: initialData?.payment_status ?? 'Pending',
       notes: initialData?.notes ?? '',
-      property_id: propertyId,
+      property_id: propPropertyId || propertyId, // Use prop first
     },
   });
 
@@ -112,18 +114,24 @@ export function BookingForm({ initialData, dictionary = {}, onSuccess }: Booking
       const token = await getCsrfToken();
       setCsrfToken(token);
       
-      const selectedPropertyId = await getSelectedPropertyId();
-      setPropertyId(selectedPropertyId ?? '');
+      // Only fetch if not provided via props
+      if (!propPropertyId) {
+        const selectedPropertyId = await getSelectedPropertyId();
+        setPropertyId(selectedPropertyId ?? '');
+      }
     };
     fetchData();
-  }, []);
+  }, [propPropertyId]);
 
   // Update form property_id when propertyId changes
   useEffect(() => {
-    if (propertyId) {
+    // If we have a prop, always use it
+    if (propPropertyId) {
+      form.setValue('property_id', propPropertyId);
+    } else if (propertyId) {
       form.setValue('property_id', propertyId);
     }
-  }, [propertyId, form]);
+  }, [propertyId, propPropertyId, form]);
 
   const initialState: BookingState = { message: null, errors: {} };
   const [state, dispatch] = useFormState(createOrUpdateBooking, initialState);
