@@ -47,7 +47,7 @@ export async function GET(
 
     // 3. Generate iCal string
     const events = bookings.map((booking: any) => {
-        // Format dates as YYYYMMDD
+        // Format dates as YYYYMMDD (No time component)
         const startDate = booking.start_date.replace(/-/g, '');
         const endDate = booking.end_date.replace(/-/g, '');
 
@@ -59,6 +59,8 @@ export async function GET(
         const summary = `${booking.guest_name}, ${propertyName}`;
         const description = booking.notes || '';
 
+        // Added ";VALUE=DATE" back. 
+        // This tells calendars to render this as a banner at the top of the day.
         return `BEGIN:VEVENT
 UID:${uid}
 DTSTAMP:${dtStamp}
