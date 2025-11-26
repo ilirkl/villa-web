@@ -45,11 +45,15 @@ export async function GET(
         return new NextResponse('Internal Server Error', { status: 500 });
     }
 
-    // 3. Generate iCal string
+    // 3. Generate iCal string with CRLF line endings (RFC 5545 requirement)
     const events = bookings.map((booking: any) => {
-        // Format dates as YYYYMMDD (No time component)
-        const startDate = booking.start_date.replace(/-/g, '');
-        const endDate = booking.end_date.replace(/-/g, '');
+        // Format dates as YYYYMMDD
+        const startDateStr = booking.start_date.replace(/-/g, '');
+        const endDateStr = booking.end_date.replace(/-/g, '');
+
+        // Add time components: Check-in at 14:00 (2pm), Check-out at 11:00 (11am)
+        const dtStart = `${startDateStr}T140000`;
+        const dtEnd = `${endDateStr}T110000`;
 
         // Create a unique ID for the event
         const uid = `${booking.id}@villa-manager`;
@@ -59,25 +63,33 @@ export async function GET(
         const summary = `${booking.guest_name}, ${propertyName}`;
         const description = booking.notes || '';
 
-        // Added ";VALUE=DATE" back. 
-        // This tells calendars to render this as a banner at the top of the day.
-        return `BEGIN:VEVENT
-UID:${uid}
-DTSTAMP:${dtStamp}
-DTSTART;VALUE=DATE:${startDate}
-DTEND;VALUE=DATE:${endDate}
-SUMMARY:${summary}
-DESCRIPTION:${description}
-END:VEVENT`;
-    }).join('\n');
+        // Construct event lines array
+        const eventLines = [
+            'BEGIN:VEVENT',
+            `UID:${uid}`,
+            `DTSTAMP:${dtStamp}`,
+            `DTSTART:${dtStart}`,
+            `DTEND:${dtEnd}`,
+            `SUMMARY:${summary}`,
+            `DESCRIPTION:${description}`,
+            'END:VEVENT'
+        ];
 
-    const icalContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Villa Manager//EN
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-${events}
-END:VCALENDAR`;
+        return eventLines.join('\r\n');
+    }).join('\r\n');
+
+    // Construct calendar lines array
+    const calendarLines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Villa Manager//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        events,
+        'END:VCALENDAR'
+    ];
+
+    const icalContent = calendarLines.join('\r\n');
 
     // 4. Return response
     return new NextResponse(icalContent, {
