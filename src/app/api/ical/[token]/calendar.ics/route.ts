@@ -100,9 +100,7 @@ export async function GET(
         const startDateStr = booking.start_date.replace(/-/g, '');
         const endDateStr = booking.end_date.replace(/-/g, '');
 
-        // Add time components: Check-in at 14:00 (2pm), Check-out at 11:00 (11am)
-        const dtStart = `${startDateStr}T140000`;
-        const dtEnd = `${endDateStr}T110000`;
+
 
         // Create a unique ID for the event
         const uid = `${booking.id}@villa-manager`;
@@ -126,8 +124,8 @@ export async function GET(
             'BEGIN:VEVENT',
             `UID:${uid}`,
             `DTSTAMP:${dtStamp}`,
-            `DTSTART:${dtStart}`,
-            `DTEND:${dtEnd}`,
+            `DTSTART;VALUE=DATE:${startDateStr}`,
+            `DTEND;VALUE=DATE:${endDateStr}`,
             `SUMMARY:${summary}`,
             `DESCRIPTION:${description}`,
             'END:VEVENT'
