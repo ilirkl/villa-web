@@ -2,9 +2,11 @@
 
 .custom-calendar-outer-container {
   background-color: #fff;
-  padding: 20px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm); /* 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) */
+  padding: 10px;
   user-select: none;
-  overflow: hidden;
+  overflow: hidden; 
 }
 
 .custom-calendar {
@@ -15,210 +17,181 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding: 0 10px;
+  margin-bottom: 7px;
 }
 
 .calendar-title {
-  font-size: 1.125rem;
-  /* 18px */
-  font-weight: 500;
-  color: #374151;
-  /* Tailwind gray-700 */
-  letter-spacing: 0.025em;
+  font-size: 1.125rem; /* 18px */
+  font-weight: 600;
+  color: #1f2937; /* Tailwind gray-800 */
 }
 
 .nav-button {
-  background-color: transparent;
-  border: none;
-  border-radius: 50%;
-  padding: 8px;
+  background-color: #fff;
+  border: 1px solid #d1d5db; /* Tailwind gray-300 */
+  border-radius: 12px;
+  padding: 6px; 
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
-  /* Tailwind gray-400 */
-  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  color: #4b5563; /* Tailwind gray-600 */
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }
 
 .nav-button:hover {
-  background-color: #f3f4f6;
-  /* Tailwind gray-100 */
-  color: #4b5563;
-  /* Tailwind gray-600 */
+  background-color: #f9fafb; /* Tailwind gray-50 */
+  border-color: #9ca3af; /* Tailwind gray-400 */
 }
-
 .nav-button:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #3b82f6; /* Tailwind blue-500 */
   outline-offset: 1px;
 }
 
 .calendar-grid-container {
-  border: none;
-  box-shadow: none;
-  overflow: visible;
+  border: 1px solid #e5e7eb; /* Tailwind gray-200 */
+  border-radius: 12px;
+  box-shadow: 1px 2px 2px rgba(0, 0, 0, 0.08);
+  overflow: hidden; 
 }
 
 .calendar-weekday-header-row {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  background-color: transparent;
-  border: none;
-  margin-bottom: 10px;
+  grid-template-columns: repeat(7, minmax(0, 1fr)); 
+  background-color: #f9fafb; /* Tailwind gray-50 */
+  border-radius: 12px;
+  border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
 }
 
 .weekday-header-cell {
-  padding: 10px 4px;
+  padding: 10px 4px; 
   text-align: center;
-  font-weight: 400;
-  font-size: 0.875rem;
-  /* 14px */
-  color: #6b7280;
-  /* Tailwind gray-500 */
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-weight: 500;
+  font-size: 0.875rem; /* 14px */
+  color: #4b5563; /* Tailwind gray-600 */
 }
 
 .calendar-week-row {
-  position: relative;
-  min-height: 80px;
-  display: flex;
-  flex-direction: column;
-  border: none;
-  margin-bottom: 0;
+  position: relative; 
+  min-height: 50px; 
+  display: flex; 
+  flex-direction: column; 
+  border-radius: 12px;
+  border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
+}
+.calendar-week-row:last-child {
+  border-bottom: none;
 }
 
 .calendar-day-cells-container {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   width: 100%;
-  z-index: 0;
-  height: 100%;
+  z-index: 0; 
 }
 
 .calendar-day-cell {
-  height: 100%;
-  padding: 4px;
-  box-sizing: border-box;
-  position: relative;
-  border: none;
-  background: transparent;
+  min-height: 60px; 
+  padding: 8px; 
+  border-radius: 12px;
+  border-right: 1px solid #e5e7eb; /* Tailwind gray-200 */
+  box-sizing: border-box; 
+  position: relative; 
 }
 
-.day-card {
-  height: 100%;
-  background-color: #f9fafb;
-  /* Default background for days (gray-50) */
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 6px;
-  transition: background-color 0.2s;
-  position: relative;
-  z-index: 0;
+.calendar-day-cell:last-child {
+  border-right: none;
 }
 
-.day-card.other-month {
-  opacity: 0;
-  background-color: transparent;
-}
-
-.day-card.other-month .day-number {
-  display: none;
-}
-
-.day-card.is-today {
-  background-color: #fff;
-  border: none;
-}
-
-.day-number {
-  font-size: 0.875rem;
-  /* 14px */
-  font-weight: 500;
-  color: #374151;
-  /* Tailwind gray-700 */
-  z-index: 2;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-}
-
-.day-card.is-today .day-number {
-  background-color: #e11d48;
-  /* Rose-600 */
-  color: white;
-  font-weight: 600;
-}
-
-/* Container for all event bars within a week */
-.calendar-event-bars-container {
+.calendar-day-cell.is-today::before {
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none;
-  z-index: 1;
+  border: 1px solid black; /* Your desired border */
+  border-radius: 12px;
+  box-sizing: border-box;  /* Important: border is inside the pseudo-element's dimensions */
+  z-index: 0;              /* Place it behind the cell's direct content and event bars */
+  }
+
+.day-number {
+  font-size: 0.65rem; /* 14px */
+  text-align: right;
+  color: #374151; /* Tailwind gray-700 */
+  margin-bottom: 4px;
 }
 
-/* Wrapper for a single event bar segment */
+.current-month .day-number {
+  font-weight: 600; 
+}
+
+
+.other-month {
+  background-color: #f9fafb; /* Tailwind gray-50, or #f8fafc */
+}
+
+.other-month .day-number {
+  color: #9ca3af; /* Tailwind gray-400 */
+}
+
+/* Container for all event bars within a week */
+.calendar-event-bars-container {
+  position: absolute; 
+  top: 5px;
+  left: 0;
+  width: 100%;
+  height: 100%; 
+  pointer-events: none; 
+  z-index: 1; 
+}
+
+/* Wrapper for a single event bar segment (controls overall position and width of the segment) */
 .event-bar-segment-wrapper {
-  position: absolute;
-  height: 28px;
+  position: absolute; /* Positioned by JS (left, width, top) */
+  height: 22px; /* Height of the event bar */
   box-sizing: border-box;
-  pointer-events: auto;
-  cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s;
-  padding: 0 6px;
-  z-index: 10;
+  pointer-events: auto; /* Segments can be interactive */
+  cursor: grab; /* Or default, or pointer based on interaction needs */
+  transition: opacity 0.2s; 
 }
-
 .event-bar-segment-wrapper:hover {
-  transform: translateY(-2px);
-  z-index: 10;
-  opacity: 0.95;
+  opacity: 0.85;
 }
 
-/* The visual part of the event bar */
+/* The visual part of the event bar (controls background, actual visual width/offset, border-radius, title) */
 .event-bar-visual {
+ 
   color: white;
-  font-size: 0.875rem;
-  /* 14px */
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  box-sizing: border-box;
-  overflow: hidden;
-  border-radius: 9999px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 500;
+  display: flex; /* For aligning the title */
+  align-items: center; /* Vertically center title */
+  padding: 0 6px; /* Horizontal padding for the title within the bar */
+  box-sizing: border-box; /* CRITICAL for padding and width/height to work as expected */
+  overflow: hidden; /* To clip the event title if it's too long */
 }
+
+
 
 .event-title {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Padding is handled by the parent .event-bar-visual */
 }
 
-.event-bar-visual.is-single-day {
-  /* Already handled by border-radius 9999px */
-}
 
 /* Booking popup styles */
+/* Booking popup overlay */
 .booking-popup-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(2px);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -226,21 +199,21 @@
   animation: fadeIn 0.2s ease-out;
 }
 
+/* Booking popup */
 .booking-popup {
   width: 350px;
   max-width: 90vw;
   background-color: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   animation: zoomIn 0.2s ease-out;
-  overflow: hidden;
+  transform-origin: center;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
   }
-
   to {
     opacity: 1;
   }
@@ -251,9 +224,19 @@
     opacity: 0;
     transform: scale(0.95);
   }
-
   to {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* Make event bars clickable with hover effect */
+.event-bar-segment-wrapper {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.event-bar-segment-wrapper:hover {
+  transform: translateY(-2px);
+  z-index: 10;
 }
